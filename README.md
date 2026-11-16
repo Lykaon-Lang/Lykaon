@@ -59,6 +59,8 @@ cargo build --release -p lykaon
 
 ## Try it
 
+**In your browser — no install:** https://lykaon-oss.github.io/Lykaon/ (WebAssembly playground, v0.1 preview)
+
 Build from source (you need [Rust](https://rustup.rs) 1.85 or newer):
 
 ```

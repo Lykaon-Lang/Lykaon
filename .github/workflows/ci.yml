@@ -30,7 +30,7 @@ jobs:
           ./target/release/lykaonc-cli build fast hello.lykaon hello
           ./hello
 
-      - name: Interpreter: arithmetic, records, enums, tasks, formats, CLI tools
+      - name: Interpreter feature smoke tests (math, records, enums, tasks, formats, CLI tools)
         shell: bash
         run: |
           printf 'Changeable total is 0.\nFor each i from 1 to 10.\n    Set total to total plus i.\nSay total.\n' > sum.lykaon

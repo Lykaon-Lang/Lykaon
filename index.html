@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lykaon Playground — v0.1 preview</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #14161a; color: #e8e8e8; }
+  header { padding: 14px 20px; background: #1c1f26; border-bottom: 1px solid #2c313a;
+           display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; color: #7ab8ff; }
+  header .tag { font-size: 12px; color: #9aa3af; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; height: calc(100vh - 56px); }
+  .pane { display: flex; flex-direction: column; min-height: 0; }
+  .pane h2 { font-size: 13px; color: #9aa3af; margin: 0 0 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  textarea { flex: 1; width: 100%; resize: none; background: #0f1115; color: #e8e8e8; border: 1px solid #2c313a;
+             border-radius: 6px; padding: 12px; font-family: Consolas, monospace; font-size: 14px; line-height: 1.5; tab-size: 4; }
+  #out { flex: 1; background: #0f1115; border: 1px solid #2c313a; border-radius: 6px; padding: 12px;
+         white-space: pre-wrap; overflow: auto; font-family: Consolas, monospace; font-size: 14px; margin: 0; }
+  .bar { display: flex; gap: 8px; align-items: center; padding: 10px 12px; }
+  button { background: #2d6cdf; color: #fff; border: 0; border-radius: 6px; padding: 8px 16px;
+           font-size: 14px; cursor: pointer; }
+  button:hover { background: #3a7ff0; }
+  button.ghost { background: #2c313a; }
+  button.ghost:hover { background: #3a4150; }
+  select { background: #2c313a; color: #e8e8e8; border: 1px solid #3a4150; border-radius: 6px; padding: 7px; }
+  #status { font-size: 12px; color: #9aa3af; }
+  #status.err { color: #ff8080; }
+  footer { padding: 8px 20px; font-size: 12px; color: #6b7380; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; height: auto; } textarea, #out { min-height: 40vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lykaon</h1>
+  <span class="tag">playground · v0.1 preview · runs entirely in your browser (WebAssembly)</span>
+</header>
+<main>
+  <div class="pane">
+    <div class="bar">
+      <button id="run">▶ Run (Ctrl+Enter)</button>
+      <button id="fmt" class="ghost">Examples</button>
+      <select id="example">
+        <option value="hello">Hello world</option>
+        <option value="sum">Sum 1 to 10</option>
+        <option value="factorial">25 factorial</option>
+        <option value="record">Records and enums</option>
+        <option value="fail">Try / Fail with</option>
+        <option value="task">Tasks</option>
+      </select>
+    </div>
+    <h2>program.lykaon</h2>
+    <textarea id="src" spellcheck="false"></textarea>
+  </div>
+  <div class="pane">
+    <div class="bar"><h2 style="margin:0">Output</h2></div>
+    <pre id="out"></pre>
+  </div>
+</main>
+<footer>
+  Ask (keyboard input) and file/network sentences are limited in the browser build. No code leaves this page.
+</footer>
+<script>
+const examples = {
+  hello: 'Say Hello World.',
+  sum: 'Changeable total is 0.\nFor each i from 1 to 10.\n    Set total to total plus i.\nSay total.',
+  factorial: 'Say 25 factorial.',
+  record: 'A color is red or green or blue.\nShade is green.\nLook at shade.\n    When red.\n        Say warm.\n    When green.\n        Say fresh.\n    When blue.\n        Say cool.',
+  fail: 'To halve n can fail.\n    If n is 0 fail with zero cannot be halved.\n    Give back n divided by 2.\nTry halve 0.\n    Say it.\nIf that fails.\n    Say could not halve.',
+  task: 'Start task looker.\n    Give back 11.\nWait for looker.\nSay it.',
+};
+
+const src = document.getElementById('src');
+const out = document.getElementById('out');
+const status = document.getElementById('status') || (() => { const s = document.createElement('span'); s.id = 'status'; document.querySelector('.bar').appendChild(s); return s; })();
+const sel = document.getElementById('example');
+
+function loadExample() { src.value = examples[sel.value]; }
+sel.addEventListener('change', loadExample);
+loadExample();
+
+let instance = null;
+let ready = false;
+
+async function boot() {
+  try {
+    const resp = await fetch('./lykaon_playground.wasm');
+    if (!resp.ok) throw new Error('wasm not found: ' + resp.status);
+    const bytes = await resp.arrayBuffer();
+    const result = await WebAssembly.instantiate(bytes, {});
+    instance = result.instance;
+    ready = true;
+    status.textContent = 'ready';
+  } catch (e) {
+    status.textContent = 'failed to load: ' + e.message;
+    status.classList.add('err');
+  }
+}
+
+function run() {
+  if (!ready) { out.textContent = 'The playground is still loading…'; return; }
+  const source = new TextEncoder().encode(src.value);
+  if (source.length > (1 << 20)) { out.textContent = 'Program too large (limit 1 MiB).'; return; }
+  const mem = instance.exports.memory;
+  const inPtr = instance.exports.lykaon_alloc(source.length);
+  new Uint8Array(mem.buffer, inPtr, source.length).set(source);
+  const packed = instance.exports.lykaon_run(inPtr, source.length);
+  const big = BigInt(packed);
+  const outPtr = Number(big >> 32n);
+  const outLen = Number(big & 0xFFFFFFFFn);
+  const bytes = new Uint8Array(mem.buffer, outPtr, outLen);
+  out.textContent = new TextDecoder().decode(bytes);
+}
+
+document.getElementById('run').addEventListener('click', run);
+src.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) run(); });
+boot();
+</script>
+</body>
+</html>

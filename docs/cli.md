@@ -111,10 +111,23 @@ lykaon-cli update [NAME]             clone/fetch, check out the pinned tag,
 lykaon-cli bench
 ```
 
-Runs the six standard benchmark programs (nbody, fannkuch, spectral_norm,
-binary_trees, mandelbrot, json_parse) — compile time measured separately from
-execution, median of 10 runs with a warm-up, and a checksum of the program's
-output printed on every run so you can verify results yourself.
+Runs the benchmark programs in `Lykaon/benchmarks/` — compile time measured
+separately from execution, median of 10 runs with a warm-up, and a checksum of
+the program's output printed on every run so you can verify results yourself.
+
+The bundle contains one honest recursion stress test (`recursion.lykaon`, naive
+Fibonacci) and its Rust reference source (`reference/recursion.rs`). `lykaon
+bench` needs the Rust reference executable built first:
+
+```
+rustc -O reference/recursion.rs -o reference/bin/recursion.exe   (Windows)
+rustc -O reference/recursion.rs -o reference/bin/recursion       (Linux)
+```
+
+The stored times in `rust_reference.json` are a staleness cross-check only;
+ratios are measured live against the executable in the same run. The real
+standard benchmarks (nbody, fannkuch, spectral_norm, binary_trees, mandelbrot,
+json_parse) are planned for a later version.
 
 ## Building from source
 

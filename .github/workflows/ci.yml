@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: Lykaon
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build (debug + release, includes the lykaon-rt runtime library)
+        run: cargo build --release
+
+      - name: Compile and run a .lykaon program with the built compiler
+        shell: bash
+        run: |
+          printf 'Say Hello World.\n' > hello.lykaon
+          ./target/release/lykaonc-cli build fast hello.lykaon hello
+          ./hello
+
+      - name: Run the interpreter on a feature program
+        shell: bash
+        run: |
+          printf 'Changeable total is 0.\nFor each i from 1 to 10.\n    Set total to total plus i.\nSay total.\n' > sum.lykaon
+          ./target/release/lykaon-cli run sum.lykaon

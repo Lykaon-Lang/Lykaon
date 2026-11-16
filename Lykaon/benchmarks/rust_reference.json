@@ -1,8 +1,3 @@
 [
-  ["nbody", 960.0],
-  ["fannkuch", 1445.9],
-  ["spectral_norm", 690.5],
-  ["binary_trees", 704.9],
-  ["mandelbrot", 672.7],
-  ["json_parse", 671.3]
+  ["recursion", 3046.2]
 ]

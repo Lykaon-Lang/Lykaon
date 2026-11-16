@@ -5,8 +5,7 @@ A sentence ends with a period. A block is indented. There are no quotes, no brac
 no semicolons. The compiler reads your sentences and builds a real native executable.
 
 This repository holds Lykaon **version 0.1 (milestones M1–M4)**: the language core,
-the interpreter, the native compiler, the runtime library, and the conformance test
-suite that defines what the language must do.
+the interpreter, the native compiler, the runtime library, and ready-to-run examples.
 
 ```lykaon
 Say Hello World.
@@ -38,9 +37,19 @@ In v0.1 a `.lykaon` program builds to a **command-line / console executable** on
 (proven by the test suite) and Linux (in principle; not yet verified on Linux hardware —
 see *Known limits*). Desktop/windowed apps arrive in a later version.
 
+## Download
+
+Prebuilt Windows x64 binaries (CLI + GUI + runtime) are attached to the
+[v0.1.0 release](../../releases/tag/v0.1.0). For Linux and macOS, build from
+source with the Rust toolchain (1.85 or newer):
+
+```
+cargo build --release
+```
+
 ## Try it
 
-Build from source (you need [Rust](https://rustup.rs) 1.75 or newer):
+Build from source (you need [Rust](https://rustup.rs) 1.85 or newer):
 
 ```
 cargo build --release
@@ -86,8 +95,10 @@ logos/             project logos
 - **Windows**: everything above is tested and passing on Windows x86-64.
 - **Linux**: the compiler cross-builds a static Linux executable and runtime, but the
   test suite has not yet been executed on Linux. Treat Linux as unverified in v0.1.
-- **Performance**: roughly 67–72% of equivalent Rust speed on the six standard
-  benchmarks. Faster backends are planned for later versions.
+- **Performance**: not yet a focus. The LLVM backend and the real standard
+  benchmarks (nbody, fannkuch, spectral_norm, binary_trees, mandelbrot,
+  json_parse) are planned for later versions; the bundled benchmark is a
+  recursion stress test, not one of those.
 - **Windowed apps**: not in v0.1. Only command-line and console programs.
 
 ## License

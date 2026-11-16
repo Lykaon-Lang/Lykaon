@@ -1,0 +1,3 @@
+Serve on port 8080.
+    When someone gets home.
+        Respond with status 200 and text hello.

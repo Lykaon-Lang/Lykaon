@@ -87,6 +87,7 @@ hello.exe
 | [`docs/standard-library.md`](docs/standard-library.md) | The built-in words, grouped by task |
 | [`docs/cli.md`](docs/cli.md) | Every command: run, repl, build, test, add, update, bench |
 | [`docs/Lykaon_Language_Reference.docx`](docs/Lykaon_Language_Reference.docx) | The complete language reference for v0.1 (M1–M4), in one document |
+| [`editors/vscode/`](editors/vscode/) | VS Code syntax-highlighting extension (source included) |
 
 ## Repository layout
 

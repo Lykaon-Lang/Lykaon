@@ -1,0 +1,42 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lykaon",
+  "scopeName": "source.lykaon",
+  "fileTypes": ["lykaon"],
+  "patterns": [
+    { "include": "#keywords" },
+    { "include": "#numbers" },
+    { "include": "#sentence-end" }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.lykaon",
+          "match": "\\b(Note|About|Say|Ask|Changeable|Constant|Set|If|Otherwise|Otherwise if|Repeat|For each|Stop|Skip|To|Give back|Hand back|Try|Fail with|When|Look at|Test|Check|Pretend|Requires|Ensures|Always|Tagged|Use|Share|Start task|Wait for|Do these together|Stop task|Send|Receive from|Sleep for|After|Every|Spread|Give|Lend|Take|Copy of|Weak|Exit with|Run|Fetch|Post|Serve|Respond with|Log|Zip|Unzip|Gzip|Make folder|Make temporary file|Remove|Move|Duplicate|List files in|Read|Write|Append|Replace|Save|Environment|When file|When signal|Be careful|Limit|Anything|A|Is|Is not|As|At least|At most|More than|Less than|And|Or|Plus|Minus|Times|Divided by|Whole divided by|Rem|Pow|Rounded|Rounded to even|As decimal|Fallback|Missing|There|Forever|While|From|In|Of|Under|Holding|Defaulting|Takes|Option)\\b",
+          "name": "keyword.control.lykaon"
+        },
+        {
+          "name": "keyword.other.lykaon",
+          "match": "\\b(maybe|text|number|whole number|decimal|yes or no|list of|map of|set of|pair of|channel of|guarded|atomic number|counter|date|moment|duration|secret)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.lykaon",
+          "match": "\\b[0-9]+(\\.[0-9]+)?\\b"
+        }
+      ]
+    },
+    "sentence-end": {
+      "patterns": [
+        {
+          "name": "punctuation.period.lykaon",
+          "match": "\\.(\\s|$)"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "lykaon",
+  "displayName": "Lykaon",
+  "description": "Syntax highlighting for the Lykaon programming language",
+  "version": "0.1.0",
+  "publisher": "lykaon-oss",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "lykaon",
+        "aliases": ["Lykaon", "lykaon"],
+        "extensions": [".lykaon"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "lykaon",
+        "scopeName": "source.lykaon",
+        "path": "./syntaxes/lykaon.tmLanguage.json"
+      }
+    ]
+  }
+}

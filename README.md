@@ -4,6 +4,12 @@
 A sentence ends with a period. A block is indented. There are no quotes, no braces,
 no semicolons. The compiler reads your sentences and builds a real native executable.
 
+[![CI](https://github.com/Lykaon-oss/Lykaon/actions/workflows/ci.yml/badge.svg)](https://github.com/Lykaon-oss/Lykaon/actions/workflows/ci.yml)
+
+Lykaon is **source-available, not open source**: free for personal use and for
+organizations under USD 1,000,000 annual revenue. See [`LICENSE.md`](LICENSE.md).
+Programs you write in Lykaon are yours to license and sell.
+
 This repository holds Lykaon **version 0.1 (milestones M1–M4)**: the language core,
 the interpreter, the native compiler, the runtime library, and ready-to-run examples.
 
@@ -93,8 +99,10 @@ logos/             project logos
 ## Status and limits (read this before you rely on it)
 
 - **Windows**: everything above is tested and passing on Windows x86-64.
-- **Linux**: the compiler cross-builds a static Linux executable and runtime, but the
-  test suite has not yet been executed on Linux. Treat Linux as unverified in v0.1.
+- **Linux**: built and smoke-tested on every push by CI (ubuntu-latest); the
+  full stress suite has not been run on Linux hardware yet.
+- **macOS**: not a target. The language targets Windows and Linux x86-64
+  (later versions may add macOS).
 - **Performance**: not yet a focus. The LLVM backend and the real standard
   benchmarks (nbody, fannkuch, spectral_norm, binary_trees, mandelbrot,
   json_parse) are planned for later versions; the bundled benchmark is a

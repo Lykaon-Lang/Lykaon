@@ -768,8 +768,9 @@ Common codes in v0.1:
 
 ## 22. Known limits in version 0.1
 
-- Windows x86-64 is fully tested. Linux x86-64 cross-builds but the test
-  suite has not been executed on Linux hardware yet.
+- Windows x86-64 is fully tested. Linux x86-64 is built and smoke-tested on
+  every push by CI (ubuntu-latest); the full stress suite has not been run on
+  Linux hardware yet. macOS is not a target in v0.1.
 - Roughly 67–72% of equivalent Rust speed on the six standard benchmarks.
 - Windowed (GUI) apps are a later milestone; v0.1 builds command-line and
   console executables only.

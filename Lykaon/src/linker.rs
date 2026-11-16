@@ -304,7 +304,7 @@ pub fn find_rt_lib() -> Result<PathBuf, String> {
             return Ok(c.clone());
         }
     }
-    Err("liblykaon_rt was not built yet: run cargo build in the lykaon workspace (it builds rt as a member), or set Lykaon_RT_LIB.".to_string())
+    Err("liblykaon_rt was not built yet: run cargo build --workspace in the lykaon workspace (plain cargo build only builds the root package; --workspace includes the rt member), or set Lykaon_RT_LIB.".to_string())
 }
 
 /// The default suffix for an executable on this host: `.exe` on Windows,

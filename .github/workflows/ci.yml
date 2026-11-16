@@ -20,8 +20,8 @@ jobs:
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build (debug + release, includes the lykaon-rt runtime library)
-        run: cargo build --release
+      - name: Build (release; --workspace includes the lykaon-rt runtime library)
+        run: cargo build --release --workspace
 
       - name: Compile and run a .lykaon program with the built compiler
         shell: bash
@@ -30,8 +30,16 @@ jobs:
           ./target/release/lykaonc-cli build fast hello.lykaon hello
           ./hello
 
-      - name: Run the interpreter on a feature program
+      - name: Interpreter: arithmetic, records, enums, tasks, formats, CLI tools
         shell: bash
         run: |
           printf 'Changeable total is 0.\nFor each i from 1 to 10.\n    Set total to total plus i.\nSay total.\n' > sum.lykaon
           ./target/release/lykaon-cli run sum.lykaon
+          printf 'A color is red or green or blue.\nShade is green.\nLook at shade.\n    When red.\n        Say warm.\n    When green.\n        Say fresh.\n    When blue.\n        Say cool.\n' > color.lykaon
+          ./target/release/lykaon-cli run color.lykaon
+          printf 'Start task looker.\n    Give back 11.\nWait for looker.\nSay it.\n' > task.lykaon
+          ./target/release/lykaon-cli run task.lykaon
+          printf 'Save 42 as json to file n in temporary folder.\nRead json file n in temporary folder as whole number.\nSay it.\n' > fmt.lykaon
+          ./target/release/lykaon-cli run fmt.lykaon
+          printf 'Takes file name as text.\nOption verbose is whole number.\n\nRead file name in temporary folder.\nSay it.\n' > tool.lykaon
+          ./target/release/lykaon-cli run tool.lykaon || test $? -eq 2

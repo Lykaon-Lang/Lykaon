@@ -230,6 +230,7 @@ pub fn link(obj: &Path, rt_lib: &Path, out: &Path) -> Result<(), String> {
         "advapi32.lib",
         "userenv.lib",
         "ntdll.lib",
+        "synchronization.lib",
     ]);
     let r = cmd
         .output()

@@ -20,8 +20,10 @@ jobs:
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build (release; --workspace includes the lykaon-rt runtime library)
-        run: cargo build --release --workspace
+      - name: Build (release; rt on its own first so it stays TLS-free, then the root package)
+        run: |
+          cargo build --release -p lykaon-rt
+          cargo build --release -p lykaon
 
       - name: Compile and run a .lykaon program with the built compiler
         shell: bash

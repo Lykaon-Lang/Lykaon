@@ -46,12 +46,16 @@ see *Known limits*). Desktop/windowed apps arrive in a later version.
 ## Download
 
 Prebuilt Windows x64 binaries (CLI + GUI + runtime) are attached to the
-[v0.1.0 release](../../releases/tag/v0.1.0). For Linux and macOS, build from
-source with the Rust toolchain (1.85 or newer):
+[v0.1.0 release](../../releases/tag/v0.1.0). On Linux, build from source with
+the Rust toolchain (1.85 or newer):
 
 ```
-cargo build --release
+cargo build --release -p lykaon-rt
+cargo build --release -p lykaon
 ```
+
+(The runtime library is built on its own so it stays TLS-free; see
+`Lykaon/src/linker.rs`.)
 
 ## Try it
 

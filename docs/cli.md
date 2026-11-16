@@ -132,10 +132,12 @@ json_parse) are planned for a later version.
 ## Building from source
 
 ```
-cargo build --release
+cargo build --release -p lykaon-rt
+cargo build --release -p lykaon
 ```
 
-executables land in `target/release/`.
+executables land in `target/release/`. (The runtime library is built on its
+own so it stays TLS-free.)
 
 ## Note on the two front ends
 

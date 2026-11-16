@@ -221,4 +221,4 @@ then open `http://localhost:8080` in a browser. Responses can also be
 
 - [`standard-library.md`](standard-library.md) — every built-in word, grouped by task
 - [`cli.md`](cli.md) — run, repl, build, test, packages, benchmarks
-- [`Lykaon_Language_Reference.docx`](Lykaon_Language_Reference.docx) — the complete reference for v0.1
+- [`Lykaon_Language_Reference.md`](Lykaon_Language_Reference.md) — the complete reference for v0.1

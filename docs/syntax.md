@@ -22,11 +22,11 @@ lykaon-cli run hello.lykaon
 or build a real executable with the compiler:
 
 ```
-lykaonc-cli build fast hello.lykaon hello.exe
-hello.exe
+lykaonc-cli build fast hello.lykaon greeting.exe
+greeting.exe
 ```
 
-On Windows, `hello.exe` is a standalone native program. See [`cli.md`](cli.md)
+On Windows, `greeting.exe` is a standalone native program. See [`cli.md`](cli.md)
 for every option.
 
 ## Variables and data kinds

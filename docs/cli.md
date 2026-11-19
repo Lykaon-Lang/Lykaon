@@ -44,7 +44,9 @@ dead code, bounds-check elimination, devirtualization, whole-program passes) —
 one line per pass with its change count.
 
 The output is a standalone executable for the host platform: `.exe` on Windows,
-an ELF binary on Linux. It embeds what it needs and finds the runtime library
+an ELF binary on Linux. Double-clicked in Explorer it keeps its window open
+until you press Enter; run from a terminal it prints and returns to the
+prompt. It embeds what it needs and finds the runtime library
 (`lykaon_rt.lib` / `liblykaon_rt.a`) by searching its own folder, its ancestors,
 `target/<profile>`, `Lykaon/target/<profile>` and `rt/target/<profile>` — so a
 build run from anywhere in the workspace works. To point at a specific library,

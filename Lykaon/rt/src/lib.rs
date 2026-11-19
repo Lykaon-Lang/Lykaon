@@ -45,7 +45,43 @@ fn fail(msg: &str) -> ! {
     with_out(|b| b.clear());
     print!("{msg}\n");
     let _ = std::io::stdout().flush();
+    pause_if_owns_console();
     std::process::exit(1)
+}
+
+// ---------------------------------------------------- console lifetime
+
+/// True when this process owns the console it is attached to: the case of
+/// a program started by double-clicking its .exe in Explorer (its console
+/// holds only this process). A program run from cmd/PowerShell has the
+/// shell attached to the same console, so the count is higher.
+#[cfg(windows)]
+fn owns_its_console() -> bool {
+    // kernel32!GetConsoleProcessList fills the array with the process ids
+    // attached to the console and returns how many there are. Declared
+    // here directly so the runtime needs no extra crate.
+    unsafe extern "system" {
+        fn GetConsoleProcessList(list: *mut u32, count: u32) -> u32;
+    }
+    let mut ids = [0u32; 4];
+    let count = unsafe { GetConsoleProcessList(ids.as_mut_ptr(), ids.len() as u32) };
+    count == 1
+}
+
+/// A double-clicked console program would close before its output can be
+/// read, so wait for Enter. Piped and automated runs (stdout is not a
+/// terminal) are untouched: their bytes stay byte-exact.
+fn pause_if_owns_console() {
+    #[cfg(windows)]
+    {
+        use std::io::IsTerminal;
+        if std::io::stdout().is_terminal() && owns_its_console() {
+            print!("\nPress Enter to close...");
+            let _ = std::io::stdout().flush();
+            let mut line = String::new();
+            let _ = std::io::stdin().read_line(&mut line);
+        }
+    }
 }
 
 // ---------------------------------------------------------------- says
@@ -549,7 +585,9 @@ pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8, _envp: *const *
     unsafe extern "C" {
         fn lykaon_main() -> i32;
     }
-    unsafe { lykaon_main() }
+    let code = unsafe { lykaon_main() };
+    pause_if_owns_console();
+    code
 }
 
 /// M4-8 (M4-S79): arm the signal flags once per process (idempotent).

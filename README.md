@@ -30,6 +30,9 @@ or build a real executable:
 Hello World
 ```
 
+Double-click `hello.exe` in Explorer and it keeps its window open until you
+press Enter; run from a terminal it prints and returns to the prompt.
+
 ## What is inside version 0.1
 
 | Area | What you get |
@@ -80,6 +83,9 @@ The compiler:
 lykaonc-cli build fast hello.lykaon hello.exe
 hello.exe
 ```
+
+Double-click `hello.exe` in Explorer and it keeps its window open until you
+press Enter; run from a terminal it prints and returns to the prompt.
 
 ## Documentation
 

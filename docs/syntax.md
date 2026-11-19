@@ -26,7 +26,9 @@ lykaonc-cli build fast hello.lykaon hello.exe
 hello.exe
 ```
 
-On Windows, `hello.exe` is a standalone native program. See [`cli.md`](cli.md)
+On Windows, `hello.exe` is a standalone native program. Double-clicked in
+Explorer it keeps its window open until you press Enter; run from a terminal
+it prints and returns to the prompt. See [`cli.md`](cli.md)
 for every option.
 
 ## Variables and data kinds

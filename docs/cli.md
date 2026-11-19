@@ -36,7 +36,7 @@ lykaonc-cli build <mode> input.lykaon output
 Example:
 
 ```
-lykaonc-cli build fast hello.lykaon greeting.exe
+lykaonc-cli build fast hello.lykaon <output>
 ```
 
 `build` prints the optimizer report (contract prover, constant folding, inlining,

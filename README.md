@@ -25,9 +25,7 @@ Hello World
 or build a real executable:
 
 ```
-> lykaonc-cli build fast hello.lykaon greeting.exe
-> greeting.exe
-Hello World
+> lykaonc-cli build fast hello.lykaon <output>
 ```
 
 ## What is inside version 0.1
@@ -77,8 +75,7 @@ lykaon-cli repl
 The compiler:
 
 ```
-lykaonc-cli build fast hello.lykaon greeting.exe
-greeting.exe
+lykaonc-cli build fast hello.lykaon <output>
 ```
 
 ## Documentation

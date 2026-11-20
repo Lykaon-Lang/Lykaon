@@ -1,61 +1,108 @@
 # Lykaon
 
-**Lykaon** is a programming language where you write programs in plain English sentences.
-A sentence ends with a period. A block is indented. There are no quotes, no braces,
-no semicolons. The compiler reads your sentences and builds a real native executable.
+**Lykaon is a programming language you read like plain English.**
+Sentences end with a period, blocks are indented, and there are no quotes,
+braces or semicolons. The compiler turns those sentences into a real native
+executable.
 
 [![CI](https://github.com/Lykaon-oss/Lykaon/actions/workflows/ci.yml/badge.svg)](https://github.com/Lykaon-oss/Lykaon/actions/workflows/ci.yml)
 
-Lykaon is **source-available, not open source**: free for personal use and for
-organizations under USD 1,000,000 annual revenue. See [`LICENSE.md`](LICENSE.md).
-Programs you write in Lykaon are yours to license and sell.
+## A taste of Lykaon
 
-This repository holds Lykaon **version 0.1 (milestones M1–M4)**: the language core,
-the interpreter, the native compiler, the runtime library, and ready-to-run examples.
+Functions, lists and loops:
 
 ```lykaon
-Say Hello World.
+To double n give n times 2.
+
+Nums is list of 1 and 2 and 3.
+Say double 21.
+For each n in Nums.
+    Say n.
 ```
 
 ```
-> lykaon-cli run hello.lykaon
-Hello World
+42
+1
+2
+3
 ```
 
-or build a real executable:
+Records:
+
+```lykaon
+A person has name as text and age as whole number.
+Maya is a person with name Maya and age 31.
+Say name of Maya.
+Say age of Maya.
+```
 
 ```
-> lykaonc-cli build fast hello.lykaon hello.exe
-> hello.exe
-Hello World
+Maya
+31
 ```
 
-## Platforms
+Tasks and channels:
 
-Lykaon v0.1 is a **command-line / console** language. Both the interpreter and the
-compiler are Rust programs and build on Windows and Linux.
+```lykaon
+Bag is channel of whole number.
+Start task producer.
+    Send 1 to bag.
+    Send 2 to bag.
+Receive from bag.
+Say it.
+Receive from bag.
+Say it.
+```
 
-| Platform | Status | Get it |
-|---|---|---|
-| **Windows x64** | Supported. Prebuilt CLI + runtime in the [v0.1.0 release](../../releases/tag/v0.1.0). CI builds and smoke-tests on `windows-latest`. | Download the release zip. |
-| **Linux x64** | Supported. Build from source with Rust 1.85 or newer. CI builds and smoke-tests on `ubuntu-latest`, including compiling and running a native `hello` program. | Build from source (below). |
-| **macOS** | Not a target in v0.1. | Not supported yet. |
+```
+1
+2
+```
 
-There is no GUI in v0.1. The release contains only the CLI interpreter, the CLI
-compiler, the runtime library, and licenses.
+**[Try it in your browser — no install](https://lykaon-oss.github.io/Lykaon/)**
+(WAsm playground, v0.1 preview).
+
+## Why Lykaon
+
+- **Plain English sentences** — `Say total price.`, `If n is more than 3.`,
+  `For each row in sales.`
+- **A real compiler** — Cranelift-based native builds (`lykaonc-cli build`),
+  with an optimizer and a runtime library.
+- **Data, servers and AI in the language** — CSV tables, SQLite/PostgreSQL,
+  HTTP/JSON, tasks/channels, classical ML models.
+- **One binary** — build a standalone executable; no interpreter needed to run
+  it.
+- **Readable errors** — Where, Why and Fix on every diagnostic.
+
+## Quick start
+
+Run a program:
+
+```
+lykaon-cli run hello.lykaon
+```
+
+Build a standalone executable:
+
+```
+lykaonc-cli build fast hello.lykaon hello.exe
+hello.exe
+```
+
+On Windows, double-click `hello.exe`; it waits for Enter before closing.
+
+## Install
 
 ### Windows
 
-1. Download the [`Lykaon-v0.1.0-windows-x64.zip`](../../releases/tag/v0.1.0) asset
-   from the release page.
-2. Extract it.
-3. Run `lykaon-cli.exe` or `lykaonc-cli.exe` from a terminal.
-
-Add the extracted folder to your `PATH` if you want to run them by name.
+Download the
+[`Lykaon-v0.1.0-windows-x64.zip`](../../releases/tag/v0.1.0) asset, extract
+it, and run `lykaon-cli.exe` / `lykaonc-cli.exe`. Add the folder to `PATH` to
+run them by name.
 
 ### Linux
 
-Install [Rust](https://rustup.rs) 1.85 or newer, then:
+Install [Rust](https://rustup.rs) 1.85 or newer:
 
 ```
 git clone https://github.com/Lykaon-oss/Lykaon.git
@@ -64,89 +111,50 @@ cargo build --release -p lykaon-rt
 cargo build --release -p lykaon
 ```
 
-The binaries are:
-
-- `target/release/lykaon-cli` — interpreter
-- `target/release/lykaonc-cli` — compiler
-
-The runtime library is built on its own so it stays TLS-free; see
-`Lykaon/src/linker.rs`. You can also run `cargo build --release --workspace`.
-
-## Try it
-
-**In your browser — no install:** https://lykaon-oss.github.io/Lykaon/ (WebAssembly playground, v0.1 preview)
-
-The interpreter:
-
-```
-lykaon-cli run hello.lykaon
-lykaon-cli repl
-```
-
-The compiler:
-
-```
-lykaonc-cli build fast hello.lykaon hello
-./hello
-```
-
-On Windows the output is `hello.exe`; double-click it in Explorer and the console
-stays open until you press Enter. On Linux run `./hello` from a terminal.
-
-## What is inside version 0.1
-
-| Area | What you get |
-|---|---|
-| M1 — Language core | Sentences, blocks, `Changeable`/`Constant`/`Set`, `Say`, `Ask`, `If`/`Otherwise`, `Repeat`, `For each`, math and comparison words, a formatter, and precise error messages (`Where`/`Why`/`Fix`) |
-| M2 — Data and ownership | Lists, maps, sets, pairs, text in depth, records, enums, `maybe`/`missing`, `can fail`/`Try`/`Fail with`, modules (`Use`, `Share`), tests (`Test`, `Check`, `Pretend`), ownership (`give`, `lend`, `copy of`, `share`, `weak`) |
-| M3 — Native code | The Cranelift-backed compiler: `lykaon build` in debug/fast/small modes, an optimizer (inlining, dead-code removal, bounds-check elimination, devirtualization, whole-program passes), generics, interfaces, closures, generators, contracts (`Requires`, `Ensures`, `Always`), packages (`Lykaon.toml`, `lykaon.lock`, `lykaon add/remove/update`), `lykaon bench` |
-| M4 — Servers and concurrency | Tasks (`Start task`, `Wait for`, `Do these together`), channels, guarded/atomic/counter values, timers (`After`, `Every`), worker pools, files and folders, zip/gzip, JSON/TOML/YAML/XML/CSV read and write, dates and time zones, random, hashing, secrets, `Run`/`Exit`/`signals`, logging and settings, HTTP client and server with TLS, templates, sessions and WebSocket, command-line tools (`Takes`, `Option`, help text), git dependencies |
-
-In v0.1 a `.lykaon` program builds to a **command-line / console executable** on
-Windows and Linux. Desktop/windowed apps arrive in a later version.
+Binaries: `target/release/lykaon-cli` (interpreter) and
+`target/release/lykaonc-cli` (compiler). The runtime library is built
+separately so it stays TLS-free.
 
 ## Documentation
 
-| File | Contents |
-|---|---|
-| [`docs/syntax.md`](docs/syntax.md) | The 5-minute tour: variables, control flow, functions, modules |
-| [`docs/standard-library.md`](docs/standard-library.md) | The built-in words, grouped by task |
-| [`docs/cli.md`](docs/cli.md) | Every command: run, repl, build, test, add, update, bench |
-| [`docs/Lykaon_Language_Reference.md`](docs/Lykaon_Language_Reference.md) | The complete language reference for v0.1 (M1–M4), in one document |
-| [`editors/vscode/`](editors/vscode/) | VS Code syntax-highlighting extension (source included) |
+- [Language reference](docs/Lykaon_Language_Reference.md)
+- [Syntax tour](docs/syntax.md)
+- [CLI reference](docs/cli.md)
+- [Standard library](docs/standard-library.md)
+- [Examples](docs/examples)
+- [Tutorial](docs/tutorial)
 
-## Repository layout
+## What works today
 
-```
-Lykaon/            the language workspace
-  core/            lexer, parser, interpreter, MIR, codegen, net, formats
-  rt/              lykaon-rt, the runtime library linked into built programs
-  src/             the two front ends (lykaon-cli, lykaonc-cli), linker, packages
-  benchmarks/      the six standard benchmark programs + Rust reference sources
-LICENSES/          third-party license texts
-logos/             project logos
-```
+- M1–M4 are complete: the language core, data and ownership, the native
+  compiler, servers, concurrency, files, formats and networking.
+- M5 is in progress: data tables, SVG charts, classical ML models,
+  SQLite/PostgreSQL, encryption, memory/time limits, native permission
+  sandbox, `lykaon lsp`, `lykaon doc`, `lykaon profile`, `lykaon outline`,
+  `lykaon check --json`, `lykaon test --json`, `lykaon docs --compact`,
+  `lykaon explain`, `lykaon run --trace-json`, `lykaon migrate`.
+- 50 runnable examples and a 15-lesson tutorial are in `docs/`.
 
-## Status and limits (read this before you rely on it)
+## Status and limits
 
-- **Windows x64**: prebuilt CLI + runtime in the v0.1.0 release. CI builds and
-  smoke-tests on `windows-latest`.
-- **Linux x64**: build from source. CI builds and smoke-tests on `ubuntu-latest`;
-  the full stress suite has not been run on Linux hardware yet.
-- **macOS**: not a target. The language targets Windows and Linux x64 (later
-  versions may add macOS).
-- **Performance**: not yet a focus. The LLVM backend and the real standard
-  benchmarks (nbody, fannkuch, spectral_norm, binary_trees, mandelbrot,
-  json_parse) are planned for later versions; the bundled benchmark is a
-  recursion stress test, not one of those.
-- **Windowed apps**: not in v0.1. Only command-line and console programs.
-- **GUI**: the v0.1 release is CLI-only. No Lykaon GUI apps are shipped.
+Lykaon v0.1 is a **command-line / console** language for **Windows x64 and
+Linux x64**. There is no GUI in v0.1; the release contains the CLI
+interpreter, the CLI compiler, the runtime library and licenses.
 
-## License
+- **Performance** is not yet a focus; correctness and byte-exact
+  interpreter/native output come first.
+- **macOS** is not a target in v0.1.
+- **WebAssembly** output and the WASI sandbox are not finished yet.
+- **Tooling** `lykaon debug`/DAP and `lykaon test coverage` are not finished.
+- The full M5 plan and remaining items are in
+  [`M5_PLAN.md`](M5_PLAN.md) and the [documentation index](docs/PROJECT_DOCUMENTATION_INDEX.md).
 
-Lykaon is **source-available, not open source**. It is free for personal use and for
-organizations under USD 1,000,000 annual revenue; see [`LICENSE.md`](LICENSE.md) for
-the exact terms. Third-party components are listed in [`THIRD_PARTY.json`](THIRD_PARTY.json)
-and [`LICENSES/`](LICENSES/).
+Lykaon is **source-available, not open source**: free for personal use and for
+organizations under USD 1,000,000 annual revenue. See
+[`LICENSE.md`](LICENSE.md). Programs you write in Lykaon are yours to license
+and sell.
 
-Programs you write in Lykaon are **yours** — you may license and sell them freely.
+## Contributing
+
+Issues and pull requests are welcome. Start with
+[`ROADMAP.md`](ROADMAP.md) and [`PROGRESS.md`](PROGRESS.md).

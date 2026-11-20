@@ -30,45 +30,51 @@ or build a real executable:
 Hello World
 ```
 
-Double-click `hello.exe` in Explorer and it keeps its window open until you
-press Enter; run from a terminal it prints and returns to the prompt.
+## Platforms
 
-## What is inside version 0.1
+Lykaon v0.1 is a **command-line / console** language. Both the interpreter and the
+compiler are Rust programs and build on Windows and Linux.
 
-| Area | What you get |
-|---|---|
-| M1 — Language core | Sentences, blocks, `Changeable`/`Constant`/`Set`, `Say`, `Ask`, `If`/`Otherwise`, `Repeat`, `For each`, math and comparison words, a formatter, and precise error messages (`Where`/`Why`/`Fix`) |
-| M2 — Data and ownership | Lists, maps, sets, pairs, text in depth, records, enums, `maybe`/`missing`, `can fail`/`Try`/`Fail with`, modules (`Use`, `Share`), tests (`Test`, `Check`, `Pretend`), ownership (`give`, `lend`, `copy of`, `share`, `weak`) |
-| M3 — Native code | The Cranelift-backed compiler: `lykaon build` in debug/fast/small modes, an optimizer (inlining, dead-code removal, bounds-check elimination, devirtualization, whole-program passes), generics, interfaces, closures, generators, contracts (`Requires`, `Ensures`, `Always`), packages (`Lykaon.toml`, `lykaon.lock`, `lykaon add/remove/update`), `lykaon bench` |
-| M4 — Servers and concurrency | Tasks (`Start task`, `Wait for`, `Do these together`), channels, guarded/atomic/counter values, timers (`After`, `Every`), worker pools, files and folders, zip/gzip, JSON/TOML/YAML/XML/CSV read and write, dates and time zones, random, hashing, secrets, `Run`/`Exit`/signals, logging and settings, HTTP client and server with TLS, templates, sessions and WebSocket, command-line tools (`Takes`, `Option`, help text), git dependencies |
+| Platform | Status | Get it |
+|---|---|---|
+| **Windows x64** | Supported. Prebuilt CLI + runtime in the [v0.1.0 release](../../releases/tag/v0.1.0). CI builds and smoke-tests on `windows-latest`. | Download the release zip. |
+| **Linux x64** | Supported. Build from source with Rust 1.85 or newer. CI builds and smoke-tests on `ubuntu-latest`, including compiling and running a native `hello` program. | Build from source (below). |
+| **macOS** | Not a target in v0.1. | Not supported yet. |
 
-In v0.1 a `.lykaon` program builds to a **command-line / console executable** on Windows
-(proven by the test suite) and Linux (in principle; not yet verified on Linux hardware —
-see *Known limits*). Desktop/windowed apps arrive in a later version.
+There is no GUI in v0.1. The release contains only the CLI interpreter, the CLI
+compiler, the runtime library, and licenses.
 
-## Download
+### Windows
 
-Prebuilt Windows x64 binaries (CLI + runtime) are attached to the
-[v0.1.0 release](../../releases/tag/v0.1.0). On Linux, build from source with
-the Rust toolchain (1.85 or newer):
+1. Download the [`Lykaon-v0.1.0-windows-x64.zip`](../../releases/tag/v0.1.0) asset
+   from the release page.
+2. Extract it.
+3. Run `lykaon-cli.exe` or `lykaonc-cli.exe` from a terminal.
+
+Add the extracted folder to your `PATH` if you want to run them by name.
+
+### Linux
+
+Install [Rust](https://rustup.rs) 1.85 or newer, then:
 
 ```
+git clone https://github.com/Lykaon-oss/Lykaon.git
+cd Lykaon/Lykaon
 cargo build --release -p lykaon-rt
 cargo build --release -p lykaon
 ```
 
-(The runtime library is built on its own so it stays TLS-free; see
-`Lykaon/src/linker.rs`.)
+The binaries are:
+
+- `target/release/lykaon-cli` — interpreter
+- `target/release/lykaonc-cli` — compiler
+
+The runtime library is built on its own so it stays TLS-free; see
+`Lykaon/src/linker.rs`. You can also run `cargo build --release --workspace`.
 
 ## Try it
 
 **In your browser — no install:** https://lykaon-oss.github.io/Lykaon/ (WebAssembly playground, v0.1 preview)
-
-Build from source (you need [Rust](https://rustup.rs) 1.85 or newer):
-
-```
-cargo build --release
-```
 
 The interpreter:
 
@@ -80,12 +86,24 @@ lykaon-cli repl
 The compiler:
 
 ```
-lykaonc-cli build fast hello.lykaon hello.exe
-hello.exe
+lykaonc-cli build fast hello.lykaon hello
+./hello
 ```
 
-Double-click `hello.exe` in Explorer and it keeps its window open until you
-press Enter; run from a terminal it prints and returns to the prompt.
+On Windows the output is `hello.exe`; double-click it in Explorer and the console
+stays open until you press Enter. On Linux run `./hello` from a terminal.
+
+## What is inside version 0.1
+
+| Area | What you get |
+|---|---|
+| M1 — Language core | Sentences, blocks, `Changeable`/`Constant`/`Set`, `Say`, `Ask`, `If`/`Otherwise`, `Repeat`, `For each`, math and comparison words, a formatter, and precise error messages (`Where`/`Why`/`Fix`) |
+| M2 — Data and ownership | Lists, maps, sets, pairs, text in depth, records, enums, `maybe`/`missing`, `can fail`/`Try`/`Fail with`, modules (`Use`, `Share`), tests (`Test`, `Check`, `Pretend`), ownership (`give`, `lend`, `copy of`, `share`, `weak`) |
+| M3 — Native code | The Cranelift-backed compiler: `lykaon build` in debug/fast/small modes, an optimizer (inlining, dead-code removal, bounds-check elimination, devirtualization, whole-program passes), generics, interfaces, closures, generators, contracts (`Requires`, `Ensures`, `Always`), packages (`Lykaon.toml`, `lykaon.lock`, `lykaon add/remove/update`), `lykaon bench` |
+| M4 — Servers and concurrency | Tasks (`Start task`, `Wait for`, `Do these together`), channels, guarded/atomic/counter values, timers (`After`, `Every`), worker pools, files and folders, zip/gzip, JSON/TOML/YAML/XML/CSV read and write, dates and time zones, random, hashing, secrets, `Run`/`Exit`/`signals`, logging and settings, HTTP client and server with TLS, templates, sessions and WebSocket, command-line tools (`Takes`, `Option`, help text), git dependencies |
+
+In v0.1 a `.lykaon` program builds to a **command-line / console executable** on
+Windows and Linux. Desktop/windowed apps arrive in a later version.
 
 ## Documentation
 
@@ -111,16 +129,18 @@ logos/             project logos
 
 ## Status and limits (read this before you rely on it)
 
-- **Windows**: everything above is tested and passing on Windows x86-64.
-- **Linux**: built and smoke-tested on every push by CI (ubuntu-latest); the
-  full stress suite has not been run on Linux hardware yet.
-- **macOS**: not a target. The language targets Windows and Linux x86-64
-  (later versions may add macOS).
+- **Windows x64**: prebuilt CLI + runtime in the v0.1.0 release. CI builds and
+  smoke-tests on `windows-latest`.
+- **Linux x64**: build from source. CI builds and smoke-tests on `ubuntu-latest`;
+  the full stress suite has not been run on Linux hardware yet.
+- **macOS**: not a target. The language targets Windows and Linux x64 (later
+  versions may add macOS).
 - **Performance**: not yet a focus. The LLVM backend and the real standard
   benchmarks (nbody, fannkuch, spectral_norm, binary_trees, mandelbrot,
   json_parse) are planned for later versions; the bundled benchmark is a
   recursion stress test, not one of those.
 - **Windowed apps**: not in v0.1. Only command-line and console programs.
+- **GUI**: the v0.1 release is CLI-only. No Lykaon GUI apps are shipped.
 
 ## License
 

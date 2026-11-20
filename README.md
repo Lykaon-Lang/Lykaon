@@ -48,7 +48,7 @@ see *Known limits*). Desktop/windowed apps arrive in a later version.
 
 ## Download
 
-Prebuilt Windows x64 binaries (CLI + GUI + runtime) are attached to the
+Prebuilt Windows x64 binaries (CLI + runtime) are attached to the
 [v0.1.0 release](../../releases/tag/v0.1.0). On Linux, build from source with
 the Rust toolchain (1.85 or newer):
 

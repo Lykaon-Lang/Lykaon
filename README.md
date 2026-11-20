@@ -121,8 +121,6 @@ separately so it stays TLS-free.
 - [Syntax tour](docs/syntax.md)
 - [CLI reference](docs/cli.md)
 - [Standard library](docs/standard-library.md)
-- [Examples](docs/examples)
-- [Tutorial](docs/tutorial)
 
 ## What works today
 
@@ -133,7 +131,6 @@ separately so it stays TLS-free.
   sandbox, `lykaon lsp`, `lykaon doc`, `lykaon profile`, `lykaon outline`,
   `lykaon check --json`, `lykaon test --json`, `lykaon docs --compact`,
   `lykaon explain`, `lykaon run --trace-json`, `lykaon migrate`.
-- 50 runnable examples and a 15-lesson tutorial are in `docs/`.
 
 ## Status and limits
 
@@ -146,8 +143,8 @@ interpreter, the CLI compiler, the runtime library and licenses.
 - **macOS** is not a target in v0.1.
 - **WebAssembly** output and the WASI sandbox are not finished yet.
 - **Tooling** `lykaon debug`/DAP and `lykaon test coverage` are not finished.
-- The full M5 plan and remaining items are in
-  [`M5_PLAN.md`](M5_PLAN.md) and the [documentation index](docs/PROJECT_DOCUMENTATION_INDEX.md).
+- The full M5 plan and remaining items are tracked in the development
+  repository; this public repo is the released CLI snapshot.
 
 Lykaon is **source-available, not open source**: free for personal use and for
 organizations under USD 1,000,000 annual revenue. See
@@ -156,5 +153,5 @@ and sell.
 
 ## Contributing
 
-Issues and pull requests are welcome. Start with
-[`ROADMAP.md`](ROADMAP.md) and [`PROGRESS.md`](PROGRESS.md).
+Issues and pull requests are welcome. Open an issue with the
+Where/Why/Fix text of any diagnostic.

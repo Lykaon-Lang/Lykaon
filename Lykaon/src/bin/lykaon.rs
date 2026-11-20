@@ -6,9 +6,23 @@
 //! (the REPL). The compiler commands (the native run, build, check, ...)
 //! belong to lykaonc.
 
+use std::io::IsTerminal;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
+    // A double click on the exe opens a console that would close before the
+    // usage text can be read. When stdout is a real console window, start the
+    // REPL instead of exiting, so the interpreter stays open. Piped and
+    // automated runs are not terminals and keep the old usage-and-exit path.
+    let interactive_console = std::io::stdout().is_terminal();
+    std::panic::set_hook(Box::new(move |info| {
+        eprintln!("{info}");
+        if std::io::stderr().is_terminal() {
+            eprintln!("\nPress Enter to close...");
+            let mut line = String::new();
+            let _ = std::io::stdin().read_line(&mut line);
+        }
+    }));
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(|s| s.as_str()) {
         Some("run") => {
@@ -74,6 +88,11 @@ fn main() -> ExitCode {
         None => {
             eprintln!("usage: lykaon-cli run <file> [arguments] | lykaon repl | lykaon ui");
             eprintln!("the compiler front is lykaonc-cli (build, check, native run, ui)");
+            if interactive_console {
+                // a double click opens a console: write and run code right
+                // here instead of closing the window
+                return lykaon::cli::repl_session();
+            }
             ExitCode::from(2)
         }
     }

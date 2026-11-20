@@ -594,34 +594,78 @@ impl<'a> Builder<'a> {
         let (toks, _) = Lexer::new(&s.text).tokenize();
         let mut ts = TS::new(&toks);
         ts.pos += 1; // To
-        let name = ts.peek_word()?.to_ascii_lowercase();
-        ts.pos += 1;
+        let start = ts.pos;
+        // The book says a function name is one word, but its own ownership
+        // example is `To total length items give ...`. Read the words before
+        // the first body/parameter marker: when at least one word precedes
+        // the marker, the last word before it is the first input and the
+        // rest is the name. This keeps every one-word name and every
+        // `give`/`lend` first input exactly as before.
+        let mut marker = None;
+        let mut p = start + 1;
+        while p < ts.toks.len() {
+            if let Token::Word { lower, .. } = &ts.toks[p] {
+                if matches!(
+                    lower.as_str(),
+                    "give" | "lend" | "with" | "as" | "can" | "defaulting"
+                ) {
+                    marker = Some(p);
+                    break;
+                }
+            }
+            p += 1;
+        }
+        let mut multiword = None;
+        if let Some(m) = marker {
+            if m >= start + 2 {
+                if let Some(Token::Word { lower, .. }) = ts.toks.get(m - 1) {
+                    let mut words = Vec::new();
+                    for tok in &ts.toks[start..m - 1] {
+                        if let Token::Word { lower, .. } = tok {
+                            words.push(lower.clone());
+                        }
+                    }
+                    if !words.is_empty() {
+                        multiword = Some((words.join(" "), lower.clone()));
+                    }
+                }
+            }
+        }
         let mut inputs: Vec<(String, ParamMode)> = Vec::new();
         let mut input_types: Vec<Option<ParamType>> = Vec::new();
-        // first input: the word straight after the name
-        if ts.peek_word() == Some("lend") {
-            // To pad lend to change items. (Ch.28): lend to change is a unique
-            // borrow, the input is the word after change.
+        let name = if let Some((full_name, first_input)) = multiword {
+            inputs.push((first_input, ParamMode::Lent));
+            ts.pos = marker.unwrap();
+            full_name
+        } else {
+            let name = ts.peek_word()?.to_ascii_lowercase();
             ts.pos += 1;
-            if ts.consume_word("to") && ts.consume_word("change") {
+            // first input: the word straight after the name
+            if ts.peek_word() == Some("lend") {
+                // To pad lend to change items. (Ch.28): lend to change is a unique
+                // borrow, the input is the word after change.
+                ts.pos += 1;
+                if ts.consume_word("to") && ts.consume_word("change") {
+                    if let Some(w) = ts.peek_word() {
+                        inputs.push((w.to_ascii_lowercase(), ParamMode::LentToChange));
+                        ts.pos += 1;
+                    }
+                }
+            } else if ts.peek_word() == Some("give") && ts.peek_next() != Some("back") {
+                // To f give items. (Ch.28): the input is moved in.
+                ts.pos += 1;
                 if let Some(w) = ts.peek_word() {
-                    inputs.push((w.to_ascii_lowercase(), ParamMode::LentToChange));
+                    inputs.push((w.to_ascii_lowercase(), ParamMode::MoveIn));
+                    ts.pos += 1;
+                }
+            } else if let Some(w) = ts.peek_word() {
+                if !matches!(w, "with" | "can" | "defaulting" | "as") {
+                    inputs.push((w.to_ascii_lowercase(), ParamMode::Lent));
                     ts.pos += 1;
                 }
             }
-        } else if ts.peek_word() == Some("give") && ts.peek_next() != Some("back") {
-            // To f give items. (Ch.28): the input is moved in.
-            ts.pos += 1;
-            if let Some(w) = ts.peek_word() {
-                inputs.push((w.to_ascii_lowercase(), ParamMode::MoveIn));
-                ts.pos += 1;
-            }
-        } else if let Some(w) = ts.peek_word() {
-            if !matches!(w, "with" | "can" | "defaulting" | "as") {
-                inputs.push((w.to_ascii_lowercase(), ParamMode::Lent));
-                ts.pos += 1;
-            }
-        }
+            name
+        };
         loop {
             match ts.peek_word() {
                 Some("as") => {
@@ -9315,9 +9359,10 @@ impl<'a> Builder<'a> {
                 }
                 Some(Token::Word { text, .. }) => {
                     let lower0 = text.to_ascii_lowercase();
-                    if !literal && self.is_function_name(&lower0) {
+                    if !literal && let Some(name) = self.match_function_at(&mut ts) {
+                        let lower0 = name.to_ascii_lowercase();
+                        let text = name.clone();
                         // a call is one value: name arg [with arg]*
-                        ts.pos += 1;
                         let mut args = Vec::new();
                         let next_is_arg = match ts.peek() {
                             None | Some(Token::Period) | Some(Token::Eof) => false,
@@ -11311,9 +11356,8 @@ impl<'a> Builder<'a> {
             };
         }
         // function call: name arg [with arg]*
-        if self.is_function_name(lower) {
-            let name = lower.to_string();
-            ts.pos += 1;
+        if let Some(name) = self.match_function_at(ts) {
+            let dis = name.clone();
             let mut args = Vec::new();
             let next_is_arg = match ts.peek() {
                 None | Some(Token::Period) | Some(Token::Eof) => false,
@@ -11346,7 +11390,7 @@ impl<'a> Builder<'a> {
             return Expr {
                 kind: Kind::Unknown,
                 e: E::Call { name, args },
-                dis: text.to_string(),
+                dis,
                 can_fail: call_can_fail,
                 num_word: false,
             };
@@ -11429,8 +11473,46 @@ impl<'a> Builder<'a> {
         }
     }
 
-    fn is_function_name(&self, w: &str) -> bool {
-        self.func_names.iter().any(|f| f == w)
+    /// Longest defined function name at the cursor. Function names may be
+    /// more than one word (`To total length items ...`), so a call must match
+    /// the whole name before reading its arguments.
+    fn match_function_at(&mut self, ts: &mut TS) -> Option<String> {
+        let save = ts.pos;
+        let mut words: Vec<String> = Vec::new();
+        let mut p = ts.pos;
+        while p < ts.toks.len() && words.len() < 8 {
+            match &ts.toks[p] {
+                Token::Word { text, .. } => {
+                    words.push(text.to_ascii_lowercase());
+                    p += 1;
+                }
+                _ => break,
+            }
+        }
+        let mut best: Option<(usize, String)> = None;
+        for name in &self.func_names {
+            let parts: Vec<&str> = name.split_whitespace().collect();
+            if parts.is_empty() || parts.len() > words.len() {
+                continue;
+            }
+            let matches = parts
+                .iter()
+                .enumerate()
+                .all(|(i, part)| words[i] == *part);
+            if matches && best.as_ref().map_or(true, |(len, _)| parts.len() > *len) {
+                best = Some((parts.len(), name.clone()));
+            }
+        }
+        match best {
+            Some((len, name)) => {
+                ts.pos = save + len;
+                Some(name)
+            }
+            None => {
+                ts.pos = save;
+                None
+            }
+        }
     }
     /// Whether a declared function is marked can fail (ch.19).
     fn func_can_fail(&self, name: &str) -> bool {

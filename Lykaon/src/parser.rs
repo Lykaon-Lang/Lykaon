@@ -81,6 +81,24 @@ pub fn parse_block_fn(
                 _ => None,
             })
             .unwrap_or("");
+        // Ch.65: a postfix word after the hole of a pattern reads two ways
+        // (T0130). The rule belongs to every sentence that carries a value,
+        // not only Say. Raw-text sentences (Note, About, Test, Example,
+        // Fail with, Log and the lines under Say lines) are prose, not
+        // expressions, so they are left alone.
+        let raw_text_sentence = s.is_raw_text
+            || matches!(
+                first_word,
+                "note" | "about" | "test" | "example" | "fail" | "log"
+            )
+            || (first_word == "say" && word_is(&toks, 1, "lines"));
+        if !raw_text_sentence {
+            if let Some(d) = postfix_ambiguity(&s.text, file, s.line, names) {
+                diags.push(d);
+                i += 1;
+                continue;
+            }
+        }
         match first_word {
             "if" => {
                 diags.extend(parse_if(all, indices, &mut i, names, file, in_loop, in_fn));
@@ -888,66 +906,9 @@ fn parse_say(text: &str, file: &str, line: usize, names: &NameTable) -> Vec<Diag
     if ts.peek_word() == Some("lines") {
         return diags;
     }
-    // Ch.65: "Say first 2 of numbers sorted." reads two ways (postfix word
-    // after the hole of a pattern) -> T0130.
-    let mut head: Vec<String> = Vec::new();
-    let mut name = String::new();
-    let mut postfix = String::new();
-    let mut stage = 0; // 0 = before of, 1 = name, 2 = postfix
-    let mut has_num = false;
-    for t in ts.toks[ts.pos..].iter() {
-        match t {
-            Token::Word { lower, .. } => match stage {
-                0 => {
-                    if lower == "of" && !head.is_empty() {
-                        stage = 1;
-                    } else {
-                        head.push(lower.clone());
-                    }
-                }
-                1 => {
-                    name = lower.clone();
-                    stage = 2;
-                }
-                _ => {
-                    postfix = lower.clone();
-                    break;
-                }
-            },
-            Token::Whole { value } => {
-                if stage == 0 {
-                    head.push(value.to_string());
-                    has_num = true;
-                }
-            }
-            Token::Negative { value } => {
-                if stage == 0 {
-                    head.push(format!("minus {value}"));
-                    has_num = true;
-                }
-            }
-            _ => {}
-        }
-    }
-    const POSTFIX: [&str; 5] = ["sorted", "reversed", "unique", "trimmed", "backwards"];
-    if has_num && POSTFIX.contains(&postfix.as_str()) {
-        let head_s = head.join(" ");
-        let why = format!(
-            "it can mean the {head_s} of {name}, {postfix}, or the {head_s} of {name} {postfix}."
-        );
-        diags.push(diag(
-            "T0130",
-            "This sentence can be read two ways.",
-            file,
-            line,
-            text,
-            0,
-            text.len(),
-            &why,
-            "Split it into two sentences.",
-        ));
-        return diags;
-    }
+    // Ch.65's postfix ambiguity (T0130) is checked once per sentence in
+    // parse_block_fn, before this function runs, so that every sentence that
+    // carries a value reports it (Say, define, Set, Give back, Add, ...).
     while ts.pos < ts.toks.len() {
         match ts.peek_word() {
             Some("literally") => {
@@ -1724,6 +1685,468 @@ fn parse_operand_range(
     }
     let mut ts = TS::new(toks);
     parse_operand(&mut ts, text, file, line, names, diags);
+}
+
+// ---------- Ch.65: postfix after a pattern's hole ----------
+
+/// Does token `at` spell `word` (lowercase)?
+fn word_is(toks: &[Token], at: usize, word: &str) -> bool {
+    matches!(toks.get(at), Some(Token::Word { lower, .. }) if lower == word)
+}
+
+/// The words that start a postfix phrase (G73 and the pattern catalog).
+fn is_postfix_start(word: &str) -> bool {
+    matches!(
+        word,
+        "sorted"
+            | "reversed"
+            | "unique"
+            | "trimmed"
+            | "backwards"
+            | "rounded"
+            | "fallback"
+            | "normalized"
+            | "shuffled"
+            | "joined"
+            | "as"
+    )
+}
+
+/// The postfix words that the semantic layer also counts for the
+/// two-postfixes-in-a-row rule (T0109). `as` is a postfix, but that rule
+/// does not name it, so it is left out here.
+fn is_postfix_word(word: &str) -> bool {
+    is_postfix_start(word) && word != "as"
+}
+
+/// Render tokens as lowercase words and digits, the way the T0130 wording
+/// has always done.
+fn tokens_text(toks: &[Token]) -> String {
+    toks.iter()
+        .filter_map(|t| match t {
+            Token::Word { lower, .. } => Some(lower.clone()),
+            Token::Whole { value } => Some(value.to_string()),
+            Token::Decimal { value } => Some(value.to_string()),
+            Token::Negative { value } => Some(format!("minus {value}")),
+            Token::YesNo { value } => Some(if *value {
+                "yes".to_string()
+            } else {
+                "no".to_string()
+            }),
+            Token::Missing => Some("missing".to_string()),
+            Token::Nothing => Some("nothing".to_string()),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Consume one operand: a literal, a name (longest first), a property or a
+/// pronoun. Returns false at the end of the sentence.
+fn consume_operand(ts: &mut TS, names: &NameTable) -> bool {
+    match ts.peek() {
+        None | Some(Token::Period) | Some(Token::Eof) => false,
+        Some(Token::Word { lower, .. }) if lower == "minus" => {
+            ts.pos += 1;
+            if matches!(
+                ts.peek(),
+                Some(Token::Whole { .. }) | Some(Token::Decimal { .. })
+            ) {
+                ts.pos += 1;
+            }
+            true
+        }
+        Some(Token::Word { lower, .. }) if lower == "its" => {
+            ts.pos += 1;
+            let _ = consume_operand(ts, names);
+            true
+        }
+        Some(Token::Word { .. }) => {
+            let start = ts.pos;
+            let mut best = 0usize;
+            let mut joined = String::new();
+            let mut count = 0usize;
+            let mut p = start;
+            while p < ts.toks.len() && count < 4 {
+                match &ts.toks[p] {
+                    Token::Word { lower, .. } => {
+                        if count > 0 {
+                            joined.push(' ');
+                        }
+                        joined.push_str(lower);
+                        count += 1;
+                        if names.contains(&joined) {
+                            best = count;
+                        }
+                        p += 1;
+                    }
+                    _ => break,
+                }
+            }
+            ts.pos += if best > 0 { best } else { 1 };
+            true
+        }
+        Some(_) => {
+            ts.pos += 1;
+            true
+        }
+    }
+}
+
+/// `as` is a postfix (G73) but it is also a structural word of several
+/// sentences (`Save x as csv`, `Read ... as T`, `Ask age as number`,
+/// `Changeable x is y as number`, `Takes name as text`). In those
+/// sentences the `as` belongs to the outer pattern, not to the `of` hole,
+/// so it must not be read as a postfix.
+fn as_is_structural(first: &str) -> bool {
+    matches!(
+        first,
+        "save"
+            | "read"
+            | "ask"
+            | "takes"
+            | "changeable"
+            | "constant"
+            | "a"
+            | "an"
+            | "to"
+            | "write"
+            | "append"
+            | "replace"
+            | "format"
+            | "encrypt"
+            | "decrypt"
+            | "secret"
+            | "option"
+            | "respond"
+            | "fetch"
+            | "post"
+            | "serve"
+            | "page"
+            | "style"
+            | "theme"
+            | "use"
+            | "share"
+            | "requires"
+            | "ensures"
+            | "tagged"
+            | "anything"
+    )
+}
+
+/// The words that join the operands inside one hole (`sum of 1 to 100`,
+/// `power of 2 and 10`, `position of 8 in numbers`).
+fn is_hole_connector(word: &str) -> bool {
+    matches!(word, "and" | "to" | "by" | "in")
+}
+
+/// Read the postfix phrase at `at`, if there is one. Returns the phrase as
+/// it should appear in the T0130 wording and the index after it.
+fn postfix_phrase(toks: &[Token], at: usize, names: &NameTable) -> Option<(String, usize)> {
+    let word = match toks.get(at) {
+        Some(Token::Word { lower, .. }) => lower.as_str(),
+        _ => return None,
+    };
+    if !is_postfix_start(word) {
+        return None;
+    }
+    let end = match word {
+        "sorted" => {
+            if word_is(toks, at + 1, "descending") {
+                at + 2
+            } else {
+                at + 1
+            }
+        }
+        "rounded" => {
+            if word_is(toks, at + 1, "to") && word_is(toks, at + 2, "even") {
+                at + 3
+            } else {
+                at + 1
+            }
+        }
+        "fallback" => {
+            let mut ts = TS::new(toks);
+            ts.pos = at + 1;
+            let _ = consume_operand(&mut ts, names);
+            ts.pos
+        }
+        "joined" => {
+            if word_is(toks, at + 1, "with") {
+                let mut ts = TS::new(toks);
+                ts.pos = at + 2;
+                let _ = consume_operand(&mut ts, names);
+                ts.pos
+            } else {
+                at + 1
+            }
+        }
+        "as" => {
+            let mut end = at + 1;
+            if end < toks.len() {
+                end += 1;
+            }
+            // `as list of numbers`, `as map of text to number`
+            if word_is(toks, end, "of") {
+                end += 1;
+                if end < toks.len() {
+                    end += 1;
+                }
+                if word_is(toks, end, "to") {
+                    end += 1;
+                    if end < toks.len() {
+                        end += 1;
+                    }
+                }
+            }
+            end
+        }
+        _ => at + 1,
+    };
+    let end = end.min(toks.len());
+    if end <= at {
+        return None;
+    }
+    Some((tokens_text(&toks[at..end]), end))
+}
+
+/// Words that end the expression that contains an `of` pattern.
+fn is_expression_boundary(word: &str) -> bool {
+    matches!(
+        word,
+        "say"
+            | "ask"
+            | "set"
+            | "give"
+            | "hand"
+            | "add"
+            | "remove"
+            | "put"
+            | "check"
+            | "if"
+            | "otherwise"
+            | "repeat"
+            | "for"
+            | "each"
+            | "is"
+            | "back"
+            | "that"
+            | "with"
+            | "from"
+            | "by"
+            | "and"
+            | "or"
+            | "not"
+            | "where"
+            | "then"
+            | "return"
+            | "when"
+            | "use"
+            | "fail"
+            | "take"
+            | "send"
+            | "receive"
+            | "write"
+            | "read"
+            | "append"
+            | "replace"
+            | "make"
+            | "move"
+            | "duplicate"
+            | "zip"
+            | "unzip"
+            | "gzip"
+            | "save"
+            | "load"
+            | "plot"
+            | "run"
+            | "exit"
+            | "start"
+            | "wait"
+            | "sleep"
+            | "after"
+            | "every"
+            | "spread"
+            | "do"
+            | "try"
+            | "stop"
+            | "skip"
+            | "close"
+            | "share"
+            | "weak"
+            | "log"
+            | "note"
+            | "about"
+            | "test"
+            | "example"
+            | "in"
+    )
+}
+
+/// Words that begin a pattern row with an `of` hole. Used only for the
+/// T0130 wording, so the two readings name the pattern that was written.
+fn is_pattern_start(word: &str) -> bool {
+    matches!(
+        word,
+        "first"
+            | "second"
+            | "last"
+            | "item"
+            | "items"
+            | "position"
+            | "value"
+            | "key"
+            | "union"
+            | "overlap"
+            | "difference"
+            | "pair"
+            | "upper"
+            | "lower"
+            | "copy"
+            | "hash"
+            | "sum"
+            | "biggest"
+            | "smallest"
+            | "remainder"
+            | "power"
+            | "total"
+            | "average"
+            | "age"
+            | "safe"
+            | "list"
+            | "map"
+            | "array"
+            | "set"
+            | "queue"
+    )
+}
+
+/// The pattern head before `of`, for the T0130 wording.
+fn pattern_head(toks: &[Token], of_idx: usize) -> String {
+    let mut start = of_idx;
+    while start > 0 {
+        let word = match &toks[start - 1] {
+            Token::Word { lower, .. } => lower.as_str(),
+            _ => "",
+        };
+        if word.is_empty() {
+            start -= 1;
+            continue;
+        }
+        if is_pattern_start(word) {
+            start -= 1;
+            break;
+        }
+        if is_expression_boundary(word) {
+            break;
+        }
+        start -= 1;
+        if word == "to" {
+            // `items 2 to 3` keeps the `to`; `Set total to foo` stops at it.
+            let next_is_number = matches!(
+                toks.get(start + 1),
+                Some(Token::Whole { .. })
+                    | Some(Token::Decimal { .. })
+                    | Some(Token::Negative { .. })
+            );
+            if !next_is_number {
+                break;
+            }
+        }
+    }
+    // `safe item N of ...`
+    if start > 0 && start < of_idx {
+        let safe = matches!(&toks[start - 1], Token::Word { lower, .. } if lower == "safe");
+        let item = matches!(&toks[start], Token::Word { lower, .. } if lower == "item");
+        if safe && item {
+            start -= 1;
+        }
+    }
+    tokens_text(&toks[start..of_idx])
+}
+
+/// Ch.65: a postfix word after the hole of a pattern makes two readings.
+/// Returns the T0130 diagnostic for the first such ambiguity in the
+/// sentence, if there is one.
+fn postfix_ambiguity(
+    text: &str,
+    file: &str,
+    line: usize,
+    names: &NameTable,
+) -> Option<Diagnostic> {
+    let (toks, _) = Lexer::new(text).tokenize();
+    let end = toks
+        .iter()
+        .position(|t| matches!(t, Token::Period | Token::Eof))
+        .unwrap_or(toks.len());
+    let toks = &toks[..end];
+    let first_word = toks
+        .first()
+        .and_then(|t| match t {
+            Token::Word { lower, .. } => Some(lower.as_str()),
+            _ => None,
+        })
+        .unwrap_or("");
+
+    for of_idx in 0..toks.len() {
+        if !word_is(toks, of_idx, "of") || of_idx == 0 {
+            continue;
+        }
+        // Read the hole after `of`: one operand, then any `and` / `to` /
+        // `by` / `in` operands that belong to the same hole.
+        let mut ts = TS::new(toks);
+        ts.pos = of_idx + 1;
+        if !consume_operand(&mut ts, names) {
+            continue;
+        }
+        loop {
+            let connector = ts
+                .peek_word()
+                .map(is_hole_connector)
+                .unwrap_or(false);
+            if !connector {
+                break;
+            }
+            ts.pos += 1;
+            if !consume_operand(&mut ts, names) {
+                break;
+            }
+        }
+        let at = ts.pos;
+        let Some((phrase, after)) = postfix_phrase(toks, at, names) else {
+            continue;
+        };
+        // `Save list of mine as csv` uses the Save pattern's `as`, not the
+        // value postfix. Only a value sentence reads `as` as a postfix.
+        if (phrase == "as" || phrase.starts_with("as ")) && as_is_structural(first_word) {
+            continue;
+        }
+        // Two postfix words in a row are T0109 (Ch.65), not T0130.
+        let two_postfixes = matches!(
+            toks.get(after),
+            Some(Token::Word { lower, .. }) if is_postfix_word(lower)
+        );
+        if two_postfixes {
+            continue;
+        }
+        let head = pattern_head(toks, of_idx);
+        let value = tokens_text(&toks[of_idx + 1..at]);
+        let why = format!(
+            "it can mean the {head} of {value}, {phrase}, or the {head} of {value} {phrase}."
+        );
+        return Some(diag(
+            "T0130",
+            "This sentence can be read two ways.",
+            file,
+            line,
+            text,
+            0,
+            text.len(),
+            &why,
+            "Split it into two sentences.",
+        ));
+    }
+    None
 }
 
 // ---------- expressions ----------

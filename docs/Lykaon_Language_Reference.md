@@ -17,6 +17,9 @@ Lykaon is a programming language written in plain English sentences.
 - Comments and documentation are `Note` and `About` sentences.
 - Names are letters and digits (e.g. `score`, `Number2`).
 
+The full M1–M4 grammar (rules G1–G227) is in
+[`Lykaon_M1_M4_GRAMMAR.md`](Lykaon_M1_M4_GRAMMAR.md).
+
 Version 0.1 covers milestones M1–M4: language core, data and ownership, native
 compilation, and servers/concurrency. Windowed (GUI) apps arrive in a later
 version; v0.1 programs are command-line and console executables.

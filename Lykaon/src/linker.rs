@@ -228,6 +228,7 @@ pub fn link(obj: &Path, rt_lib: &Path, out: &Path) -> Result<(), String> {
         "user32.lib",
         "ws2_32.lib",
         "advapi32.lib",
+        "bcrypt.lib",
         "userenv.lib",
         "ntdll.lib",
         "synchronization.lib",
@@ -265,6 +266,17 @@ pub fn find_rt_lib() -> Result<PathBuf, String> {
     } else {
         &["liblykaon_rt.a"]
     };
+    // A release/install folder keeps the runtime library next to the exe.
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            for name in names {
+                let p = dir.join(name);
+                if p.exists() {
+                    return Ok(p);
+                }
+            }
+        }
+    }
     // Search roots, nearest first: every ancestor of the working folder and
     // of the running exe (up to four levels each). Each root is then probed at
     // `target/`, `Lykaon/target/` (a front run from the repository root or

@@ -8,7 +8,7 @@ $dest = Join-Path $env:LOCALAPPDATA "Lykaon"
 
 # 1. Install the binaries + icon to a stable location.
 New-Item -ItemType Directory -Force $dest | Out-Null
-foreach ($f in @("lykaonc-cli.exe", "lykaon-cli.exe", "lykaon.ico")) {
+foreach ($f in @("lykaonc-cli.exe", "lykaon-cli.exe", "lykaon_rt.lib", "lykaon.ico")) {
     $src = Join-Path $here $f
     if (Test-Path $src) {
         Copy-Item -Force $src (Join-Path $dest $f)

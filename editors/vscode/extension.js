@@ -93,6 +93,10 @@ function startServer() {
     proc.stderr.on('data', d => {
         if (output) output.appendLine(d.toString());
     });
+    proc.on('error', e => {
+        if (output) output.appendLine(`Lykaon: cannot start ${path}: ${e}`);
+        proc = null;
+    });
     proc.on('exit', code => {
         if (output) output.appendLine(`Lykaon language server exited (${code})`);
         proc = null;

@@ -141,7 +141,13 @@
           "description": "Format Lykaon files on save."
         }
       }
-    }
+    },
+    "snippets": [
+      {
+        "language": "lykaon",
+        "path": "./snippets/lykaon.json"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "echo \"no build step\""

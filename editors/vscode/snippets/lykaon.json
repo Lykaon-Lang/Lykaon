@@ -1,0 +1,73 @@
+{
+  "Say": {
+    "prefix": [
+      "say"
+    ],
+    "body": [
+      "Say $1."
+    ],
+    "description": "Say a value"
+  },
+  "Function": {
+    "prefix": [
+      "to",
+      "fn"
+    ],
+    "body": [
+      "To $1 $2 as whole number.",
+      "    Give back $2 as whole number."
+    ],
+    "description": "A function"
+  },
+  "If": {
+    "prefix": [
+      "if"
+    ],
+    "body": [
+      "If $1.",
+      "    $2",
+      "Otherwise.",
+      "    $3"
+    ],
+    "description": "If / otherwise"
+  },
+  "Repeat": {
+    "prefix": [
+      "repeat"
+    ],
+    "body": [
+      "Repeat $1 times.",
+      "    $2"
+    ],
+    "description": "Repeat"
+  },
+  "For each": {
+    "prefix": [
+      "for"
+    ],
+    "body": [
+      "For each $1 in $2.",
+      "    $3"
+    ],
+    "description": "For each"
+  },
+  "Record": {
+    "prefix": [
+      "record"
+    ],
+    "body": [
+      "A $1 has $2 as whole number."
+    ],
+    "description": "A record"
+  },
+  "Test": {
+    "prefix": [
+      "test"
+    ],
+    "body": [
+      "Test $1.",
+      "    Check that $2 is $3."
+    ],
+    "description": "A test"
+  }
+}

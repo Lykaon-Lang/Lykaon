@@ -133,6 +133,19 @@ function activate(context) {
     output = vscode.window.createOutputChannel('Lykaon');
     startServer();
 
+    // M5d: offer the Lykaon file icons once. VS Code requires an icon theme to
+    // be selected; this sets it on the first Yes (the user can change it later).
+    if (vscode.workspace.getConfiguration().get('workbench.iconTheme') !== 'lykaon'
+        && !context.globalState.get('lykaon.iconPrompted')) {
+        context.globalState.update('lykaon.iconPrompted', true);
+        vscode.window.showInformationMessage('Show the Lykaon wolf icon for .lykaon files?', 'Yes', 'No')
+            .then(choice => {
+                if (choice === 'Yes') {
+                    vscode.workspace.getConfiguration().update('workbench.iconTheme', 'lykaon', vscode.ConfigurationTarget.Global);
+                }
+            });
+    }
+
     // M5d: DAP debugging. VS Code launches `lykaonc-cli debug <file>` and
     // talks DAP to it over stdio (breakpoints, step, variables).
     context.subscriptions.push(
@@ -194,6 +207,53 @@ function activate(context) {
                     vscode.Uri.parse(loc.uri),
                     new vscode.Range(loc.range.start.line, loc.range.start.character, loc.range.end.line, loc.range.end.character)
                 ));
+            }
+        }),
+        vscode.languages.registerDocumentSymbolProvider('lykaon', {
+            provideDocumentSymbols(document) {
+                return request('textDocument/documentSymbol', { textDocument: { uri: documentUri(document) } })
+                    .then(syms => (syms || []).map(s => {
+                        let loc = new vscode.Location(document.uri, new vscode.Range(0, 0, 0, 0));
+                        if (s.location && s.location.range) {
+                            loc = new vscode.Location(document.uri, new vscode.Range(
+                                s.location.range.start.line, s.location.range.start.character,
+                                s.location.range.end.line, s.location.range.end.character));
+                        }
+                        return new vscode.SymbolInformation(s.name, s.kind, s.name, loc);
+                    }));
+            }
+        }),
+        vscode.languages.registerReferenceProvider('lykaon', {
+            provideReferences(document, position) {
+                return request('textDocument/references', {
+                    textDocument: { uri: documentUri(document) },
+                    position: { line: position.line, character: position.character },
+                    context: { includeDeclaration: true }
+                }).then(locs => (locs || []).map(l => new vscode.Location(
+                    vscode.Uri.parse(l.uri || documentUri(document)),
+                    new vscode.Range(l.range.start.line, l.range.start.character,
+                                     l.range.end.line, l.range.end.character))));
+            }
+        }),
+        vscode.languages.registerRenameProvider('lykaon', {
+            provideRenameEdits(document, position, newName) {
+                return request('textDocument/rename', {
+                    textDocument: { uri: documentUri(document) },
+                    position: { line: position.line, character: position.character },
+                    newName
+                }).then(res => {
+                    const edit = new vscode.WorkspaceEdit();
+                    const changes = (res && res.changes) || {};
+                    for (const uri in changes) {
+                        for (const e of changes[uri]) {
+                            edit.replace(vscode.Uri.parse(uri),
+                                new vscode.Range(e.range.start.line, e.range.start.character,
+                                                 e.range.end.line, e.range.end.character),
+                                e.newText);
+                        }
+                    }
+                    return edit;
+                });
             }
         }),
         vscode.commands.registerCommand('lykaon.run', () => {

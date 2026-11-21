@@ -24,7 +24,7 @@ Set the paths in Settings → Extensions → Lykaon if the tools are elsewhere.
 
 ```
 cd editors/vscode
-npx --yes @vscode/vsce-cli package
+npx --yes @vscode/vsce package --no-dependencies
 ```
 
 The result is `lykaon-0.1.0.vsix`. Install with

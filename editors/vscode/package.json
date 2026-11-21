@@ -1,18 +1,32 @@
 {
   "name": "lykaon",
   "displayName": "Lykaon",
-  "description": "Syntax highlighting for the Lykaon programming language",
+  "description": "Lykaon language support: syntax highlighting, LSP diagnostics, completion, formatting, run and test.",
   "version": "0.1.0",
   "publisher": "lykaon-oss",
   "license": "SEE LICENSE IN LICENSE.md",
-  "engines": { "vscode": "^1.75.0" },
-  "categories": ["Programming Languages"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:lykaon",
+    "onDebugResolve:lykaon"
+  ],
+  "main": "./extension.js",
   "contributes": {
     "languages": [
       {
         "id": "lykaon",
-        "aliases": ["Lykaon", "lykaon"],
-        "extensions": [".lykaon"],
+        "aliases": [
+          "Lykaon",
+          "lykaon"
+        ],
+        "extensions": [
+          ".lykaon"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -22,6 +36,121 @@
         "scopeName": "source.lykaon",
         "path": "./syntaxes/lykaon.tmLanguage.json"
       }
-    ]
-  }
+    ],
+    "debuggers": [
+      {
+        "type": "lykaon",
+        "label": "Lykaon",
+        "languages": [
+          "lykaon"
+        ],
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the .lykaon file to debug.",
+                "default": "${file}"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Stop at the first statement.",
+                "default": false
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "lykaon",
+            "request": "launch",
+            "name": "Debug Lykaon file",
+            "program": "${file}"
+          }
+        ]
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "lykaon"
+      }
+    ],
+    "commands": [
+      {
+        "command": "lykaon.run",
+        "title": "Run File",
+        "category": "Lykaon"
+      },
+      {
+        "command": "lykaon.test",
+        "title": "Test File",
+        "category": "Lykaon"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "editorLangId == lykaon",
+          "command": "lykaon.run",
+          "group": "navigation@1"
+        },
+        {
+          "when": "editorLangId == lykaon",
+          "command": "lykaon.test",
+          "group": "navigation@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "editorLangId == lykaon",
+          "command": "lykaon.run",
+          "group": "z_commands@1"
+        },
+        {
+          "when": "editorLangId == lykaon",
+          "command": "lykaon.test",
+          "group": "z_commands@2"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Lykaon",
+      "properties": {
+        "lykaon.serverPath": {
+          "type": "string",
+          "default": "lykaonc-cli",
+          "description": "Path to the Lykaon language server (lykaonc-cli lsp)."
+        },
+        "lykaon.interpreterPath": {
+          "type": "string",
+          "default": "lykaon-cli",
+          "description": "Path to the Lykaon interpreter (lykaon-cli run)."
+        },
+        "lykaon.compilerPath": {
+          "type": "string",
+          "default": "lykaonc-cli",
+          "description": "Path to the Lykaon compiler (lykaonc-cli test)."
+        },
+        "lykaon.formatOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Format Lykaon files on save."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "echo \"no build step\""
+  },
+  "iconThemes": [
+    {
+      "id": "lykaon",
+      "label": "Lykaon",
+      "path": "./icon-theme.json"
+    }
+  ]
 }

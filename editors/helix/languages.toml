@@ -1,0 +1,12 @@
+# Helix: add this to ~/.config/helix/languages.toml
+
+[[language]]
+name = "lykaon"
+scope = "source.lykaon"
+file-types = ["lykaon"]
+comment-token = "Note"
+language-servers = ["lykaon-lsp"]
+
+[language-server.lykaon-lsp]
+command = "lykaonc-cli"
+args = ["lsp"]

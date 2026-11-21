@@ -1,0 +1,19 @@
+%YAML 1.2
+---
+name: Lykaon
+file_extensions: [lykaon]
+scope: source.lykaon
+contexts:
+  main:
+    - match: '\b(Note|About)\b[^\n]*'
+      scope: comment.line.lykaon
+    - match: '\b(Say|Set|Ask|If|Otherwise|Repeat|For|each|in|from|to|while|forever|Stop|Skip|Give|Hand|back|To|A|has|is|Changeable|Constant|Test|Check|Try|When|Look|Be|careful|Do|these|together|Start|task|Wait|Sleep|Send|Receive|Run|Exit|Read|Write|Append|Replace|Make|Remove|Move|Duplicate|Zip|Unzip|Gzip|Save|Fetch|Post|Respond|Serve|Page|Log|Takes|Option|Plot|Predict|Open|Limit|Requires|Ensures|Always|Apply|Combine|Use|Share|Anything|Tagged|Load|Navigate|Show|Play|Hide)\b'
+      scope: keyword.control.lykaon
+    - match: '\b(plus|minus|times|divided|by|whole|and|or|not|is|is not|is more than|is less than|is at least|is at most|is between|is close to)\b'
+      scope: keyword.operator.lykaon
+    - match: '\b(yes|no|missing|nothing)\b'
+      scope: constant.language.lykaon
+    - match: '\b\d+(\.\d+)?\b'
+      scope: constant.numeric.lykaon
+    - match: '[.,()]'
+      scope: punctuation.terminator.lykaon

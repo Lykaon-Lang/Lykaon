@@ -1,0 +1,78 @@
+# Using Lykaon in any IDE
+
+Lykaon ships an **LSP server** (`lykaonc-cli lsp`) and a **tree-sitter grammar**,
+so it works in any editor that speaks either — the same way Python, Rust, Go,
+Java, etc. do.
+
+## 1. Install the tools
+
+Download the release `lykaonc-cli` (compiler + LSP) and `lykaon-cli` (REPL) for
+your platform and put them on `PATH`:
+
+```sh
+lykaonc-cli --help      # compiler + lsp + audit + ...
+lykaon-cli --help       # interpreter / REPL
+```
+
+Every editor below calls `lykaonc-cli lsp` over stdio. Set `lykaon.compilerPath`
+(or the editor's LSP command) if the binary is elsewhere.
+
+## 2. Editor by editor
+
+### VS Code
+Install `editors/vscode/lykaon-0.1.0.vsix` (or publish it to the Marketplace).
+It gives syntax highlighting, LSP diagnostics/hover/completion/definition,
+format on save, Run/Test buttons, and DAP debugging.
+
+### Neovim
+1. Install the tree-sitter parser: add `editors/tree-sitter-lykaon` as a
+   parser (e.g. with nvim-treesitter) and copy `editors/nvim/queries/lykaon`.
+2. LSP: `require('lspconfig').lykaon.setup { cmd = { 'lykaonc-cli', 'lsp' } }`.
+   (See `editors/nvim/README.md`.)
+
+### Helix
+Add to `~/.config/helix/languages.toml`:
+```toml
+[[language]]
+name = "lykaon"
+scope = "source.lykaon"
+file-types = ["lykaon"]
+language-servers = ["lykaon-lsp"]
+
+[language-server.lykaon-lsp]
+command = "lykaonc-cli"
+args = ["lsp"]
+```
+(See `editors/helix/languages.toml`.)
+
+### Emacs
+```elisp
+(load-file "/path/to/editors/emacs/lykaon-mode.el")
+;; then open a .lykaon file; M-x lsp-mode if you use lsp-mode
+```
+
+### Sublime Text
+Install `editors/sublime/lykaon.sublime-syntax` as a package, and point the LSP
+client at `lykaonc-cli lsp`.
+
+### JetBrains (IntelliJ / PyCharm / WebStorm / CLion ...)
+Install the Lykaon plugin from `editors/jetbrains/` (syntax + LSP), or use the
+LSP4IJ plugin and point it at `lykaonc-cli lsp`.
+
+### Any other LSP editor (Zed, Emacs, Kate, etc.)
+Configure the language server command: `lykaonc-cli lsp`, language id `lykaon`,
+extensions `.lykaon`. Tree-sitter users can use `editors/tree-sitter-lykaon`.
+
+## 3. What you get everywhere
+
+- Syntax highlighting (tree-sitter / TextMate / Sublime).
+- Diagnostics with Where/Why/Fix (LSP).
+- Hover, completion, go-to-definition, format (LSP).
+- Run/Test (VS Code) and DAP debugging (VS Code, `lykaonc-cli debug`).
+
+## 4. Publishing packages
+
+- VS Code: `cd editors/vscode && npx vsce package` -> `.vsix`.
+- Open VSX / Marketplace: publish the `.vsix`.
+- Tree-sitter: publish `editors/tree-sitter-lykaon` to npm; editors pick it up.
+- JetBrains: build the plugin with Gradle and publish to the Marketplace.

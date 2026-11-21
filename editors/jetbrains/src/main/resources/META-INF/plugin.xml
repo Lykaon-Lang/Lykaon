@@ -1,0 +1,15 @@
+<idea-plugin>
+  <id>com.lykaon.idea</id>
+  <name>Lykaon</name>
+  <version>0.1.0</version>
+  <vendor>Lykaon</vendor>
+  <description>Lykaon language support: file type, syntax, and LSP via LSP4IJ or lykaonc-cli lsp.</description>
+  <depends>com.intellij.modules.platform</depends>
+  <extensions defaultExtensionNs="com.intellij">
+    <fileType name="Lykaon"
+              implementationClass="com.lykaon.LykaonFileType"
+              fieldName="INSTANCE"
+              language="lykaon"
+              extensions="lykaon"/>
+  </extensions>
+</idea-plugin>

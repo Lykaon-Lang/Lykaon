@@ -1,0 +1,19 @@
+{
+  "name": "tree-sitter-lykaon",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for the Lykaon programming language",
+  "main": "grammar.js",
+  "license": "SEE LICENSE IN ../../LICENSE.md",
+  "keywords": ["parser", "lexer", "lykaon"],
+  "files": ["grammar.js", "queries/*", "package.json"],
+  "dependencies": {
+    "nan": "^2.18.0"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.22.0"
+  },
+  "scripts": {
+    "build": "tree-sitter generate && tree-sitter build",
+    "test": "tree-sitter test"
+  }
+}

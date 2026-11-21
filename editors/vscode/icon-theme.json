@@ -1,0 +1,11 @@
+{
+  "iconDefinitions": {
+    "_lykaon": { "iconPath": "./icons/lykaon.svg" }
+  },
+  "fileExtensions": {
+    "lykaon": "_lykaon"
+  },
+  "languageIds": {
+    "lykaon": "_lykaon"
+  }
+}

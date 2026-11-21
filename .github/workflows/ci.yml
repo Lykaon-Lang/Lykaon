@@ -52,17 +52,29 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $dist = "dist"
+          # Absolute path: the current directory changes while packaging the extension.
+          $dist = Join-Path $PWD "dist"
           New-Item -ItemType Directory -Force $dist | Out-Null
           Copy-Item "target/release/lykaonc-cli.exe" $dist
           Copy-Item "target/release/lykaon-cli.exe" $dist
           Copy-Item "..\release\lykaon.ico" $dist
           Copy-Item "..\release\install.ps1" $dist
           Copy-Item "..\release\install.bat" $dist
+          Copy-Item "..\release\README.md" $dist
           Push-Location ..\editors\vscode
-          npx --yes vsce package --no-dependencies
-          Copy-Item *.vsix $dist
-          Pop-Location
+          try {
+            npx --yes @vscode/vsce package --no-dependencies
+            Copy-Item *.vsix $dist
+          } finally {
+            Pop-Location
+          }
+          # Fail the build if any expected file is missing.
+          $names = (Get-ChildItem $dist).Name
+          foreach ($need in @("lykaonc-cli.exe", "lykaon-cli.exe", "lykaon.ico", "install.ps1", "install.bat", "README.md")) {
+            if ($names -notcontains $need) { throw "release package is missing $need" }
+          }
+          if (-not (Get-ChildItem $dist -Filter *.vsix)) { throw "release package is missing the .vsix" }
+          Get-ChildItem $dist | Select-Object Name, Length
           Compress-Archive -Path "$dist\*" -DestinationPath "Lykaon-windows-x64.zip"
 
       - name: Upload Windows zip

@@ -40,8 +40,31 @@ jobs:
           printf 'A color is red or green or blue.\nShade is green.\nLook at shade.\n    When red.\n        Say warm.\n    When green.\n        Say fresh.\n    When blue.\n        Say cool.\n' > color.lykaon
           ./target/release/lykaon-cli run color.lykaon
           printf 'Start task looker.\n    Give back 11.\nWait for looker.\nSay it.\n' > task.lykaon
-          ./target/release/lykaon-cli run task.lykaon
+          ./target/release/lykaonc-cli run task.lykaon
           printf 'Save 42 as json to file n in temporary folder.\nRead json file n in temporary folder as whole number.\nSay it.\n' > fmt.lykaon
-          ./target/release/lykaon-cli run fmt.lykaon
+          ./target/release/lykaonc-cli run fmt.lykaon
           printf 'Takes file name as text.\nOption verbose is whole number.\n\nRead file name in temporary folder.\nSay it.\n' > tool.lykaon
-          ./target/release/lykaon-cli run tool.lykaon || test $? -eq 2
+          ./target/release/lykaonc-cli run tool.lykaon || test $? -eq 2
+
+      - name: Package Windows zip (binaries + icon + installer + VS Code extension)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $dist = "dist"
+          New-Item -ItemType Directory -Force $dist | Out-Null
+          Copy-Item "target/release/lykaonc-cli.exe" $dist
+          Copy-Item "target/release/lykaon-cli.exe" $dist
+          Copy-Item "..\release\lykaon.ico" $dist
+          Copy-Item "..\release\install.ps1" $dist
+          Push-Location ..\editors\vscode
+          npx --yes vsce package --no-dependencies
+          Copy-Item *.vsix $dist
+          Pop-Location
+          Compress-Archive -Path "$dist\*" -DestinationPath "Lykaon-windows-x64.zip"
+
+      - name: Upload Windows zip
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lykaon-windows-x64
+          path: Lykaon/Lykaon-windows-x64.zip

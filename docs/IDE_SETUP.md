@@ -96,7 +96,8 @@ This writes, for the current user (no admin):
 - `...\Lykaon.File\DefaultIcon` -> `lykaon.ico,0`
 - `...\Lykaon.File\shell\open\command` -> `"lykaon-cli" run "%1"`
 
-After running it, new `.lykaon` files show the **wolf icon** in Explorer.
+After running it, new `.lykaon` files show the **Lykaon file icon** (a document
+with the wolf inside) in Explorer.
 
 Notes:
 

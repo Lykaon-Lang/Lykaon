@@ -3,7 +3,7 @@
 - `lykaonc-cli.exe` — compiler + CLI tools.
 - `lykaon-cli.exe` — interpreter / REPL.
 - `lykaon_rt.lib` — runtime library that `lykaonc-cli` links into native builds.
-- `lykaon.ico` — the Lykaon wolf icon.
+- `lykaon.ico` — the Lykaon file icon (a document with the wolf inside).
 - `install.bat` — double-click to install (copies to `%LOCALAPPDATA%\Lykaon`, adds to PATH, registers the icon).
 - `install.ps1` — the installer script (`install.bat` runs it).
 - `lykaon-0.1.0.vsix` — the VS Code extension.
@@ -14,7 +14,7 @@
 2. **Double-click `install.bat`** (or run `install.ps1`).
    - Copies the binaries, runtime library and icon to `%LOCALAPPDATA%\Lykaon`.
    - Adds that folder to your User PATH.
-   - Registers `.lykaon` so File Explorer shows the wolf icon.
+   - Registers `.lykaon` so File Explorer shows the Lykaon file icon.
    - Refreshes Explorer immediately.
 3. Open a new terminal and run:
    ```

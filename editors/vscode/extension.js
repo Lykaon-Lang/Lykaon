@@ -138,9 +138,9 @@ function activate(context) {
     if (vscode.workspace.getConfiguration().get('workbench.iconTheme') !== 'lykaon'
         && !context.globalState.get('lykaon.iconPrompted')) {
         context.globalState.update('lykaon.iconPrompted', true);
-        vscode.window.showInformationMessage('Show the Lykaon wolf icon for .lykaon files?', 'Yes', 'No')
+        vscode.window.showInformationMessage('Switch your active File Icon Theme to Lykaon to display .lykaon file icons?', 'Switch Theme', 'Keep Current')
             .then(choice => {
-                if (choice === 'Yes') {
+                if (choice === 'Switch Theme') {
                     vscode.workspace.getConfiguration().update('workbench.iconTheme', 'lykaon', vscode.ConfigurationTarget.Global);
                 }
             });

@@ -76,3 +76,37 @@ extensions `.lykaon`. Tree-sitter users can use `editors/tree-sitter-lykaon`.
 - Open VSX / Marketplace: publish the `.vsix`.
 - Tree-sitter: publish `editors/tree-sitter-lykaon` to npm; editors pick it up.
 - JetBrains: build the plugin with Gradle and publish to the Marketplace.
+
+## Windows Explorer icons (the wolf on .lykaon files)
+
+Inside VS Code the icon comes from the editor's icon theme. **Windows Explorer**
+(the file in a folder) uses a **file association** in the registry — the same
+mechanism the Python and .NET installers use. Register it once:
+
+```powershell
+lykaonc-cli setup --icon "C:\path\to\lykaon.ico"
+```
+
+(or put `lykaon.ico` next to `lykaonc-cli.exe` and run `lykaonc-cli setup`).
+
+This writes, for the current user (no admin):
+
+- `HKCU\Software\Classes\.lykaon` -> `Lykaon.File`
+- `HKCU\Software\Classes\Lykaon.File` -> "Lykaon Source File"
+- `...\Lykaon.File\DefaultIcon` -> `lykaon.ico,0`
+- `...\Lykaon.File\shell\open\command` -> `"lykaon-cli" run "%1"`
+
+After running it, new `.lykaon` files show the **wolf icon** in Explorer.
+
+Notes:
+
+- Windows shows **one icon per file type**. You cannot stack "Lupin Code + Lykaon"
+  icons on one file in Explorer; the file-type icon is the wolf, and "Open with"
+  (Lupin Code) is a separate association.
+- The C# icon you saw is the **.NET SDK's** file association (not a VS Code
+  feature); the Python icon is the **Python installer's** association. Lykaon
+  does the same via `lykaonc-cli setup`.
+- For "by default when downloaded", ship `lykaon.ico` in the release zip and run
+  `lykaonc-cli setup` during install (or provide a `register-lykaon.reg`).
+- Other IDEs: icons are per-editor (JetBrains file-type icons, `vscode-icons`,
+- etc.) and also need a one-time setup.

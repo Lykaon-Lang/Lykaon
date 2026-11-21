@@ -22,7 +22,7 @@
    ```
    To build a native executable:
    ```
-   lykaonc-cli build fast hello.lykaon hello
+   lykaonc-cli build fast hello.lykaon hello.exe
    .\hello.exe
    ```
 

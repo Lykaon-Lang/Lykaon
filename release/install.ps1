@@ -29,14 +29,19 @@ if ($userPath -notlike "*$dest*") {
 }
 
 # 3. Register the file type + icon (DefaultIcon points at the installed copy).
-reg add "HKCU\Software\Classes\.lykaon" /ve /d "Lykaon.File" /f | Out-Null
-reg add "HKCU\Software\Classes\Lykaon.File" /ve /d "Lykaon Source File" /f | Out-Null
-reg add "HKCU\Software\Classes\Lykaon.File\DefaultIcon" /ve /d "$icon,0" /f | Out-Null
+# Use the registry provider, not reg.exe: reg.exe strips the quotes that paths
+# and "%1" need when a path contains spaces.
+New-Item -Path 'HKCU:\Software\Classes\.lykaon' -Force | Out-Null
+Set-Item -Path 'HKCU:\Software\Classes\.lykaon' -Value 'Lykaon.File'
+New-Item -Path 'HKCU:\Software\Classes\Lykaon.File' -Force | Out-Null
+Set-Item -Path 'HKCU:\Software\Classes\Lykaon.File' -Value 'Lykaon Source File'
+New-Item -Path 'HKCU:\Software\Classes\Lykaon.File\DefaultIcon' -Force | Out-Null
+Set-Item -Path 'HKCU:\Software\Classes\Lykaon.File\DefaultIcon' -Value "`"$icon`",0"
 
 $cli = Join-Path $dest "lykaonc-cli.exe"
 if (Test-Path $cli) {
-    $cmd = "`"$cli`" run `"%1`""
-    reg add "HKCU\Software\Classes\Lykaon.File\shell\open\command" /ve /d $cmd /f | Out-Null
+    New-Item -Path 'HKCU:\Software\Classes\Lykaon.File\shell\open\command' -Force | Out-Null
+    Set-Item -Path 'HKCU:\Software\Classes\Lykaon.File\shell\open\command' -Value "`"$cli`" run `"%1`""
     Write-Host "Registered .lykaon (open with lykaonc-cli run)."
 } else {
     Write-Host "Registered .lykaon file type and icon."

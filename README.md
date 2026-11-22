@@ -5,7 +5,7 @@ Sentences end with a period, blocks are indented, and there are no quotes,
 braces or semicolons. The compiler turns those sentences into a real native
 executable.
 
-[![CI](https://github.com/Lykaon-oss/Lykaon/actions/workflows/ci.yml/badge.svg)](https://github.com/Lykaon-oss/Lykaon/actions/workflows/ci.yml)
+[![CI](https://github.com/Lykaon-Lang/Lykaon/actions/workflows/ci.yml/badge.svg)](https://github.com/Lykaon-Lang/Lykaon/actions/workflows/ci.yml)
 
 ## A taste of Lykaon
 
@@ -59,7 +59,7 @@ Say it.
 2
 ```
 
-**[Try it in your browser — no install](https://lykaon-oss.github.io/Lykaon/)**
+**[Try it in your browser — no install](https://lykaon-lang.github.io/Lykaon/)**
 (WAsm playground, v0.1 preview).
 
 ## Why Lykaon
@@ -105,7 +105,7 @@ run them by name.
 Install [Rust](https://rustup.rs) 1.85 or newer:
 
 ```
-git clone https://github.com/Lykaon-oss/Lykaon.git
+git clone https://github.com/Lykaon-Lang/Lykaon.git
 cd Lykaon/Lykaon
 cargo build --release -p lykaon-rt
 cargo build --release -p lykaon

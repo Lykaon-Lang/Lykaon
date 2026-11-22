@@ -62,7 +62,7 @@ For each n in Numbers.
 
 Open a PR titled something like **"Add Lykaon language"** with:
 
-- a link to this repository (https://github.com/Lykaon-oss/Lykaon) as the
+- a link to this repository (https://github.com/Lykaon-Lang/Lykaon) as the
   language's home page,
 - a short description: *Lykaon is a programming language written in plain
   English sentences; programs end in `.lykaon`; see the linked repo for the

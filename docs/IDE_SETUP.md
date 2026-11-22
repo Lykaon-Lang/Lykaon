@@ -110,4 +110,33 @@ Notes:
 - For "by default when downloaded", ship `lykaon.ico` in the release zip and run
   `lykaonc-cli setup` during install (or provide a `register-lykaon.reg`).
 - Other IDEs: icons are per-editor (JetBrains file-type icons, `vscode-icons`,
-- etc.) and also need a one-time setup.
+  etc.) and also need a one-time setup.
+
+### Linux (GNOME, KDE, XFCE, ...)
+
+Linux file managers take the icon from the **MIME type**, not an `.ico`. Install
+the vector icon once, per user (no root):
+
+```sh
+mkdir -p ~/.local/share/mime/packages \
+         ~/.local/share/icons/hicolor/scalable/mimetypes
+cp docs/assets/lykaon-file.svg \
+   ~/.local/share/icons/hicolor/scalable/mimetypes/text-x-lykaon.svg
+
+cat > ~/.local/share/mime/packages/lykaon.xml <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/x-lykaon">
+    <comment>Lykaon source file</comment>
+    <glob pattern="*.lykaon"/>
+    <icon name="text-x-lykaon"/>
+  </mime-type>
+</mime-info>
+EOF
+
+update-mime-database ~/.local/share/mime
+gtk-update-icon-cache ~/.local/share/icons/hicolor 2>/dev/null || true
+```
+
+`docs/assets/lykaon-file.svg` is the flattened vector: some Linux icon loaders
+cannot follow the nested SVG-in-`<image>` used by the original artwork.

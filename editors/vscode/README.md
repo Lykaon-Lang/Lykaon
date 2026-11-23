@@ -20,6 +20,15 @@ Set the paths in Settings → Extensions → Lykaon if the tools are elsewhere.
 - Format on save
 - Run and Test buttons in the editor title
 
+## Installing
+
+From the folder where you unzipped the release (quote the path if it has
+spaces):
+
+```
+code --install-extension "C:\path\to\Lykaon\lykaon-<version>.vsix"
+```
+
 ## Packaging
 
 ```
@@ -27,10 +36,9 @@ cd editors/vscode
 npx --yes @vscode/vsce package --no-dependencies
 ```
 
-The result is `lykaon-0.1.0.vsix`. Install with
-`code --install-extension lykaon-0.1.0.vsix`.
-
+The result is `lykaon-<version>.vsix`; the version comes from `package.json`.
 The extension is plain JavaScript; there is no build step.
+
 ## Debugging
 
 The extension registers a `lykaon` debug adapter that runs `lykaonc-cli debug

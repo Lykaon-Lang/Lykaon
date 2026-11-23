@@ -32,7 +32,8 @@
         "extensions": [
           ".lykaon"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": "./icons/lykaon.svg"
       }
     ],
     "grammars": [
@@ -128,17 +129,17 @@
         "lykaon.serverPath": {
           "type": "string",
           "default": "lykaonc-cli",
-          "description": "Path to the Lykaon language server (lykaonc-cli lsp)."
+          "description": "Path to the Lykaon language server. Leave the default to find it automatically (installed copy, then the open file's folder, then PATH)."
         },
         "lykaon.interpreterPath": {
           "type": "string",
           "default": "lykaon-cli",
-          "description": "Path to the Lykaon interpreter (lykaon-cli run)."
+          "description": "Path to the Lykaon interpreter (Run). Leave the default to find it automatically."
         },
         "lykaon.compilerPath": {
           "type": "string",
           "default": "lykaonc-cli",
-          "description": "Path to the Lykaon compiler (lykaonc-cli test)."
+          "description": "Path to the Lykaon compiler (run/test/debug). Leave the default to find it automatically."
         },
         "lykaon.formatOnSave": {
           "type": "boolean",
@@ -151,6 +152,25 @@
       {
         "language": "lykaon",
         "path": "./snippets/lykaon.json"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "lykaon.run",
+        "key": "ctrl+f5",
+        "when": "editorLangId == lykaon"
+      },
+      {
+        "command": "lykaon.test",
+        "key": "ctrl+shift+f5",
+        "when": "editorLangId == lykaon"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "lykaon-file-icons",
+        "label": "Lykaon",
+        "path": "./icon-theme.json"
       }
     ]
   },

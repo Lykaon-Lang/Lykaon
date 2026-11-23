@@ -4,6 +4,8 @@
 
 const vscode = require('vscode');
 const { spawn } = require('child_process');
+const fs = require('fs');
+const pathMod = require('path');
 
 let proc = null;
 let buffer = Buffer.alloc(0);
@@ -14,6 +16,50 @@ let output = null;
 
 function cfg() {
     return vscode.workspace.getConfiguration('lykaon');
+}
+
+// Where the installer puts the tools.
+const INSTALL_DIR = process.env.LOCALAPPDATA
+    ? pathMod.join(process.env.LOCALAPPDATA, 'Lykaon')
+    : null;
+
+// The settings ship with a bare-name default, so "still the default" has to
+// count as "not configured".
+const BARE_DEFAULTS = {
+    serverPath: 'lykaonc-cli',
+    compilerPath: 'lykaonc-cli',
+    interpreterPath: 'lykaon-cli'
+};
+
+// Find a Lykaon tool without relying on PATH. Windows keeps a stale PATH in
+// processes that were already running when install.bat ran, so an open VS Code
+// window would never see the new folder. Order:
+//   1. the explicit setting, if it is not the untouched default
+//   2. %LOCALAPPDATA%\Lykaon           (where install.bat copies the tools)
+//   3. the folder of the open .lykaon file (portable: unzip and run)
+//   4. the workspace folder
+//   5. the bare name, which makes the OS search PATH (works after a restart)
+function resolveTool(settingName, bareName) {
+    const configured = (cfg().get(settingName) || '').trim();
+    if (configured && configured !== BARE_DEFAULTS[settingName]) return configured;
+
+    const exe = process.platform === 'win32' ? `${bareName}.exe` : bareName;
+    const dirs = [];
+    if (INSTALL_DIR) dirs.push(INSTALL_DIR);
+    const editor = vscode.window.activeTextEditor;
+    if (editor && editor.document.uri.scheme === 'file') {
+        dirs.push(pathMod.dirname(editor.document.fileName));
+    }
+    for (const folder of vscode.workspace.workspaceFolders || []) {
+        if (folder.uri.scheme === 'file') dirs.push(folder.uri.fsPath);
+    }
+    for (const dir of dirs) {
+        const candidate = pathMod.join(dir, exe);
+        try {
+            if (fs.existsSync(candidate)) return candidate;
+        } catch (_) { /* unreadable folder, keep looking */ }
+    }
+    return exe;
 }
 
 function send(msg) {
@@ -82,11 +128,11 @@ function onData(chunk) {
 }
 
 function startServer() {
-    const path = cfg().get('serverPath') || 'lykaonc-cli';
+    const cli = resolveTool('serverPath', 'lykaonc-cli');
     try {
-        proc = spawn(path, ['lsp'], { stdio: ['pipe', 'pipe', 'pipe'] });
+        proc = spawn(cli, ['lsp'], { stdio: ['pipe', 'pipe', 'pipe'] });
     } catch (e) {
-        vscode.window.showErrorMessage(`Lykaon: cannot start ${path}: ${e}`);
+        vscode.window.showErrorMessage(`Lykaon: cannot start ${cli}: ${e}`);
         return;
     }
     proc.stdout.on('data', onData);
@@ -94,7 +140,7 @@ function startServer() {
         if (output) output.appendLine(d.toString());
     });
     proc.on('error', e => {
-        if (output) output.appendLine(`Lykaon: cannot start ${path}: ${e}`);
+        if (output) output.appendLine(`Lykaon: cannot start ${cli}: ${e}`);
         proc = null;
     });
     proc.on('exit', code => {
@@ -157,7 +203,7 @@ function activate(context) {
             createDebugAdapterDescriptor(session) {
                 const program = session.configuration.program
                     || vscode.window.activeTextEditor?.document.fileName;
-                const cli = cfg().get('compilerPath') || 'lykaonc-cli';
+                const cli = resolveTool('compilerPath', 'lykaonc-cli');
                 return new vscode.DebugAdapterExecutable(cli, ['debug', program]);
             }
         })
@@ -268,7 +314,7 @@ function activate(context) {
             }
             const terminal = vscode.window.createTerminal({
                 name: 'Lykaon: Run',
-                shellPath: cfg().get('interpreterPath') || 'lykaon-cli',
+                shellPath: resolveTool('interpreterPath', 'lykaon-cli'),
                 shellArgs: ['run', editor.document.fileName]
             });
             terminal.show();
@@ -281,7 +327,7 @@ function activate(context) {
             }
             const terminal = vscode.window.createTerminal({
                 name: 'Lykaon: Test',
-                shellPath: cfg().get('compilerPath') || 'lykaonc-cli',
+                shellPath: resolveTool('compilerPath', 'lykaonc-cli'),
                 shellArgs: ['test', editor.document.fileName]
             });
             terminal.show();
@@ -297,4 +343,4 @@ function deactivate() {
     if (diagnostics) diagnostics.dispose();
 }
 
-module.exports = { activate, deactivate };
+module.exports = { activate, deactivate, resolveTool };

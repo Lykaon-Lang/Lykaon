@@ -76,7 +76,7 @@ Say it.
 
 ## Quick start (Windows)
 
-1. Download `Lykaon-v0.1.1-windows-x64.zip` from
+1. Download `Lykaon-v0.1.0-windows-x64.zip` from
    [Releases](https://github.com/Lykaon-Lang/Lykaon/releases/latest).
 2. Unzip it anywhere.
 3. Double-click `install.bat`. It copies the tools to

@@ -87,3 +87,31 @@ usage: lykaonc-cli <command> [args]
   checkpoint file.lykaon | resume file.lykaon
   add <folder-or-url> | remove <name> | update
 ```
+
+## Verify the download (optional)
+
+The zip is sealed so you can check it was not changed after we built it. You do not need this to use Lykaon.
+
+- `SHA256SUMS` lists the SHA-256 of the zip, the VS Code extension and the SBOM.
+- `Lykaon-v0.1.0-windows-x64.zip.sig` is the seal for the zip.
+- `lykaon-0.1.0.cdx.json.sig` is the seal for the SBOM.
+- `SHA256SUMS.sig` is the seal for the list.
+- `lykaon-release.pub` is the public key.
+
+Quick check in PowerShell (nothing to install):
+
+```
+Get-FileHash .\Lykaon-v0.1.0-windows-x64.zip -Algorithm SHA256
+```
+
+The hash must match the zip line in `SHA256SUMS` (`B39B2DBB...9AD192`).
+
+Full check of the seal (needs OpenSSL; Git for Windows already includes it):
+
+```
+openssl dgst -sha256 -verify lykaon-release.pub -signature Lykaon-v0.1.0-windows-x64.zip.sig Lykaon-v0.1.0-windows-x64.zip
+```
+
+```
+Verified OK
+```

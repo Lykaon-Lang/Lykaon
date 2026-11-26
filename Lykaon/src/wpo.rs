@@ -199,6 +199,38 @@ pub fn read_stmt_exprs(st: &Stmt, f: &mut dyn FnMut(&Expr)) {
         },
         Stmt::PageDecl { .. } | Stmt::WsRecv { .. } => {}
         Stmt::Careful { body } => go_list(body, f),
+        // M5 (Appendix L 7.1): a row loop reads its body; a rows sentence
+        // reads its where condition.
+        Stmt::ForEachRow { body, .. } => go_list(body, f),
+        Stmt::SayRows { cond: Some(c), .. } => f(c),
+        Stmt::SayModel { items } => {
+            for item in items {
+                if let lykaon_core::sem::ModelItem::Prediction(pairs) = item {
+                    for (_, e) in pairs {
+                        f(e);
+                    }
+                }
+            }
+        }
+        Stmt::DbAdd { value, .. } => f(value),
+        Stmt::DbRemove { cond, .. } => f(cond),
+        Stmt::DbSet { value, cond, .. } => {
+            f(value);
+            f(cond);
+        }
+        Stmt::Transaction { body } => go_list(body, f),
+        Stmt::LoadTable { .. }
+        | Stmt::SayData { .. }
+        | Stmt::SayGroup { .. }
+        | Stmt::SayRows { cond: None, .. }
+        | Stmt::Plot { .. }
+        | Stmt::Predict { .. }
+        | Stmt::SaveModel { .. }
+        | Stmt::OpenDatabase { .. }
+        | Stmt::LoadDatabase { .. }
+        | Stmt::Limit { .. }
+        | Stmt::AskAssistant { .. }
+        | Stmt::LoadModel { .. } => {}
         Stmt::WhenSignal { body, .. } | Stmt::ForEachInput { body, .. } => go_list(body, f),
         // M4-5 (Appendix K 7.5): the write/append/replace value reads;
         // the for-each-line / when-file-changes bodies read; the other
@@ -728,7 +760,38 @@ fn st_exprs_mut(st: &mut Stmt) -> Vec<&mut Expr> {
         | Stmt::StreamLoop { .. } | Stmt::UseWorkers { .. }
         | Stmt::UseSeed { .. }
         // Receive holds only the channel name
-        | Stmt::Receive { .. } => Vec::new(),
+        | Stmt::Receive { .. }
+        // M5 (Appendix L 7.1): the row loop's body is separate sentences;
+        // the data sentences hold no own expressions.
+        | Stmt::ForEachRow { .. }
+        | Stmt::LoadTable { .. }
+        | Stmt::SayData { .. }
+        | Stmt::SayGroup { .. }
+        | Stmt::SayRows { cond: None, .. }
+        | Stmt::Plot { .. }
+        | Stmt::Predict { .. }
+        | Stmt::SaveModel { .. }
+        | Stmt::OpenDatabase { .. }
+        | Stmt::LoadDatabase { .. }
+        | Stmt::Limit { .. }
+        | Stmt::AskAssistant { .. }
+        | Stmt::LoadModel { .. } => Vec::new(),
+        Stmt::DbAdd { value, .. } => vec![value],
+        Stmt::DbRemove { cond, .. } => vec![cond],
+        Stmt::DbSet { value, cond, .. } => vec![value, cond],
+        Stmt::Transaction { .. } => Vec::new(),
+        Stmt::SayModel { items } => {
+            let mut out = Vec::new();
+            for item in items.iter_mut() {
+                if let lykaon_core::sem::ModelItem::Prediction(pairs) = item {
+                    for (_, e) in pairs.iter_mut() {
+                        out.push(e);
+                    }
+                }
+            }
+            out
+        }
+        Stmt::SayRows { cond: Some(c), .. } => vec![c],
         // M4 (Appendix K): Send/AtomicAdd carry the value expression
         Stmt::Send { value, .. } | Stmt::AtomicAdd { value, .. } => vec![value],
         // M4-4: a spread's own expression is its items value

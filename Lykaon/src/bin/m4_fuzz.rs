@@ -7,7 +7,7 @@
 //! Run: cargo run --release --bin m4_fuzz -- 600
 //! (the milestone requires ten minutes: 600 seconds)
 
-use lykaon::{check_source, format_source, run_source_budgeted, test_source};
+use lykaon::{check_source, try_format_source, run_source_budgeted, test_source};
 use lykaon_core::formats;
 use lykaon_core::net;
 use lykaon_core::sem::Kind;
@@ -279,7 +279,7 @@ fn make_source(rng: &mut Rng) -> String {
         if rng.below(2) == 0 {
             let words = 1 + rng.below(10);
             for _ in 0..words {
-                s.push_str(rng.pick(POOL));
+                s.push_str(*rng.pick(POOL));
                 s.push(' ');
             }
         } else {
@@ -315,7 +315,7 @@ fn make_source(rng: &mut Rng) -> String {
                 _ => {
                     let n = rng.below(8);
                     for _ in 0..n {
-                        s.push_str(rng.pick(POOL));
+                        s.push_str(*rng.pick(POOL));
                         s.push(' ');
                     }
                     s.push('\n');
@@ -380,7 +380,7 @@ fn make_document(rng: &mut Rng) -> String {
     let n = 1 + rng.below(40);
     let mut s = String::new();
     for _ in 0..n {
-        s.push_str(rng.pick(FORMAT_POOL));
+        s.push_str(*rng.pick(FORMAT_POOL));
     }
     s
 }
@@ -507,7 +507,7 @@ fn main() {
         for _ in 0..20 {
             let src = make_source(&mut rng);
             let _ = check_source(&src, "fuzz.lykaon");
-            let _ = format_source(&src);
+            let _ = try_format_source(&src, "fuzz.lykaon");
             let _ = run_source_budgeted(&src, "fuzz.lykaon", "", 100_000);
             let _ = test_source(&src, "fuzz.lykaon", "");
             source_runs += 1;

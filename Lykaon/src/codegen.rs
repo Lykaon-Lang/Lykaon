@@ -1209,6 +1209,7 @@ impl Strings {
 /// The runtime functions generated code may call (declared Import, resolved
 /// at link time against liblykaon_rt).
 const RT_MAIN: &str = "lykaon_rt_main";
+const RT_TICK: &str = "lykaon_rt_tick";
 const RT_FLUSH: &str = "lykaon_rt_flush";
 const RT_FAIL: &str = "lykaon_rt_fail";
 const RT_SAY_WHOLE: &str = "lykaon_rt_say_whole";
@@ -1263,6 +1264,10 @@ pub struct Codegen {
     fn_kinds: std::collections::BTreeMap<String, Scalar>,
     /// pool offsets of the three fatal lines (T0603, T0604, T0607)
     errs: [(u32, u32); 3],
+    /// M5g item a: emit a `lykaon_rt_tick()` call before every sentence.
+    /// Off by default (a plain build has zero overhead); on when the runner
+    /// asks for a fuel budget.
+    meter: bool,
 }
 
 /// One SSA variable binding: a name visible in a scope, its register type,
@@ -1328,6 +1333,7 @@ impl Codegen {
             pool: None,
             user_fns: std::collections::HashMap::new(),
             rt_fns: std::collections::HashMap::new(),
+            meter: false,
             clo_plans: Vec::new(),
             fn_kinds: std::collections::BTreeMap::new(),
             errs: [(0, 0); 3],
@@ -1339,8 +1345,10 @@ impl Codegen {
         source: &str,
         prog: &sem::Program,
         mode: &str,
+        meter: bool,
     ) -> Result<(Vec<u8>, LowerKind), String> {
         let mut cg = Codegen::new()?;
+        cg.meter = meter;
         let mode = BuildMode::from_str(mode);
         let kind = classify(prog);
         match &kind {
@@ -2562,6 +2570,12 @@ impl Codegen {
                 // the interpreter's exec_stmts returns early on Stop, Skip
                 // and give backs; everything after is unreachable
                 break;
+            }
+            // M5g item a: one tick per executed sentence, the same unit
+            // the interpreter charges. Only emitted when the runner asked
+            // for a budget, so a normal build is untouched.
+            if self.meter {
+                self.rt(builder, RT_TICK, &[], None, &[])?;
             }
             self.walk_stmt(prog, builder, w, st)?;
         }

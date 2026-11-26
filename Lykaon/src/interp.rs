@@ -7,5 +7,6 @@
 //! interpreter output, byte for byte) hold by construction.
 
 pub use lykaon_core::interp::{
-    RunError, run, run_budgeted, run_budgeted_streams, run_test, split_streams,
+    ExitReason, RunError, run, run_budgeted, run_budgeted_streams,
+    run_budgeted_streams_metered, run_budgeted_streams_traced, run_test, split_streams,
 };

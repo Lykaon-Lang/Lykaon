@@ -1,4 +1,4 @@
-//! Mid-level graph (M1b), as in Chapter 67: "a mid-level graph: statements
+﻿//! Mid-level graph (M1b), as in Chapter 67: "a mid-level graph: statements
 //! become lists of steps that jump to each other". Each function is a set of
 //! blocks; a block runs its steps and then jumps to a target block. Jumping
 //! pops a counted number of scopes, and may push one (branches and loop
@@ -434,6 +434,29 @@ impl MB {
                 | sem::Stmt::WsSend { .. }
                 | sem::Stmt::WsRecv { .. }
                 | sem::Stmt::Careful { .. } => {
+                    self.push_step(cur, Step::Other, Some(st));
+                }
+                // M5 (Appendix L 7.1): the data sentences run through the
+                // evaluator; each is recorded as Step::Other so a resumable
+                // body can still hold one.
+                sem::Stmt::LoadTable { .. }
+                | sem::Stmt::SayData { .. }
+                | sem::Stmt::SayGroup { .. }
+                | sem::Stmt::SayRows { .. }
+                | sem::Stmt::Plot { .. }
+                | sem::Stmt::ForEachRow { .. }
+                | sem::Stmt::Predict { .. }
+                | sem::Stmt::SayModel { .. }
+                | sem::Stmt::SaveModel { .. }
+                | sem::Stmt::LoadModel { .. }
+                | sem::Stmt::OpenDatabase { .. }
+                | sem::Stmt::LoadDatabase { .. }
+                | sem::Stmt::DbAdd { .. }
+                | sem::Stmt::DbRemove { .. }
+                | sem::Stmt::DbSet { .. }
+                | sem::Stmt::Transaction { .. }
+                | sem::Stmt::Limit { .. }
+                | sem::Stmt::AskAssistant { .. } => {
                     self.push_step(cur, Step::Other, Some(st));
                 }
                 sem::Stmt::Note => {}

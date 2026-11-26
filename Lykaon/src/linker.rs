@@ -1,8 +1,8 @@
-//! Locate the Microsoft x64 toolchain (link.exe and the CRT/SDK libraries)
+﻿//! Locate the Microsoft x64 toolchain (link.exe and the CRT/SDK libraries)
 //! and link an lykaon object against liblykaon_rt (M3 backend, section 9:
 //! Microsoft x64 first). The detection order is explicit overrides, then
 //! vswhere, then a version-ordered scan of the Visual Studio and Windows SDK
-//! install roots — the same paths the environment probe verified.
+//! install roots â€” the same paths the environment probe verified.
 
 use std::path::{Path, PathBuf};
 
@@ -214,6 +214,8 @@ pub fn link(obj: &Path, rt_lib: &Path, out: &Path) -> Result<(), String> {
         .arg("/MACHINE:X64")
         .arg("/SUBSYSTEM:CONSOLE")
         .arg("/INCREMENTAL:NO")
+        // /BREPRO: write a constant PE timestamp (reproducible builds).
+        .arg("/BREPRO")
         .arg(format!("/OUT:{}", out.display()))
         .arg(obj)
         .arg(rt_lib);

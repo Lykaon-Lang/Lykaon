@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_sum_to_hole/input.lykaon, line 1: Say sum of 1 to 100 sorted.
+                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the sum of 1 to 100, sorted, or the sum of 1 to 100 sorted.
+Fix: Split it into two sentences.
+

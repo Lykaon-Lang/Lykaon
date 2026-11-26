@@ -1,0 +1,3750 @@
+{
+ "kind": "grammar",
+ "items": [
+  {
+   "id": "G1",
+   "milestone": "M1a",
+   "name": "WORD",
+   "status": "covered"
+  },
+  {
+   "id": "G2",
+   "milestone": "M1a",
+   "name": "NUMBER",
+   "status": "covered"
+  },
+  {
+   "id": "G3",
+   "milestone": "M1a",
+   "name": "NAME",
+   "status": "covered"
+  },
+  {
+   "id": "G4",
+   "milestone": "M1a",
+   "name": "TEXT",
+   "status": "covered"
+  },
+  {
+   "id": "G5",
+   "milestone": "M1a",
+   "name": "TEXT_WITH_NAMES",
+   "status": "covered"
+  },
+  {
+   "id": "G6",
+   "milestone": "M1a",
+   "name": "TEXT_LINE",
+   "status": "covered"
+  },
+  {
+   "id": "G7",
+   "milestone": "M1a",
+   "name": "NEWLINE",
+   "status": "covered"
+  },
+  {
+   "id": "G8",
+   "milestone": "M1a",
+   "name": "INDENT",
+   "status": "covered"
+  },
+  {
+   "id": "G9",
+   "milestone": "M1a",
+   "name": "DEDENT",
+   "status": "covered"
+  },
+  {
+   "id": "G10",
+   "milestone": "M1a",
+   "name": "sentence_end",
+   "status": "covered"
+  },
+  {
+   "id": "G11",
+   "milestone": "M1a",
+   "name": "program",
+   "status": "covered"
+  },
+  {
+   "id": "G12",
+   "milestone": "M1a",
+   "name": "top_item",
+   "status": "covered"
+  },
+  {
+   "id": "G13",
+   "milestone": "M1a",
+   "name": "statement",
+   "status": "covered"
+  },
+  {
+   "id": "G14",
+   "milestone": "M1a",
+   "name": "simple_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G15",
+   "milestone": "M1a",
+   "name": "block_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G16",
+   "milestone": "M1a",
+   "name": "block",
+   "status": "covered"
+  },
+  {
+   "id": "G17",
+   "milestone": "M1a",
+   "name": "pattern_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G18",
+   "milestone": "M1a",
+   "name": "pattern_block",
+   "status": "covered"
+  },
+  {
+   "id": "G19",
+   "milestone": "M1a",
+   "name": "simple_stmt_no_period",
+   "status": "covered"
+  },
+  {
+   "id": "G20",
+   "milestone": "M1a",
+   "name": "one_line_action",
+   "status": "covered"
+  },
+  {
+   "id": "G21",
+   "milestone": "M1a",
+   "name": "note",
+   "status": "covered"
+  },
+  {
+   "id": "G22",
+   "milestone": "M1a",
+   "name": "about_block",
+   "status": "covered"
+  },
+  {
+   "id": "G23",
+   "milestone": "M1a",
+   "name": "define",
+   "status": "covered"
+  },
+  {
+   "id": "G24",
+   "milestone": "M1a",
+   "name": "changeable",
+   "status": "covered"
+  },
+  {
+   "id": "G25",
+   "milestone": "M1a",
+   "name": "const_def",
+   "status": "covered"
+  },
+  {
+   "id": "G26",
+   "milestone": "M1a",
+   "name": "set",
+   "status": "covered"
+  },
+  {
+   "id": "G27",
+   "milestone": "M1a",
+   "name": "say",
+   "status": "covered"
+  },
+  {
+   "id": "G28",
+   "milestone": "M1a",
+   "name": "say_question",
+   "status": "covered"
+  },
+  {
+   "id": "G29",
+   "milestone": "M1a",
+   "name": "say_lines",
+   "status": "covered"
+  },
+  {
+   "id": "G30",
+   "milestone": "M1a",
+   "name": "say_value",
+   "status": "covered"
+  },
+  {
+   "id": "G31",
+   "milestone": "M1a",
+   "name": "say_text",
+   "status": "covered"
+  },
+  {
+   "id": "G32",
+   "milestone": "M1a",
+   "name": "fmt",
+   "status": "covered"
+  },
+  {
+   "id": "G33",
+   "milestone": "M1a",
+   "name": "ask",
+   "status": "covered"
+  },
+  {
+   "id": "G34",
+   "milestone": "M1a",
+   "name": "stop",
+   "status": "covered"
+  },
+  {
+   "id": "G35",
+   "milestone": "M1a",
+   "name": "skip",
+   "status": "covered"
+  },
+  {
+   "id": "G36",
+   "milestone": "M1a",
+   "name": "give_back",
+   "status": "covered"
+  },
+  {
+   "id": "G37",
+   "milestone": "M1a",
+   "name": "hand_back",
+   "status": "covered"
+  },
+  {
+   "id": "G38",
+   "milestone": "M1a",
+   "name": "if_block",
+   "status": "covered"
+  },
+  {
+   "id": "G39",
+   "milestone": "M1a",
+   "name": "if_line",
+   "status": "covered"
+  },
+  {
+   "id": "G40",
+   "milestone": "M1a",
+   "name": "otherwise_block",
+   "status": "covered"
+  },
+  {
+   "id": "G41",
+   "milestone": "M1a",
+   "name": "otherwise_line",
+   "status": "covered"
+  },
+  {
+   "id": "G42",
+   "milestone": "M1a",
+   "name": "repeat_block",
+   "status": "covered"
+  },
+  {
+   "id": "G43",
+   "milestone": "M1a",
+   "name": "repeat_line",
+   "status": "covered"
+  },
+  {
+   "id": "G44",
+   "milestone": "M1a",
+   "name": "for_each_in",
+   "status": "covered"
+  },
+  {
+   "id": "G45",
+   "milestone": "M1a",
+   "name": "for_each_range",
+   "status": "covered"
+  },
+  {
+   "id": "G46",
+   "milestone": "M1a",
+   "name": "try_block",
+   "status": "covered"
+  },
+  {
+   "id": "G47",
+   "milestone": "M1a",
+   "name": "look_block",
+   "status": "covered"
+  },
+  {
+   "id": "G48",
+   "milestone": "M1a",
+   "name": "careful_block",
+   "status": "covered"
+  },
+  {
+   "id": "G49",
+   "milestone": "M1a",
+   "name": "together_block",
+   "status": "covered"
+  },
+  {
+   "id": "G50",
+   "milestone": "M1a",
+   "name": "task_block",
+   "status": "covered"
+  },
+  {
+   "id": "G51",
+   "milestone": "M1a",
+   "name": "function_def",
+   "status": "covered"
+  },
+  {
+   "id": "G52",
+   "milestone": "M1a",
+   "name": "param",
+   "status": "covered"
+  },
+  {
+   "id": "G53",
+   "milestone": "M1a",
+   "name": "record_def",
+   "status": "covered"
+  },
+  {
+   "id": "G54",
+   "milestone": "M1a",
+   "name": "field",
+   "status": "covered"
+  },
+  {
+   "id": "G55",
+   "milestone": "M1a",
+   "name": "enum_def",
+   "status": "covered"
+  },
+  {
+   "id": "G56",
+   "milestone": "M1a",
+   "name": "variant",
+   "status": "covered"
+  },
+  {
+   "id": "G57",
+   "milestone": "M1a",
+   "name": "interface_def",
+   "status": "covered"
+  },
+  {
+   "id": "G58",
+   "milestone": "M1a",
+   "name": "impl_def",
+   "status": "covered"
+  },
+  {
+   "id": "G59",
+   "milestone": "M1a",
+   "name": "use_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G60",
+   "milestone": "M1a",
+   "name": "share_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G61",
+   "milestone": "M1a",
+   "name": "test_block",
+   "status": "covered"
+  },
+  {
+   "id": "G62",
+   "milestone": "M1a",
+   "name": "check",
+   "status": "covered"
+  },
+  {
+   "id": "G63",
+   "milestone": "M1a",
+   "name": "check_fails",
+   "status": "covered"
+  },
+  {
+   "id": "G64",
+   "milestone": "M1a",
+   "name": "check_any",
+   "status": "covered"
+  },
+  {
+   "id": "G65",
+   "milestone": "M1a",
+   "name": "example_block",
+   "status": "covered"
+  },
+  {
+   "id": "G66",
+   "milestone": "M1a",
+   "name": "pretend_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G67",
+   "milestone": "M1a",
+   "name": "cond",
+   "status": "covered"
+  },
+  {
+   "id": "G68",
+   "milestone": "M1a",
+   "name": "comparison",
+   "status": "covered"
+  },
+  {
+   "id": "G69",
+   "milestone": "M1a",
+   "name": "question_pattern",
+   "status": "covered"
+  },
+  {
+   "id": "G70",
+   "milestone": "M1a",
+   "name": "cmp",
+   "status": "covered"
+  },
+  {
+   "id": "G71",
+   "milestone": "M1a",
+   "name": "expr",
+   "status": "covered"
+  },
+  {
+   "id": "G72",
+   "milestone": "M1a",
+   "name": "BINOP",
+   "status": "covered"
+  },
+  {
+   "id": "G73",
+   "milestone": "M1a",
+   "name": "postfix",
+   "status": "covered"
+  },
+  {
+   "id": "G74",
+   "milestone": "M1a",
+   "name": "operand",
+   "status": "covered"
+  },
+  {
+   "id": "G75",
+   "milestone": "M1a",
+   "name": "property",
+   "status": "covered"
+  },
+  {
+   "id": "G76",
+   "milestone": "M1a",
+   "name": "pronoun",
+   "status": "covered"
+  },
+  {
+   "id": "G77",
+   "milestone": "M1a",
+   "name": "literal",
+   "status": "covered"
+  },
+  {
+   "id": "G78",
+   "milestone": "M1a",
+   "name": "function_name",
+   "status": "covered"
+  },
+  {
+   "id": "G79",
+   "milestone": "M1a",
+   "name": "call",
+   "status": "covered"
+  },
+  {
+   "id": "G80",
+   "milestone": "M1a",
+   "name": "list_value",
+   "status": "covered"
+  },
+  {
+   "id": "G81",
+   "milestone": "M1a",
+   "name": "inline_list",
+   "status": "covered"
+  },
+  {
+   "id": "G82",
+   "milestone": "M1a",
+   "name": "array_value",
+   "status": "covered"
+  },
+  {
+   "id": "G83",
+   "milestone": "M1a",
+   "name": "map_value",
+   "status": "covered"
+  },
+  {
+   "id": "G84",
+   "milestone": "M1a",
+   "name": "set_value",
+   "status": "covered"
+  },
+  {
+   "id": "G85",
+   "milestone": "M1a",
+   "name": "queue_value",
+   "status": "covered"
+  },
+  {
+   "id": "G86",
+   "milestone": "M1a",
+   "name": "pair_value",
+   "status": "covered"
+  },
+  {
+   "id": "G87",
+   "milestone": "M1a",
+   "name": "record_make",
+   "status": "covered"
+  },
+  {
+   "id": "G88",
+   "milestone": "M1a",
+   "name": "part_value",
+   "status": "covered"
+  },
+  {
+   "id": "G89",
+   "milestone": "M1a",
+   "name": "variant_value",
+   "status": "covered"
+  },
+  {
+   "id": "G90",
+   "milestone": "M1a",
+   "name": "variant_name",
+   "status": "covered"
+  },
+  {
+   "id": "G91",
+   "milestone": "M1a",
+   "name": "copy_expr",
+   "status": "covered"
+  },
+  {
+   "id": "G92",
+   "milestone": "M1a",
+   "name": "give_expr",
+   "status": "covered"
+  },
+  {
+   "id": "G93",
+   "milestone": "M1a",
+   "name": "add_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G94",
+   "milestone": "M1a",
+   "name": "remove_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G95",
+   "milestone": "M1a",
+   "name": "remove_first",
+   "status": "covered"
+  },
+  {
+   "id": "G96",
+   "milestone": "M1a",
+   "name": "put_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G97",
+   "milestone": "M1a",
+   "name": "failing_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G98",
+   "milestone": "M1a",
+   "name": "failing_stmt_no_period",
+   "status": "covered"
+  },
+  {
+   "id": "G99",
+   "milestone": "M1a",
+   "name": "recover_line",
+   "status": "covered"
+  },
+  {
+   "id": "G100",
+   "milestone": "M1a",
+   "name": "fail_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G101",
+   "milestone": "M1a",
+   "name": "pass_up",
+   "status": "covered"
+  },
+  {
+   "id": "G102",
+   "milestone": "M1a",
+   "name": "stop_program",
+   "status": "covered"
+  },
+  {
+   "id": "G103",
+   "milestone": "M1a",
+   "name": "text_pattern",
+   "status": "covered"
+  },
+  {
+   "id": "G104",
+   "milestone": "M1a",
+   "name": "pattern_part",
+   "status": "covered"
+  },
+  {
+   "id": "G105",
+   "milestone": "M1a",
+   "name": "builtin",
+   "status": "covered"
+  },
+  {
+   "id": "G106",
+   "milestone": "M1a",
+   "name": "type",
+   "status": "covered"
+  },
+  {
+   "id": "G107",
+   "milestone": "M1a",
+   "name": "base_type",
+   "status": "covered"
+  },
+  {
+   "id": "G108",
+   "milestone": "M1a",
+   "name": "names",
+   "status": "covered"
+  },
+  {
+   "id": "G109",
+   "milestone": "M1a",
+   "name": "kind",
+   "status": "covered"
+  },
+  {
+   "id": "G110",
+   "milestone": "M1a",
+   "name": "when_block",
+   "status": "covered"
+  },
+  {
+   "id": "G111",
+   "milestone": "M1a",
+   "name": "place",
+   "status": "covered"
+  },
+  {
+   "id": "G112",
+   "milestone": "M1a",
+   "name": "param_type",
+   "status": "covered"
+  },
+  {
+   "id": "G113",
+   "milestone": "M1a",
+   "name": "limited_type",
+   "status": "covered"
+  },
+  {
+   "id": "G114",
+   "milestone": "M1a",
+   "name": "function_kind",
+   "status": "covered"
+  },
+  {
+   "id": "G115",
+   "milestone": "M1a",
+   "name": "dynamic_kind",
+   "status": "covered"
+  },
+  {
+   "id": "G116",
+   "milestone": "M1a",
+   "name": "default_impl",
+   "status": "covered"
+  },
+  {
+   "id": "G117",
+   "milestone": "M1a",
+   "name": "function_impl",
+   "status": "covered"
+  },
+  {
+   "id": "G118",
+   "milestone": "M1a",
+   "name": "meaning_impl",
+   "status": "covered"
+  },
+  {
+   "id": "G119",
+   "milestone": "M1a",
+   "name": "apply_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G120",
+   "milestone": "M1a",
+   "name": "combine_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G121",
+   "milestone": "M1a",
+   "name": "function_ref",
+   "status": "covered"
+  },
+  {
+   "id": "G122",
+   "milestone": "M1a",
+   "name": "operator_word",
+   "status": "covered"
+  },
+  {
+   "id": "G123",
+   "milestone": "M1a",
+   "name": "where_expr",
+   "status": "covered"
+  },
+  {
+   "id": "G124",
+   "milestone": "M1a",
+   "name": "sequence_read",
+   "status": "covered"
+  },
+  {
+   "id": "G125",
+   "milestone": "M1a",
+   "name": "give_back_typed",
+   "status": "covered"
+  },
+  {
+   "id": "G126",
+   "milestone": "M1a",
+   "name": "requires_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G127",
+   "milestone": "M1a",
+   "name": "ensures_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G128",
+   "milestone": "M1a",
+   "name": "always_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G129",
+   "milestone": "M1a",
+   "name": "tag_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G130",
+   "milestone": "M1a",
+   "name": "contract_position",
+   "status": "covered"
+  },
+  {
+   "id": "G131",
+   "milestone": "M1a",
+   "name": "definition_with_tag",
+   "status": "covered"
+  },
+  {
+   "id": "G132",
+   "milestone": "M1a",
+   "name": "package_file",
+   "status": "covered"
+  },
+  {
+   "id": "G133",
+   "milestone": "M1a",
+   "name": "package_sentence",
+   "status": "covered"
+  },
+  {
+   "id": "G134",
+   "milestone": "M1a",
+   "name": "name_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G135",
+   "milestone": "M1a",
+   "name": "version_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G136",
+   "milestone": "M1a",
+   "name": "version",
+   "status": "covered"
+  },
+  {
+   "id": "G137",
+   "milestone": "M1a",
+   "name": "edition_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G138",
+   "milestone": "M1a",
+   "name": "entry_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G139",
+   "milestone": "M1a",
+   "name": "needs_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G140",
+   "milestone": "M1a",
+   "name": "version_req",
+   "status": "covered"
+  },
+  {
+   "id": "G141",
+   "milestone": "M1a",
+   "name": "allows_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G142",
+   "milestone": "M1a",
+   "name": "permission",
+   "status": "covered"
+  },
+  {
+   "id": "G143",
+   "milestone": "M1a",
+   "name": "lock_file",
+   "status": "covered"
+  },
+  {
+   "id": "G144",
+   "milestone": "M1a",
+   "name": "lock_sentence",
+   "status": "covered"
+  },
+  {
+   "id": "G145",
+   "milestone": "M1a",
+   "name": "type_extra",
+   "status": "covered"
+  },
+  {
+   "id": "G146",
+   "milestone": "M1a",
+   "name": "contract_in_one_line",
+   "status": "covered"
+  },
+  {
+   "id": "G147",
+   "milestone": "M1a",
+   "name": "wait_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G148",
+   "milestone": "M1a",
+   "name": "sleep_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G149",
+   "milestone": "M1a",
+   "name": "duration_value",
+   "status": "covered"
+  },
+  {
+   "id": "G150",
+   "milestone": "M1a",
+   "name": "time_unit",
+   "status": "covered"
+  },
+  {
+   "id": "G151",
+   "milestone": "M1a",
+   "name": "channel_value",
+   "status": "covered"
+  },
+  {
+   "id": "G152",
+   "milestone": "M1a",
+   "name": "guarded_value",
+   "status": "covered"
+  },
+  {
+   "id": "G153",
+   "milestone": "M1a",
+   "name": "atomic_value",
+   "status": "covered"
+  },
+  {
+   "id": "G154",
+   "milestone": "M1a",
+   "name": "counter_value",
+   "status": "covered"
+  },
+  {
+   "id": "G155",
+   "milestone": "M1a",
+   "name": "send_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G156",
+   "milestone": "M1a",
+   "name": "receive_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G157",
+   "milestone": "M1a",
+   "name": "atomic_add",
+   "status": "covered"
+  },
+  {
+   "id": "G158",
+   "milestone": "M1a",
+   "name": "after_block",
+   "status": "covered"
+  },
+  {
+   "id": "G159",
+   "milestone": "M1a",
+   "name": "every_block",
+   "status": "covered"
+  },
+  {
+   "id": "G160",
+   "milestone": "M1a",
+   "name": "stream_loop",
+   "status": "covered"
+  },
+  {
+   "id": "G161",
+   "milestone": "M1a",
+   "name": "workers_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G162",
+   "milestone": "M1a",
+   "name": "spread_block",
+   "status": "covered"
+  },
+  {
+   "id": "G163",
+   "milestone": "M1a",
+   "name": "stop_task",
+   "status": "covered"
+  },
+  {
+   "id": "G164",
+   "milestone": "M1a",
+   "name": "run_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G165",
+   "milestone": "M1a",
+   "name": "exit_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G166",
+   "milestone": "M1a",
+   "name": "signal_block",
+   "status": "covered"
+  },
+  {
+   "id": "G167",
+   "milestone": "M1a",
+   "name": "signal_name",
+   "status": "covered"
+  },
+  {
+   "id": "G168",
+   "milestone": "M1a",
+   "name": "environment_read",
+   "status": "covered"
+  },
+  {
+   "id": "G169",
+   "milestone": "M1a",
+   "name": "takes_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G170",
+   "milestone": "M1a",
+   "name": "option_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G171",
+   "milestone": "M1a",
+   "name": "input_read",
+   "status": "covered"
+  },
+  {
+   "id": "G172",
+   "milestone": "M1a",
+   "name": "file_ref",
+   "status": "covered"
+  },
+  {
+   "id": "G173",
+   "milestone": "M1a",
+   "name": "file_name_words",
+   "status": "covered"
+  },
+  {
+   "id": "G174",
+   "milestone": "M1a",
+   "name": "extension",
+   "status": "covered"
+  },
+  {
+   "id": "G175",
+   "milestone": "M1a",
+   "name": "folder_step",
+   "status": "covered"
+  },
+  {
+   "id": "G176",
+   "milestone": "M1a",
+   "name": "root",
+   "status": "covered"
+  },
+  {
+   "id": "G177",
+   "milestone": "M1a",
+   "name": "folder_ref",
+   "status": "covered"
+  },
+  {
+   "id": "G178",
+   "milestone": "M1a",
+   "name": "read_file",
+   "status": "covered"
+  },
+  {
+   "id": "G179",
+   "milestone": "M1a",
+   "name": "read_bytes",
+   "status": "covered"
+  },
+  {
+   "id": "G180",
+   "milestone": "M1a",
+   "name": "write_file",
+   "status": "covered"
+  },
+  {
+   "id": "G181",
+   "milestone": "M1a",
+   "name": "append_file",
+   "status": "covered"
+  },
+  {
+   "id": "G182",
+   "milestone": "M1a",
+   "name": "replace_file",
+   "status": "covered"
+  },
+  {
+   "id": "G183",
+   "milestone": "M1a",
+   "name": "for_each_line",
+   "status": "covered"
+  },
+  {
+   "id": "G184",
+   "milestone": "M1a",
+   "name": "make_folder",
+   "status": "covered"
+  },
+  {
+   "id": "G185",
+   "milestone": "M1a",
+   "name": "remove_file",
+   "status": "covered"
+  },
+  {
+   "id": "G186",
+   "milestone": "M1a",
+   "name": "move_file",
+   "status": "covered"
+  },
+  {
+   "id": "G187",
+   "milestone": "M1a",
+   "name": "duplicate_file",
+   "status": "covered"
+  },
+  {
+   "id": "G188",
+   "milestone": "M1a",
+   "name": "list_folder",
+   "status": "covered"
+  },
+  {
+   "id": "G189",
+   "milestone": "M1a",
+   "name": "file_question",
+   "status": "covered"
+  },
+  {
+   "id": "G190",
+   "milestone": "M1a",
+   "name": "temp_file",
+   "status": "covered"
+  },
+  {
+   "id": "G191",
+   "milestone": "M1a",
+   "name": "file_watch",
+   "status": "covered"
+  },
+  {
+   "id": "G192",
+   "milestone": "M1a",
+   "name": "zip_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G193",
+   "milestone": "M1a",
+   "name": "read_format",
+   "status": "covered"
+  },
+  {
+   "id": "G194",
+   "milestone": "M1a",
+   "name": "read_text_format",
+   "status": "covered"
+  },
+  {
+   "id": "G195",
+   "milestone": "M1a",
+   "name": "save_format",
+   "status": "covered"
+  },
+  {
+   "id": "G196",
+   "milestone": "M1a",
+   "name": "format_text",
+   "status": "covered"
+  },
+  {
+   "id": "G197",
+   "milestone": "M1a",
+   "name": "format_word",
+   "status": "covered"
+  },
+  {
+   "id": "G198",
+   "milestone": "M1a",
+   "name": "date_value",
+   "status": "covered"
+  },
+  {
+   "id": "G199",
+   "milestone": "M1a",
+   "name": "moment_value",
+   "status": "covered"
+  },
+  {
+   "id": "G200",
+   "milestone": "M1a",
+   "name": "time_arith",
+   "status": "covered"
+  },
+  {
+   "id": "G201",
+   "milestone": "M1a",
+   "name": "random_read",
+   "status": "covered"
+  },
+  {
+   "id": "G202",
+   "milestone": "M1a",
+   "name": "seed_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G203",
+   "milestone": "M1a",
+   "name": "hash_read",
+   "status": "covered"
+  },
+  {
+   "id": "G204",
+   "milestone": "M1a",
+   "name": "secret_value",
+   "status": "covered"
+  },
+  {
+   "id": "G205",
+   "milestone": "M1a",
+   "name": "reveal_read",
+   "status": "covered"
+  },
+  {
+   "id": "G206",
+   "milestone": "M1a",
+   "name": "address",
+   "status": "covered"
+  },
+  {
+   "id": "G207",
+   "milestone": "M1a",
+   "name": "scheme",
+   "status": "covered"
+  },
+  {
+   "id": "G208",
+   "milestone": "M1a",
+   "name": "host_words",
+   "status": "covered"
+  },
+  {
+   "id": "G209",
+   "milestone": "M1a",
+   "name": "port",
+   "status": "covered"
+  },
+  {
+   "id": "G210",
+   "milestone": "M1a",
+   "name": "fetch_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G211",
+   "milestone": "M1a",
+   "name": "fetch_clause",
+   "status": "covered"
+  },
+  {
+   "id": "G212",
+   "milestone": "M1a",
+   "name": "method_word",
+   "status": "covered"
+  },
+  {
+   "id": "G213",
+   "milestone": "M1a",
+   "name": "post_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G214",
+   "milestone": "M1a",
+   "name": "serve_block",
+   "status": "covered"
+  },
+  {
+   "id": "G215",
+   "milestone": "M1a",
+   "name": "tls_clause",
+   "status": "covered"
+  },
+  {
+   "id": "G216",
+   "milestone": "M1a",
+   "name": "when_someone",
+   "status": "covered"
+  },
+  {
+   "id": "G217",
+   "milestone": "M1a",
+   "name": "http_word",
+   "status": "covered"
+  },
+  {
+   "id": "G218",
+   "milestone": "M1a",
+   "name": "live_block",
+   "status": "covered"
+  },
+  {
+   "id": "G219",
+   "milestone": "M1a",
+   "name": "respond_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G220",
+   "milestone": "M1a",
+   "name": "request_read",
+   "status": "covered"
+  },
+  {
+   "id": "G221",
+   "milestone": "M1a",
+   "name": "page_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G222",
+   "milestone": "M1a",
+   "name": "path_segments",
+   "status": "covered"
+  },
+  {
+   "id": "G223",
+   "milestone": "M1a",
+   "name": "segment",
+   "status": "covered"
+  },
+  {
+   "id": "G224",
+   "milestone": "M1a",
+   "name": "log_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G225",
+   "milestone": "M1a",
+   "name": "level",
+   "status": "covered"
+  },
+  {
+   "id": "G226",
+   "milestone": "M1a",
+   "name": "log_level_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G227",
+   "milestone": "M1a",
+   "name": "needs_git",
+   "status": "covered"
+  },
+  {
+   "id": "G228",
+   "milestone": "M5",
+   "name": "load_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G229",
+   "milestone": "M1a",
+   "name": "table_ref",
+   "status": "covered"
+  },
+  {
+   "id": "G230",
+   "milestone": "M1a",
+   "name": "column_words",
+   "status": "covered"
+  },
+  {
+   "id": "G231",
+   "milestone": "M1a",
+   "name": "stat_word",
+   "status": "covered"
+  },
+  {
+   "id": "G232",
+   "milestone": "M1a",
+   "name": "data_item",
+   "status": "covered"
+  },
+  {
+   "id": "G233",
+   "milestone": "M1a",
+   "name": "say_data",
+   "status": "covered"
+  },
+  {
+   "id": "G234",
+   "milestone": "M1a",
+   "name": "group_say",
+   "status": "covered"
+  },
+  {
+   "id": "G235",
+   "milestone": "M1a",
+   "name": "group_all",
+   "status": "covered"
+  },
+  {
+   "id": "G236",
+   "milestone": "M1a",
+   "name": "group_hole",
+   "status": "covered"
+  },
+  {
+   "id": "G237",
+   "milestone": "M1a",
+   "name": "row_say",
+   "status": "covered"
+  },
+  {
+   "id": "G238",
+   "milestone": "M1a",
+   "name": "for_each_row",
+   "status": "covered"
+  },
+  {
+   "id": "G239",
+   "milestone": "M5",
+   "name": "plot_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G240",
+   "milestone": "M1a",
+   "name": "chart_kind",
+   "status": "covered"
+  },
+  {
+   "id": "G241",
+   "milestone": "M1a",
+   "name": "where_rows",
+   "status": "covered"
+  },
+  {
+   "id": "G242",
+   "milestone": "M1a",
+   "name": "save_table",
+   "status": "covered"
+  },
+  {
+   "id": "G243",
+   "milestone": "M5",
+   "name": "predict_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G244",
+   "milestone": "M1a",
+   "name": "model_name",
+   "status": "covered"
+  },
+  {
+   "id": "G245",
+   "milestone": "M1a",
+   "name": "say_model",
+   "status": "covered"
+  },
+  {
+   "id": "G246",
+   "milestone": "M1a",
+   "name": "model_item",
+   "status": "covered"
+  },
+  {
+   "id": "G247",
+   "milestone": "M5",
+   "name": "save_model",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G248",
+   "milestone": "M5",
+   "name": "load_model",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G249",
+   "milestone": "M5",
+   "name": "assistant_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G250",
+   "milestone": "M1a",
+   "name": "vector_value",
+   "status": "covered"
+  },
+  {
+   "id": "G251",
+   "milestone": "M1a",
+   "name": "vector_read",
+   "status": "covered"
+  },
+  {
+   "id": "G252",
+   "milestone": "M1a",
+   "name": "open_db",
+   "status": "covered"
+  },
+  {
+   "id": "G253",
+   "milestone": "M1a",
+   "name": "db_load",
+   "status": "covered"
+  },
+  {
+   "id": "G254",
+   "milestone": "M1a",
+   "name": "db_add",
+   "status": "covered"
+  },
+  {
+   "id": "G255",
+   "milestone": "M1a",
+   "name": "db_remove",
+   "status": "covered"
+  },
+  {
+   "id": "G256",
+   "milestone": "M1a",
+   "name": "db_set",
+   "status": "covered"
+  },
+  {
+   "id": "G257",
+   "milestone": "M5",
+   "name": "transaction_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G258",
+   "milestone": "M1a",
+   "name": "migration_file",
+   "status": "covered"
+  },
+  {
+   "id": "G259",
+   "milestone": "M1a",
+   "name": "migration_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G260",
+   "milestone": "M1a",
+   "name": "limit_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G261",
+   "milestone": "M1a",
+   "name": "memory_unit",
+   "status": "covered"
+  },
+  {
+   "id": "G262",
+   "milestone": "M5",
+   "name": "encrypt_expr",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G263",
+   "milestone": "M5",
+   "name": "decrypt_expr",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G264",
+   "milestone": "M1a",
+   "name": "key_expr",
+   "status": "covered"
+  },
+  {
+   "id": "G265",
+   "milestone": "M5",
+   "name": "screen_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G266",
+   "milestone": "M1a",
+   "name": "show_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G267",
+   "milestone": "M1a",
+   "name": "show_title",
+   "status": "covered"
+  },
+  {
+   "id": "G268",
+   "milestone": "M1a",
+   "name": "show_text",
+   "status": "covered"
+  },
+  {
+   "id": "G269",
+   "milestone": "M1a",
+   "name": "show_button",
+   "status": "covered"
+  },
+  {
+   "id": "G270",
+   "milestone": "M1a",
+   "name": "show_field",
+   "status": "covered"
+  },
+  {
+   "id": "G271",
+   "milestone": "M1a",
+   "name": "show_picture",
+   "status": "covered"
+  },
+  {
+   "id": "G272",
+   "milestone": "M1a",
+   "name": "show_list",
+   "status": "covered"
+  },
+  {
+   "id": "G273",
+   "milestone": "M1a",
+   "name": "show_table",
+   "status": "covered"
+  },
+  {
+   "id": "G274",
+   "milestone": "M1a",
+   "name": "show_chart",
+   "status": "covered"
+  },
+  {
+   "id": "G275",
+   "milestone": "M5",
+   "name": "layout_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G276",
+   "milestone": "M5",
+   "name": "event_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G277",
+   "milestone": "M5",
+   "name": "receive_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G278",
+   "milestone": "M1a",
+   "name": "button_event",
+   "status": "covered"
+  },
+  {
+   "id": "G279",
+   "milestone": "M1a",
+   "name": "field_event",
+   "status": "covered"
+  },
+  {
+   "id": "G280",
+   "milestone": "M1a",
+   "name": "open_event",
+   "status": "covered"
+  },
+  {
+   "id": "G281",
+   "milestone": "M1a",
+   "name": "navigation",
+   "status": "covered"
+  },
+  {
+   "id": "G282",
+   "milestone": "M5",
+   "name": "style_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G283",
+   "milestone": "M1a",
+   "name": "style_target",
+   "status": "covered"
+  },
+  {
+   "id": "G284",
+   "milestone": "M1a",
+   "name": "widget_kind",
+   "status": "covered"
+  },
+  {
+   "id": "G285",
+   "milestone": "M1a",
+   "name": "style_def",
+   "status": "covered"
+  },
+  {
+   "id": "G286",
+   "milestone": "M5",
+   "name": "theme_use",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G287",
+   "milestone": "M5",
+   "name": "theme_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G288",
+   "milestone": "M1a",
+   "name": "theme_def_line",
+   "status": "covered"
+  },
+  {
+   "id": "G289",
+   "milestone": "M1a",
+   "name": "theme_name",
+   "status": "covered"
+  },
+  {
+   "id": "G290",
+   "milestone": "M5",
+   "name": "responsive_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G291",
+   "milestone": "M5",
+   "name": "describe_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G292",
+   "milestone": "M1a",
+   "name": "color_name",
+   "status": "covered"
+  },
+  {
+   "id": "G293",
+   "milestone": "M1a",
+   "name": "size_name",
+   "status": "covered"
+  },
+  {
+   "id": "G294",
+   "milestone": "M1a",
+   "name": "shape_name",
+   "status": "covered"
+  },
+  {
+   "id": "G295",
+   "milestone": "M5",
+   "name": "c_library",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G296",
+   "milestone": "M5",
+   "name": "share_for_c",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G297",
+   "milestone": "M1a",
+   "name": "layout_phrase",
+   "status": "covered"
+  },
+  {
+   "id": "G298",
+   "milestone": "M5",
+   "name": "plugin_load",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G299",
+   "milestone": "M1a",
+   "name": "build_target",
+   "status": "covered"
+  },
+  {
+   "id": "G300",
+   "milestone": "M1a",
+   "name": "installer_suffix",
+   "status": "covered"
+  },
+  {
+   "id": "G301",
+   "milestone": "M1a",
+   "name": "c_stub_file",
+   "status": "covered"
+  },
+  {
+   "id": "G302",
+   "milestone": "M1a",
+   "name": "c_decl",
+   "status": "covered"
+  },
+  {
+   "id": "G303",
+   "milestone": "M1a",
+   "name": "c_kind",
+   "status": "covered"
+  },
+  {
+   "id": "G304",
+   "milestone": "M5",
+   "name": "frame_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G305",
+   "milestone": "M5",
+   "name": "key_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G306",
+   "milestone": "M5",
+   "name": "pointer_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G307",
+   "milestone": "M5",
+   "name": "app_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G308",
+   "milestone": "M1a",
+   "name": "play_sound",
+   "status": "covered"
+  },
+  {
+   "id": "G309",
+   "milestone": "M1a",
+   "name": "stop_sound",
+   "status": "covered"
+  },
+  {
+   "id": "G310",
+   "milestone": "M1a",
+   "name": "game_area",
+   "status": "covered"
+  },
+  {
+   "id": "G311",
+   "milestone": "M1a",
+   "name": "move_picture",
+   "status": "covered"
+  },
+  {
+   "id": "G312",
+   "milestone": "M1a",
+   "name": "hide_picture",
+   "status": "covered"
+  },
+  {
+   "id": "G313",
+   "milestone": "M1a",
+   "name": "touches_question",
+   "status": "covered"
+  },
+  {
+   "id": "G314",
+   "milestone": "M1a",
+   "name": "show_picture_at",
+   "status": "covered"
+  },
+  {
+   "id": "G315",
+   "milestone": "M5",
+   "name": "kernel_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G316",
+   "milestone": "M1a",
+   "name": "gpu_clause",
+   "status": "covered"
+  },
+  {
+   "id": "G317",
+   "milestone": "M5",
+   "name": "predict_gpu",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G318",
+   "milestone": "M5",
+   "name": "gpu_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G319",
+   "milestone": "M1a",
+   "name": "gpu_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G320",
+   "milestone": "M1a",
+   "name": "device_build",
+   "status": "covered"
+  },
+  {
+   "id": "G321",
+   "milestone": "M5",
+   "name": "register_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G322",
+   "milestone": "M1a",
+   "name": "read_register",
+   "status": "covered"
+  },
+  {
+   "id": "G323",
+   "milestone": "M1a",
+   "name": "write_register",
+   "status": "covered"
+  },
+  {
+   "id": "G324",
+   "milestone": "M1a",
+   "name": "intrinsic_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G325",
+   "milestone": "M5",
+   "name": "interrupt_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G326",
+   "milestone": "M1a",
+   "name": "device_file",
+   "status": "covered"
+  },
+  {
+   "id": "G327",
+   "milestone": "M1a",
+   "name": "device_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "G328",
+   "milestone": "M5",
+   "name": "memory_limit",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G329",
+   "milestone": "M5",
+   "name": "use_allocator",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "G330",
+   "milestone": "M1a",
+   "name": "manage_interface",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G1",
+   "milestone": "M2",
+   "name": "list_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G2",
+   "milestone": "M2",
+   "name": "inline_list",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G3",
+   "milestone": "M2",
+   "name": "array_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G4",
+   "milestone": "M2",
+   "name": "map_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G5",
+   "milestone": "M2",
+   "name": "set_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G6",
+   "milestone": "M2",
+   "name": "queue_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G7",
+   "milestone": "M2",
+   "name": "pair_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G8",
+   "milestone": "M2",
+   "name": "collection_def",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G9",
+   "milestone": "M2",
+   "name": "add_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G10",
+   "milestone": "M2",
+   "name": "remove_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G11",
+   "milestone": "M2",
+   "name": "remove_first",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G12",
+   "milestone": "M2",
+   "name": "put_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G13",
+   "milestone": "M2",
+   "name": "collection_read",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G14",
+   "milestone": "M2",
+   "name": "collection_question",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G15",
+   "milestone": "M2",
+   "name": "set_read",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G16",
+   "milestone": "M2",
+   "name": "pair_read",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G17",
+   "milestone": "M2",
+   "name": "text_read",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G18",
+   "milestone": "M2",
+   "name": "record_def",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G19",
+   "milestone": "M2",
+   "name": "record_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G20",
+   "milestone": "M2",
+   "name": "part_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G21",
+   "milestone": "M2",
+   "name": "record_part_read",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G22",
+   "milestone": "M2",
+   "name": "record_change",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G23",
+   "milestone": "M2",
+   "name": "copy_expr",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G24",
+   "milestone": "M2",
+   "name": "give_expr",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G25",
+   "milestone": "M2",
+   "name": "enum_def",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G26",
+   "milestone": "M2",
+   "name": "variant_value",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G27",
+   "milestone": "M2",
+   "name": "look_block",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G28",
+   "milestone": "M2",
+   "name": "when_block",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G29",
+   "milestone": "M2",
+   "name": "maybe_forms",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G30",
+   "milestone": "M2",
+   "name": "text_pattern",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G31",
+   "milestone": "M2",
+   "name": "pattern_part",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G32",
+   "milestone": "M2",
+   "name": "try_block",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G33",
+   "milestone": "M2",
+   "name": "recover_line",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G34",
+   "milestone": "M2",
+   "name": "fail_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G35",
+   "milestone": "M2",
+   "name": "pass_up",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G36",
+   "milestone": "M2",
+   "name": "stop_program",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G37",
+   "milestone": "M2",
+   "name": "pretend_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G38",
+   "milestone": "M2",
+   "name": "check_fails",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G39",
+   "milestone": "M2",
+   "name": "check_any",
+   "status": "covered"
+  },
+  {
+   "id": "M2-G40",
+   "milestone": "M2",
+   "name": "example_block",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G1",
+   "milestone": "M3",
+   "name": "function_def",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G2",
+   "milestone": "M3",
+   "name": "param",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G3",
+   "milestone": "M3",
+   "name": "param_type",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G4",
+   "milestone": "M3",
+   "name": "limited_type",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G5",
+   "milestone": "M3",
+   "name": "function_kind",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G6",
+   "milestone": "M3",
+   "name": "dynamic_kind",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G7",
+   "milestone": "M3",
+   "name": "interface_def",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G8",
+   "milestone": "M3",
+   "name": "default_impl",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G9",
+   "milestone": "M3",
+   "name": "impl_def",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G10",
+   "milestone": "M3",
+   "name": "function_impl",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G11",
+   "milestone": "M3",
+   "name": "meaning_impl",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G12",
+   "milestone": "M3",
+   "name": "apply_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G13",
+   "milestone": "M3",
+   "name": "combine_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G14",
+   "milestone": "M3",
+   "name": "function_ref",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G15",
+   "milestone": "M3",
+   "name": "operator_word",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G16",
+   "milestone": "M3",
+   "name": "where_expr",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G17",
+   "milestone": "M3",
+   "name": "hand_back",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G18",
+   "milestone": "M3",
+   "name": "sequence_read",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G19",
+   "milestone": "M3",
+   "name": "give_back_typed",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G20",
+   "milestone": "M3",
+   "name": "requires_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G21",
+   "milestone": "M3",
+   "name": "ensures_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G22",
+   "milestone": "M3",
+   "name": "always_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G23",
+   "milestone": "M3",
+   "name": "tag_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G24",
+   "milestone": "M3",
+   "name": "contract_position",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G25",
+   "milestone": "M3",
+   "name": "definition_with_tag",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G26",
+   "milestone": "M3",
+   "name": "package_file",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G27",
+   "milestone": "M3",
+   "name": "package_sentence",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G28",
+   "milestone": "M3",
+   "name": "name_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G29",
+   "milestone": "M3",
+   "name": "version_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G30",
+   "milestone": "M3",
+   "name": "version",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G31",
+   "milestone": "M3",
+   "name": "edition_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G32",
+   "milestone": "M3",
+   "name": "entry_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G33",
+   "milestone": "M3",
+   "name": "needs_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G34",
+   "milestone": "M3",
+   "name": "version_req",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G35",
+   "milestone": "M3",
+   "name": "allows_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G36",
+   "milestone": "M3",
+   "name": "permission",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G37",
+   "milestone": "M3",
+   "name": "lock_file",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G38",
+   "milestone": "M3",
+   "name": "lock_sentence",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G39",
+   "milestone": "M3",
+   "name": "type_extra",
+   "status": "covered"
+  },
+  {
+   "id": "M3-G40",
+   "milestone": "M3",
+   "name": "contract_in_one_line",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G1",
+   "milestone": "M4",
+   "name": "task_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G2",
+   "milestone": "M4",
+   "name": "together_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G3",
+   "milestone": "M4",
+   "name": "wait_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G4",
+   "milestone": "M4",
+   "name": "sleep_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G5",
+   "milestone": "M4",
+   "name": "duration_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G6",
+   "milestone": "M4",
+   "name": "time_unit",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G7",
+   "milestone": "M4",
+   "name": "channel_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G8",
+   "milestone": "M4",
+   "name": "guarded_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G9",
+   "milestone": "M4",
+   "name": "atomic_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G10",
+   "milestone": "M4",
+   "name": "counter_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G11",
+   "milestone": "M4",
+   "name": "send_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G12",
+   "milestone": "M4",
+   "name": "receive_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G13",
+   "milestone": "M4",
+   "name": "atomic_add",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G14",
+   "milestone": "M4",
+   "name": "after_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G15",
+   "milestone": "M4",
+   "name": "every_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G16",
+   "milestone": "M4",
+   "name": "stream_loop",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G17",
+   "milestone": "M4",
+   "name": "workers_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G18",
+   "milestone": "M4",
+   "name": "spread_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G19",
+   "milestone": "M4",
+   "name": "stop_task",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G20",
+   "milestone": "M4",
+   "name": "run_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G21",
+   "milestone": "M4",
+   "name": "exit_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G22",
+   "milestone": "M4",
+   "name": "signal_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G23",
+   "milestone": "M4",
+   "name": "signal_name",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G24",
+   "milestone": "M4",
+   "name": "environment_read",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G25",
+   "milestone": "M4",
+   "name": "takes_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G26",
+   "milestone": "M4",
+   "name": "option_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G27",
+   "milestone": "M4",
+   "name": "input_read",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G28",
+   "milestone": "M4",
+   "name": "file_ref",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G29",
+   "milestone": "M4",
+   "name": "file_name_words",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G30",
+   "milestone": "M4",
+   "name": "extension",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G31",
+   "milestone": "M4",
+   "name": "folder_step",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G32",
+   "milestone": "M4",
+   "name": "root",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G33",
+   "milestone": "M4",
+   "name": "folder_ref",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G34",
+   "milestone": "M4",
+   "name": "read_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G35",
+   "milestone": "M4",
+   "name": "read_bytes",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G36",
+   "milestone": "M4",
+   "name": "write_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G37",
+   "milestone": "M4",
+   "name": "append_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G38",
+   "milestone": "M4",
+   "name": "replace_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G39",
+   "milestone": "M4",
+   "name": "for_each_line",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G40",
+   "milestone": "M4",
+   "name": "make_folder",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G41",
+   "milestone": "M4",
+   "name": "remove_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G42",
+   "milestone": "M4",
+   "name": "move_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G43",
+   "milestone": "M4",
+   "name": "duplicate_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G44",
+   "milestone": "M4",
+   "name": "list_folder",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G45",
+   "milestone": "M4",
+   "name": "file_question",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G46",
+   "milestone": "M4",
+   "name": "temp_file",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G47",
+   "milestone": "M4",
+   "name": "file_watch",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G48",
+   "milestone": "M4",
+   "name": "zip_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G49",
+   "milestone": "M4",
+   "name": "read_format",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G50",
+   "milestone": "M4",
+   "name": "read_text_format",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G51",
+   "milestone": "M4",
+   "name": "save_format",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G52",
+   "milestone": "M4",
+   "name": "format_text",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G53",
+   "milestone": "M4",
+   "name": "format_word",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G54",
+   "milestone": "M4",
+   "name": "date_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G55",
+   "milestone": "M4",
+   "name": "moment_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G56",
+   "milestone": "M4",
+   "name": "time_arith",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G57",
+   "milestone": "M4",
+   "name": "random_read",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G58",
+   "milestone": "M4",
+   "name": "seed_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G59",
+   "milestone": "M4",
+   "name": "hash_read",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G60",
+   "milestone": "M4",
+   "name": "secret_value",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G61",
+   "milestone": "M4",
+   "name": "reveal_read",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G62",
+   "milestone": "M4",
+   "name": "address",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G63",
+   "milestone": "M4",
+   "name": "scheme",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G64",
+   "milestone": "M4",
+   "name": "host_words",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G65",
+   "milestone": "M4",
+   "name": "port",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G66",
+   "milestone": "M4",
+   "name": "place",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G67",
+   "milestone": "M4",
+   "name": "fetch_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G68",
+   "milestone": "M4",
+   "name": "fetch_clause",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G69",
+   "milestone": "M4",
+   "name": "method_word",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G70",
+   "milestone": "M4",
+   "name": "post_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G71",
+   "milestone": "M4",
+   "name": "serve_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G72",
+   "milestone": "M4",
+   "name": "tls_clause",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G73",
+   "milestone": "M4",
+   "name": "when_someone",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G74",
+   "milestone": "M4",
+   "name": "http_word",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G75",
+   "milestone": "M4",
+   "name": "live_block",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G76",
+   "milestone": "M4",
+   "name": "respond_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G77",
+   "milestone": "M4",
+   "name": "request_read",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G78",
+   "milestone": "M4",
+   "name": "page_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G79",
+   "milestone": "M4",
+   "name": "path_segments",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G80",
+   "milestone": "M4",
+   "name": "segment",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G81",
+   "milestone": "M4",
+   "name": "log_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G82",
+   "milestone": "M4",
+   "name": "level",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G83",
+   "milestone": "M4",
+   "name": "log_level_stmt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-G84",
+   "milestone": "M4",
+   "name": "needs_git",
+   "status": "covered"
+  },
+  {
+   "id": "M5-G1",
+   "milestone": "M5",
+   "name": "load_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G2",
+   "milestone": "M5",
+   "name": "table_ref",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G3",
+   "milestone": "M5",
+   "name": "column_words",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G4",
+   "milestone": "M5",
+   "name": "stat_word",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G5",
+   "milestone": "M5",
+   "name": "data_item",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G6",
+   "milestone": "M5",
+   "name": "say_data",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G7",
+   "milestone": "M5",
+   "name": "group_say",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G8",
+   "milestone": "M5",
+   "name": "group_all",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G9",
+   "milestone": "M5",
+   "name": "group_hole",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G10",
+   "milestone": "M5",
+   "name": "row_say",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G11",
+   "milestone": "M5",
+   "name": "for_each_row",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G12",
+   "milestone": "M5",
+   "name": "plot_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G13",
+   "milestone": "M5",
+   "name": "chart_kind",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G14",
+   "milestone": "M5",
+   "name": "where_rows",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G15",
+   "milestone": "M5",
+   "name": "save_table",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G16",
+   "milestone": "M5",
+   "name": "predict_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G17",
+   "milestone": "M5",
+   "name": "model_name",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G18",
+   "milestone": "M5",
+   "name": "say_model",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G19",
+   "milestone": "M5",
+   "name": "model_item",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G20",
+   "milestone": "M5",
+   "name": "save_model",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G21",
+   "milestone": "M5",
+   "name": "load_model",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G22",
+   "milestone": "M5",
+   "name": "assistant_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G23",
+   "milestone": "M5",
+   "name": "vector_value",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G24",
+   "milestone": "M5",
+   "name": "vector_read",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G25",
+   "milestone": "M5",
+   "name": "open_db",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G26",
+   "milestone": "M5",
+   "name": "db_load",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G27",
+   "milestone": "M5",
+   "name": "db_add",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G28",
+   "milestone": "M5",
+   "name": "db_remove",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G29",
+   "milestone": "M5",
+   "name": "db_set",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G30",
+   "milestone": "M5",
+   "name": "transaction_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G31",
+   "milestone": "M5",
+   "name": "migration_file",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G32",
+   "milestone": "M5",
+   "name": "migration_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G33",
+   "milestone": "M5",
+   "name": "limit_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G34",
+   "milestone": "M5",
+   "name": "memory_unit",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G35",
+   "milestone": "M5",
+   "name": "encrypt_expr",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G36",
+   "milestone": "M5",
+   "name": "decrypt_expr",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G37",
+   "milestone": "M5",
+   "name": "key_expr",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G38",
+   "milestone": "M5",
+   "name": "allows_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-G39",
+   "milestone": "M5",
+   "name": "permission",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G1",
+   "milestone": "M6",
+   "name": "screen_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G2",
+   "milestone": "M6",
+   "name": "show_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G3",
+   "milestone": "M6",
+   "name": "show_title",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G4",
+   "milestone": "M6",
+   "name": "show_text",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G5",
+   "milestone": "M6",
+   "name": "show_button",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G6",
+   "milestone": "M6",
+   "name": "show_field",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G7",
+   "milestone": "M6",
+   "name": "show_picture",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G8",
+   "milestone": "M6",
+   "name": "show_list",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G9",
+   "milestone": "M6",
+   "name": "show_table",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G10",
+   "milestone": "M6",
+   "name": "show_chart",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G11",
+   "milestone": "M6",
+   "name": "layout_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G12",
+   "milestone": "M6",
+   "name": "event_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G13",
+   "milestone": "M6",
+   "name": "receive_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G14",
+   "milestone": "M6",
+   "name": "button_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G15",
+   "milestone": "M6",
+   "name": "field_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G16",
+   "milestone": "M6",
+   "name": "open_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G17",
+   "milestone": "M6",
+   "name": "navigation",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G18",
+   "milestone": "M6",
+   "name": "style_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G19",
+   "milestone": "M6",
+   "name": "style_target",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G20",
+   "milestone": "M6",
+   "name": "widget_kind",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G21",
+   "milestone": "M6",
+   "name": "style_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G22",
+   "milestone": "M6",
+   "name": "theme_use",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G23",
+   "milestone": "M6",
+   "name": "theme_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G24",
+   "milestone": "M6",
+   "name": "theme_def_line",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G25",
+   "milestone": "M6",
+   "name": "theme_name",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G26",
+   "milestone": "M6",
+   "name": "responsive_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G27",
+   "milestone": "M6",
+   "name": "describe_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G28",
+   "milestone": "M6",
+   "name": "color_name",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G29",
+   "milestone": "M6",
+   "name": "size_name",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G30",
+   "milestone": "M6",
+   "name": "shape_name",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G31",
+   "milestone": "M6",
+   "name": "c_library",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G32",
+   "milestone": "M6",
+   "name": "share_for_c",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G33",
+   "milestone": "M6",
+   "name": "layout_phrase",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G34",
+   "milestone": "M6",
+   "name": "record_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G35",
+   "milestone": "M6",
+   "name": "plugin_load",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G36",
+   "milestone": "M6",
+   "name": "build_target",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G37",
+   "milestone": "M6",
+   "name": "installer_suffix",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G38",
+   "milestone": "M6",
+   "name": "c_stub_file",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G39",
+   "milestone": "M6",
+   "name": "c_decl",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-G40",
+   "milestone": "M6",
+   "name": "c_kind",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G1",
+   "milestone": "M7",
+   "name": "frame_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G2",
+   "milestone": "M7",
+   "name": "key_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G3",
+   "milestone": "M7",
+   "name": "pointer_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G4",
+   "milestone": "M7",
+   "name": "app_event",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G5",
+   "milestone": "M7",
+   "name": "play_sound",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G6",
+   "milestone": "M7",
+   "name": "stop_sound",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G7",
+   "milestone": "M7",
+   "name": "game_area",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G8",
+   "milestone": "M7",
+   "name": "move_picture",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G9",
+   "milestone": "M7",
+   "name": "hide_picture",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G10",
+   "milestone": "M7",
+   "name": "touches_question",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G11",
+   "milestone": "M7",
+   "name": "show_picture_at",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G12",
+   "milestone": "M7",
+   "name": "kernel_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G13",
+   "milestone": "M7",
+   "name": "gpu_clause",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G14",
+   "milestone": "M7",
+   "name": "apply_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G15",
+   "milestone": "M7",
+   "name": "predict_gpu",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G16",
+   "milestone": "M7",
+   "name": "gpu_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G17",
+   "milestone": "M7",
+   "name": "gpu_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G18",
+   "milestone": "M7",
+   "name": "device_build",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G19",
+   "milestone": "M7",
+   "name": "register_def",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G20",
+   "milestone": "M7",
+   "name": "read_register",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G21",
+   "milestone": "M7",
+   "name": "write_register",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G22",
+   "milestone": "M7",
+   "name": "intrinsic_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G23",
+   "milestone": "M7",
+   "name": "interrupt_block",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G24",
+   "milestone": "M7",
+   "name": "device_file",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G25",
+   "milestone": "M7",
+   "name": "device_stmt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G26",
+   "milestone": "M7",
+   "name": "memory_limit",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G27",
+   "milestone": "M7",
+   "name": "use_allocator",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-G28",
+   "milestone": "M7",
+   "name": "manage_interface",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  }
+ ]
+}

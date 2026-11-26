@@ -1,0 +1,655 @@
+{
+ "kind": "patterns",
+ "items": [
+  {
+   "pattern": "print",
+   "example": "Say hello world.",
+   "result": "hello world"
+  },
+  {
+   "pattern": "print a name",
+   "example": "Say price.",
+   "result": "the value of price"
+  },
+  {
+   "pattern": "print the word",
+   "example": "Say literally price.",
+   "result": "price print lines Say lines. then indented text each line"
+  },
+  {
+   "pattern": "no newline",
+   "example": "Say without newline one.",
+   "result": "one with no line break"
+  },
+  {
+   "pattern": "decimals",
+   "example": "Say rate to 3 places.",
+   "result": "2.500"
+  },
+  {
+   "pattern": "width",
+   "example": "Say 42 width 6.",
+   "result": "42"
+  },
+  {
+   "pattern": "ask",
+   "example": "Ask name.",
+   "result": "stores the reply as text"
+  },
+  {
+   "pattern": "ask a number",
+   "example": "Ask age as number.",
+   "result": "stores the reply as a number"
+  },
+  {
+   "pattern": "define",
+   "example": "Price is 20.",
+   "result": "defines price"
+  },
+  {
+   "pattern": "change",
+   "example": "Set count to 5.",
+   "result": "changes a changeable name"
+  },
+  {
+   "pattern": "add",
+   "example": "Say 7 plus 2.",
+   "result": "9"
+  },
+  {
+   "pattern": "divide",
+   "example": "Say 7 divided by 2.",
+   "result": "3.50"
+  },
+  {
+   "pattern": "whole divide",
+   "example": "Say 7 whole divided by 2.",
+   "result": "3"
+  },
+  {
+   "pattern": "remainder",
+   "example": "Say remainder of 17 by 5.",
+   "result": "2"
+  },
+  {
+   "pattern": "power",
+   "example": "Say power of 2 and 10.",
+   "result": "1024"
+  },
+  {
+   "pattern": "rounded",
+   "example": "Say 2.5 rounded.",
+   "result": "3"
+  },
+  {
+   "pattern": "rounded to even",
+   "example": "Say 2.5 rounded to even.",
+   "result": "2"
+  },
+  {
+   "pattern": "compare",
+   "example": "Say if age is at least 18.",
+   "result": "yes or no"
+  },
+  {
+   "pattern": "between",
+   "example": "Say if age is between 10 and 15.",
+   "result": "yes or no"
+  },
+  {
+   "pattern": "close to",
+   "example": "Say if answer is close to 0.3.",
+   "result": "yes"
+  },
+  {
+   "pattern": "choose",
+   "example": "If age is at least 18 say adult.",
+   "result": "adult"
+  },
+  {
+   "pattern": "otherwise",
+   "example": "Otherwise say minor.",
+   "result": "the other branch"
+  },
+  {
+   "pattern": "repeat",
+   "example": "Repeat 3 times say hi.",
+   "result": "hi three times"
+  },
+  {
+   "pattern": "repeat while",
+   "example": "Repeat while count is at most 3.",
+   "result": "loops"
+  },
+  {
+   "pattern": "for each range",
+   "example": "For each n from 1 to 5.",
+   "result": "n = 1, 2, 3, 4, 5"
+  },
+  {
+   "pattern": "for each item",
+   "example": "For each fruit in fruits.",
+   "result": "each item"
+  },
+  {
+   "pattern": "list",
+   "example": "Numbers is list of 5 and 2 and 8.",
+   "result": "5, 2 and 8"
+  },
+  {
+   "pattern": "item",
+   "example": "Say item 2 of numbers.",
+   "result": "2"
+  },
+  {
+   "pattern": "slice",
+   "example": "Say items 2 to 3 of numbers.",
+   "result": "2 and 8"
+  },
+  {
+   "pattern": "first",
+   "example": "Say first 2 of numbers.",
+   "result": "5 and 2"
+  },
+  {
+   "pattern": "count",
+   "example": "Say how many in numbers.",
+   "result": "3"
+  },
+  {
+   "pattern": "position",
+   "example": "Spot is position of 8 in numbers.",
+   "result": "a maybe number"
+  },
+  {
+   "pattern": "sorted",
+   "example": "Say numbers sorted.",
+   "result": "2, 5 and 8"
+  },
+  {
+   "pattern": "add to list",
+   "example": "Add 9 to numbers.",
+   "result": "adds an item"
+  },
+  {
+   "pattern": "remove",
+   "example": "Remove 2 from numbers.",
+   "result": "removes an item"
+  },
+  {
+   "pattern": "map",
+   "example": "Changeable ages is map of text to number.",
+   "result": "an empty map"
+  },
+  {
+   "pattern": "put",
+   "example": "Put 31 in ages under Maya.",
+   "result": "adds an entry"
+  },
+  {
+   "pattern": "lookup",
+   "example": "Found is value of Maya in ages.",
+   "result": "a maybe value"
+  },
+  {
+   "pattern": "has",
+   "example": "Say if ages has Maya.",
+   "result": "yes Tern: Programming in Plain English  -  Language version 0.1 214 Pattern Example Result"
+  },
+  {
+   "pattern": "union",
+   "example": "Say union of left and right.",
+   "result": "all items"
+  },
+  {
+   "pattern": "overlap",
+   "example": "Say overlap of left and right.",
+   "result": "shared items"
+  },
+  {
+   "pattern": "difference",
+   "example": "Say difference of left and right.",
+   "result": "items only in the first"
+  },
+  {
+   "pattern": "pair",
+   "example": "Spot is pair of 1 and 2.",
+   "result": "a pair"
+  },
+  {
+   "pattern": "join",
+   "example": "Say words joined with comma.",
+   "result": "apple,pear,plum"
+  },
+  {
+   "pattern": "split",
+   "example": "Parts is split line at space.",
+   "result": "a list of words"
+  },
+  {
+   "pattern": "upper",
+   "example": "Say upper of line.",
+   "result": "CAT SAT DOWN"
+  },
+  {
+   "pattern": "replace",
+   "example": "Say replace cat with dog in line.",
+   "result": "dog sat down"
+  },
+  {
+   "pattern": "backwards",
+   "example": "Say hello backwards.",
+   "result": "olleh"
+  },
+  {
+   "pattern": "function",
+   "example": "To double n give n times 2.",
+   "result": "defines double"
+  },
+  {
+   "pattern": "call",
+   "example": "Say double 21.",
+   "result": "42"
+  },
+  {
+   "pattern": "give back",
+   "example": "Give back n plus 1.",
+   "result": "ends a block function"
+  },
+  {
+   "pattern": "missing",
+   "example": "If phone is missing say no phone.",
+   "result": "tests absence"
+  },
+  {
+   "pattern": "fallback",
+   "example": "Say phone fallback 0.",
+   "result": "0"
+  },
+  {
+   "pattern": "try",
+   "example": "Try Read file notes.",
+   "result": "runs, may fail"
+  },
+  {
+   "pattern": "fail",
+   "example": "Fail with message.",
+   "result": "fails the function"
+  },
+  {
+   "pattern": "record",
+   "example": "A person has name as text and age as number.",
+   "result": "a record kind"
+  },
+  {
+   "pattern": "make a record",
+   "example": "Maya is a person with name Maya and age 31.",
+   "result": "a record"
+  },
+  {
+   "pattern": "part",
+   "example": "Say age of maya.",
+   "result": "31"
+  },
+  {
+   "pattern": "enum",
+   "example": "A color is red or green or blue.",
+   "result": "an enum kind look at Look at pay. with When blocks one block runs"
+  },
+  {
+   "pattern": "interface",
+   "example": "Anything that can speak must have speak.",
+   "result": "a promise"
+  },
+  {
+   "pattern": "apply",
+   "example": "Apply double to each of numbers.",
+   "result": "a new list"
+  },
+  {
+   "pattern": "select",
+   "example": "Big ones is numbers where it is more than 3.",
+   "result": "items that pass"
+  },
+  {
+   "pattern": "combine",
+   "example": "Combine numbers with plus.",
+   "result": "one value"
+  },
+  {
+   "pattern": "give",
+   "example": "Others is give names.",
+   "result": "moves a value"
+  },
+  {
+   "pattern": "copy",
+   "example": "Twin is copy of names.",
+   "result": "a deep copy"
+  },
+  {
+   "pattern": "constant",
+   "example": "Constant limit is 100.",
+   "result": "a build-time value"
+  },
+  {
+   "pattern": "close",
+   "example": "Close file.",
+   "result": "finishes early"
+  },
+  {
+   "pattern": "careful",
+   "example": "Be careful.",
+   "result": "a block of relaxed checks"
+  },
+  {
+   "pattern": "bits",
+   "example": "Say 12 bit and 10.",
+   "result": "8"
+  },
+  {
+   "pattern": "time",
+   "example": "Time this.",
+   "result": "prints the duration"
+  },
+  {
+   "pattern": "workers",
+   "example": "Use 4 workers.",
+   "result": "sets the worker count"
+  },
+  {
+   "pattern": "module",
+   "example": "Use helper.",
+   "result": "brings in a module"
+  },
+  {
+   "pattern": "test",
+   "example": "Test double works.",
+   "result": "a test block"
+  },
+  {
+   "pattern": "check",
+   "example": "Check that double 21 is 42.",
+   "result": "passes or fails"
+  },
+  {
+   "pattern": "note",
+   "example": "Note this explains why.",
+   "result": "a comment"
+  },
+  {
+   "pattern": "about",
+   "example": "About double gives its input times 2.",
+   "result": "documentation"
+  },
+  {
+   "pattern": "pause",
+   "example": "Pause here.",
+   "result": "a stop for the debugger"
+  },
+  {
+   "pattern": "task",
+   "example": "Start task square.",
+   "result": "a task"
+  },
+  {
+   "pattern": "wait",
+   "example": "Wait for square.",
+   "result": "waits, gives the result"
+  },
+  {
+   "pattern": "together",
+   "example": "Do these together.",
+   "result": "a block of tasks"
+  },
+  {
+   "pattern": "send",
+   "example": "Send 7 to pipe.",
+   "result": "puts in a channel"
+  },
+  {
+   "pattern": "receive",
+   "example": "Receive from pipe.",
+   "result": "takes from a channel Tern: Programming in Plain English  -  Language version 0.1 215 Pattern Example Result"
+  },
+  {
+   "pattern": "after",
+   "example": "After 5 seconds.",
+   "result": "runs once later"
+  },
+  {
+   "pattern": "every",
+   "example": "Every 5 seconds.",
+   "result": "runs repeatedly"
+  },
+  {
+   "pattern": "run",
+   "example": "Run echo with hello.",
+   "result": "runs a program"
+  },
+  {
+   "pattern": "exit",
+   "example": "Exit with 2.",
+   "result": "ends with a code"
+  },
+  {
+   "pattern": "write",
+   "example": "Write hello to file greeting.",
+   "result": "makes a new file"
+  },
+  {
+   "pattern": "append",
+   "example": "Append world to file greeting.",
+   "result": "adds to a file"
+  },
+  {
+   "pattern": "replace file",
+   "example": "Replace file greeting with hello.",
+   "result": "overwrites a file"
+  },
+  {
+   "pattern": "read",
+   "example": "Read file greeting.",
+   "result": "the file text"
+  },
+  {
+   "pattern": "read json",
+   "example": "Read json file config.",
+   "result": "the JSON data"
+  },
+  {
+   "pattern": "save",
+   "example": "Save maya as json to file people.",
+   "result": "writes JSON"
+  },
+  {
+   "pattern": "load",
+   "example": "Load sales.",
+   "result": "loads a table"
+  },
+  {
+   "pattern": "rows",
+   "example": "Say rows and average price.",
+   "result": "rows 8 and average price 111.88"
+  },
+  {
+   "pattern": "top",
+   "example": "Say top 5 regions by total price.",
+   "result": "a table"
+  },
+  {
+   "pattern": "plot",
+   "example": "Plot price against size.",
+   "result": "a chart"
+  },
+  {
+   "pattern": "predict",
+   "example": "Predict churned from the rest.",
+   "result": "trains a model"
+  },
+  {
+   "pattern": "today",
+   "example": "Say days between today and later.",
+   "result": "a number of days"
+  },
+  {
+   "pattern": "hash",
+   "example": "Say hash of hello.",
+   "result": "a SHA-256 hash"
+  },
+  {
+   "pattern": "secret",
+   "example": "Token is secret hunter.",
+   "result": "a hidden value query"
+  },
+  {
+   "pattern": "fetch",
+   "example": "Fetch example dot com users page.",
+   "result": "a result"
+  },
+  {
+   "pattern": "serve",
+   "example": "Serve on port 8080.",
+   "result": "a server block"
+  },
+  {
+   "pattern": "gets",
+   "example": "When someone gets home.",
+   "result": "answers one page"
+  },
+  {
+   "pattern": "respond",
+   "example": "Respond with hello.",
+   "result": "the response"
+  },
+  {
+   "pattern": "takes",
+   "example": "Takes name as text.",
+   "result": "a command-line argument"
+  },
+  {
+   "pattern": "option",
+   "example": "Option verbose is yes or no.",
+   "result": "a command-line option"
+  },
+  {
+   "pattern": "screen",
+   "example": "Screen home.",
+   "result": "a screen block"
+  },
+  {
+   "pattern": "show",
+   "example": "Show button Save.",
+   "result": "shows a button"
+  },
+  {
+   "pattern": "style",
+   "example": "Style button Save.",
+   "result": "a style block"
+  },
+  {
+   "pattern": "theme",
+   "example": "Use theme material.",
+   "result": "picks a theme"
+  },
+  {
+   "pattern": "log",
+   "example": "Log info server started.",
+   "result": "info server started"
+  },
+  {
+   "pattern": "limit",
+   "example": "Limit memory 512 megabytes.",
+   "result": "a limit"
+  },
+  {
+   "pattern": "requires",
+   "example": "Requires n is more than 0.",
+   "result": "a contract"
+  },
+  {
+   "pattern": "use C",
+   "example": "Use C library math.",
+   "result": "a C library"
+  },
+  {
+   "pattern": "share for C",
+   "example": "Share for C.",
+   "result": "offers a function to C Tern: Programming in Plain English  -  Language version 0.1 216 Rows added in M2 Pattern Holes Result Example item N of list whole, list T (panic if out of range, T0601) item 2 of numbers safe item N of list whole, list maybe T safe item 9 of numbers items A to B of list whole, whole, list list of T items 2 to 3 of numbers first N of list whole, list list of T first 2 of numbers first of list / last of list list maybe T last of numbers how many in C collection or text whole how many in numbers position of x in list T, list maybe whole position of 8 in numbers position of x in text text or pattern, text maybe whole position of sat in line x is empty collection yes or no names is empty list sorted / sorted descending / reversed / unique list list numbers sorted Add x to list / queue T, list"
+  },
+  {
+   "pattern": "statement",
+   "example": "Add 9 to numbers.",
+   "result": "Remove x from list T, list statement; removes the"
+  },
+  {
+   "pattern": "first equal item",
+   "example": "Remove 2 from numbers.",
+   "result": "Remove first from queue queue statement (T0613 if"
+  },
+  {
+   "pattern": "empty)",
+   "example": "Remove first from tasks.",
+   "result": "first of queue queue maybe T first of tasks Put x in set T, set"
+  },
+  {
+   "pattern": "statement",
+   "example": "Put red in tags.",
+   "result": "Put v in map under k V, map, K statement; replaces an"
+  },
+  {
+   "pattern": "existing key",
+   "example": "Put 31 in ages under Maya.",
+   "result": "Remove k from map / set K, map"
+  },
+  {
+   "pattern": "statement",
+   "example": "Remove Maya from ages.",
+   "result": "value of k in map K, map maybe V value of Maya in ages map has k / set has x map, K yes or no"
+  },
+  {
+   "pattern": "ages has Maya",
+   "example": "union of A and B etc.",
+   "result": "set, set set union of left and right pair of a and b A, B pair pair of 1 and 2 first of pair / second of pair pair A / B second of spot words joined with SEP list of text, separator text words joined with comma split text at SEP text, separator or pattern list of text split line at space upper of text / lower of text text text upper of line text trimmed / text normalized / text backwards text text hello backwards replace P with y in text pattern, text, text text replace one or more digits with x in phrase copy of x T T copy of names x checked plus y / wrapping plus / saturating plus whole, whole F result / whole / whole x checked plus y Fail with TEXT text statement"
+  },
+  {
+   "pattern": "Fail with zero cannot be",
+   "example": "halved.",
+   "result": "Close x file, connection, or value"
+  },
+  {
+   "pattern": "statement; F",
+   "example": "Close notes.",
+   "result": "Tern: Programming in Plain English  -  Language version 0.1 217 Rows added in M3 Pattern Holes Result Example Apply f to each of list function, list list (them)"
+  },
+  {
+   "pattern": "Apply double to each of",
+   "example": "numbers.",
+   "result": "Combine list with f list, function of two"
+  },
+  {
+   "pattern": "one value (it)",
+   "example": "Combine numbers with plus.",
+   "result": "list where cond list, question about it list numbers where it is more than 3 first N fibonacci whole lazy list first 10 fibonacci primes to N whole list primes to 50 first N of SEQ whole, list or generator lazy list first 3 of many sum of A to B whole, whole whole sum of 1 to 100"
+  },
+  {
+   "pattern": "biggest of x and y and",
+   "example": "...",
+   "result": "inline list of ordered T"
+  },
+  {
+   "pattern": "biggest of 4 and 9 and 2",
+   "example": "smallest of ...",
+   "result": "same T smallest of 4 and 9 N factorial whole whole or big number 25 factorial how many vowels in text text whole how many vowels in education x is a palindrome text yes or no level is a palindrome sorted for language list of text list words sorted for language Tern: Programming in Plain English  -  Language version 0.1 218 Rows added in M4 Pattern Result F Read file F text F Read bytes of file F bytes F Write x to file F none; fails if the file exists F Append x to file F none F Replace file F with x none; atomic (write to a temporary file in the same folder, then rename) F Make folder X, Remove file F, Remove folder X, Move, Duplicate none F List files in folder X list of text F file F exists yes or no no Zip, Unzip, Gzip none F Read json file F as T (and toml, yaml, xml, csv) T F Read json from text as T T F Save x as json to file F none F json of x text"
+  },
+  {
+   "pattern": "no",
+   "example": "Fetch address ...",
+   "result": "response record F Post x to address response record F Run program with a and b text F Ask x text F (only no person here) Wait for task the task's result F if the task failed Receive from channel maybe T no Environment names maybe text no hash of x text no reveal x text no random number from a to b whole"
+  },
+  {
+   "pattern": "no",
+   "example": "n days after date etc.",
+   "result": "date or moment no days between a and b whole no Rows added in M5 Pattern Result Load T table T (failure not found or bad format) Say rows a line rows N Say average price (and the other stat words) a line average price V Say top N regions by total price a table Say rows where price is more than 120 sorted by price a table Plot a against b writes a chart file Predict y from the rest trains a model; it is the model Say accuracy and the other model items lines Ask assistant about TEXT text (failure timed out, other) encrypted x with key bytes decrypted x with key bytes (failure bad format) random key secret bytes of 32 bytes Tern: Programming in Plain English  -  Language version 0.1 219 Rows added in M7 Pattern Result read at R value of the register's kind picture A touches picture B yes or no elapsed (a provided name) whole number of milliseconds pointer x, pointer y (provided names) whole numbers"
+  }
+ ]
+}

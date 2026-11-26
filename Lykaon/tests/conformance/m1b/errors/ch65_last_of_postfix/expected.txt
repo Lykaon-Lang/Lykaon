@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_last_of_postfix/input.lykaon, line 2: Say last of numbers sorted.
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the last of numbers, sorted, or the last of numbers sorted.
+Fix: Split it into two sentences.
+

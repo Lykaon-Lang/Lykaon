@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_power_and_hole/input.lykaon, line 1: Say power of 2 and 10 sorted.
+                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the power of 2 and 10, sorted, or the power of 2 and 10 sorted.
+Fix: Split it into two sentences.
+

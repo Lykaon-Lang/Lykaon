@@ -7,12 +7,27 @@
 use crate::mir::{self, Step};
 use crate::net;
 use crate::sem::{self, E, Meaning, Op, Pat, Rel, SayMods, Value, gen_resume_safe};
+use crate::trace::{TraceEvent, TraceKind, TraceMode};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{BufRead as _, Write as _};
 
 // ---- M3b contract prover (pass 1) hook ----
+/// std::env::temp_dir() aborts on wasm32-unknown-unknown (unsupported); the
+/// M5d-preview playground maps it to a virtual path so file sentences fail
+/// gracefully (anonymous not-found) instead of aborting the run.
+fn lykaon_temp_dir() -> std::path::PathBuf {
+    #[cfg(target_arch = "wasm32")]
+    {
+        std::path::PathBuf::from("/tmp")
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::env::temp_dir()
+    }
+}
+
 /// A hook the compiler installs (lykaon::prover): for one function, per Ensures
 /// contract index, whether the condition is proven always true by interval
 /// analysis over the function's MIR (ch.64, M3-S35). Proven-true means the
@@ -33,10 +48,10 @@ fn prover_hook() -> Option<ProverHook> {
 }
 
 /// A per-site Always hook (M3b pass 1, ch.64 M3-S38): the compiler installs
-/// it (lykaon::prover). It receives one site's static facts ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â the kind name,
+/// it (lykaon::prover). It receives one site's static facts ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â the kind name,
 /// the part values knowable at the site (`(part name, value expression)`;
 /// a record construction passes every part, a Set-part site only the
-/// written part) ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â and the kind's Always conditions, and answers per
+/// written part) ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â and the kind's Always conditions, and answers per
 /// condition index whether the site is proven always true: the run-time
 /// check at that site is then skipped. Every unproven condition keeps its
 /// live check, so a skipped site can never smuggle a bad record through.
@@ -75,6 +90,69 @@ pub struct RunError {
     /// the code. The failure paths keep it empty (they print only their
     /// message, as before).
     pub out: String,
+    /// M5g item f: why the run ended, derived from the failure kind. Additive:
+    /// callers that only read `code` are unaffected.
+    pub reason: ExitReason,
+}
+
+/// M5g item f: the exit reason in `lykaon report` and `lykaon serve`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ExitReason {
+    /// The program reached its end.
+    Ok,
+    /// The source did not compile, so it never ran.
+    Compile,
+    /// `Exit with N.` ended the run.
+    Exit,
+    /// A signal ended the run with no fallback written.
+    Signal,
+    /// The sentence budget ran out.
+    Fuel,
+    /// `Limit time` fired (T0612).
+    Time,
+    /// `Limit memory` fired (T0611).
+    Memory,
+    /// The run's output byte cap fired (M5g item e, T0613).
+    Output,
+    /// A sandbox permission was refused (T0622).
+    Permission,
+    /// Any other stopping error.
+    Failure,
+}
+
+impl ExitReason {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            ExitReason::Ok => "ok",
+            ExitReason::Compile => "compile",
+            ExitReason::Exit => "exit",
+            ExitReason::Signal => "signal",
+            ExitReason::Fuel => "fuel",
+            ExitReason::Time => "time",
+            ExitReason::Memory => "memory",
+            ExitReason::Output => "output",
+            ExitReason::Permission => "permission",
+            ExitReason::Failure => "failure",
+        }
+    }
+}
+
+/// Classify a `TErr::Fatal` message. The codes are part of the frozen error
+/// text, so matching them is stable; the budget error has no code.
+fn classify_failure(message: &str) -> ExitReason {
+    if message.contains("(T0611)") {
+        ExitReason::Memory
+    } else if message.contains("(T0613)") {
+        ExitReason::Output
+    } else if message.contains("(T0612)") {
+        ExitReason::Time
+    } else if message.contains("(T0622)") {
+        ExitReason::Permission
+    } else if message.starts_with("Error: The program ran for too long.") {
+        ExitReason::Fuel
+    } else {
+        ExitReason::Failure
+    }
 }
 
 /// A catchable failure (a can-fail conversion, or a Fail.) or a
@@ -118,18 +196,37 @@ struct ScopeFrame {
     temps: Vec<std::path::PathBuf>,
 }
 
+/// M5g item b: where the run's time comes from.
+#[derive(Clone, Copy, Debug)]
+enum Clock {
+    Real,
+    /// A deterministic clock starting at 2026-01-01T00:00:00Z, in
+    /// milliseconds since the Unix epoch. It advances only when the
+    /// program sleeps or waits for a timer.
+    Virtual { now_ms: u64 },
+}
+
+impl Clock {
+    fn is_virtual(self) -> bool {
+        matches!(self, Clock::Virtual { .. })
+    }
+}
+
+/// 2026-01-01T00:00:00Z in milliseconds since the Unix epoch.
+const DETERMINISTIC_BASE_MS: u64 = 1_767_225_600_000;
+
 /// M4 (Appendix K 7.4): one pending timer on the frame.
 struct TimerTask {
     /// true = a one-shot After (M4-G14), false = a repeating Every (M4-G15).
     every: bool,
     /// The body block, shared so Frame stays cheap to clone.
     body: std::rc::Rc<Vec<sem::Stmt>>,
-    /// After: fire once at/after this instant. Seed for Every: unused.
-    deadline: std::time::Instant,
-    /// Every: the fixed interval between round STARTS (M4-D12).
-    interval: std::time::Duration,
-    /// Every: the instant the next round starts.
-    next_round: std::time::Instant,
+    /// After: fire once at/after this millisecond. Seed for Every: unused.
+    deadline: u64,
+    /// Every: the fixed interval between round STARTS, in milliseconds.
+    interval: u64,
+    /// Every: the millisecond the next round starts.
+    next_round: u64,
     /// Every: Stop. inside a round ended it (M4-S26).
     stopped: bool,
     /// After: set true once the block has run once (M4-S25).
@@ -152,7 +249,7 @@ impl Clone for TimerTask {
 
 /// The 100 ms watcher beat (M4-S39: changes closer than 100 milliseconds
 /// merge into one firing; the poll interval implements the merge).
-const WATCH_POLL: std::time::Duration = std::time::Duration::from_millis(100);
+const WATCH_POLL_MS: u64 = 100;
 
 /// M4 (Appendix K 7.5, M4-G47): one file watcher. The eager cut polls on
 /// the same calendar as the timers (during Sleeps, 100 ms beat); a firing
@@ -162,7 +259,7 @@ struct WatcherTask {
     body: std::rc::Rc<Vec<sem::Stmt>>,
     /// The last observed file state: (exists, mtime, size).
     state: Option<(bool, Option<std::time::SystemTime>, u64)>,
-    last_poll: std::time::Instant,
+    last_poll: u64,
     /// Stop. inside the watcher body cancels the watcher (choice logged).
     stopped: bool,
 }
@@ -384,7 +481,7 @@ impl<'p> Interp<'p> {
     }
 
     /// Per-site Always skip decisions (M3b pass 1): asked the prover's
-    /// per-site hook once per site and cached for the Interp lifetime ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â
+    /// per-site hook once per site and cached for the Interp lifetime ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â
     /// the site's `site` key is an address inside the `prog` tree this
     /// Interp borrows, so it stays valid. No hook (or the off switch inside
     /// the hook) answers all-false: every check stays live.
@@ -534,20 +631,341 @@ fn timer_unit_ms(amount: u64, unit: &str) -> u64 {
     }
 }
 
-/// Instant::now() + ms, capped at about a year: a giant duration amount
-/// would overflow the Instant and panic (deviation logged for M4-4:
-/// huge timer amounts see the cap).
-fn instant_after(ms: u64) -> std::time::Instant {
-    const MAX_MS: u64 = 365 * 24 * 60 * 60 * 1000;
-    std::time::Instant::now() + std::time::Duration::from_millis(ms.min(MAX_MS))
+// The interpreter runs on a worker thread, so the profile state is global.
+static PROFILE: std::sync::Mutex<Vec<(String, u64)>> = std::sync::Mutex::new(Vec::new());
+static PROFILE_ON: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn enable_profile() {
+    PROFILE_ON.store(true, std::sync::atomic::Ordering::Relaxed);
+    if let Ok(mut m) = PROFILE.lock() {
+        m.clear();
+    }
+}
+
+pub fn disable_profile() {
+    PROFILE_ON.store(false, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn take_profile() -> Vec<(String, u64)> {
+    PROFILE
+        .lock()
+        .map(|mut m| std::mem::take(&mut *m))
+        .unwrap_or_default()
+}
+
+fn profile_stmt(st: &sem::Stmt) {
+    if !PROFILE_ON.load(std::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+    let text: String = format!("{st:?}").chars().take(160).collect();
+    if let Ok(mut m) = PROFILE.lock() {
+        if let Some((_, c)) = m.iter_mut().find(|(t, _)| *t == text) {
+            *c += 1;
+        } else {
+            m.push((text, 1));
+        }
+    }
+}
+
+// Coverage state is global for the same reason (the interpreter runs on a
+// worker thread). A sentence is identified by the debug form of its typed
+// node; the same compiled program produces the same hashes at run time.
+static COVERAGE: std::sync::Mutex<Vec<u64>> = std::sync::Mutex::new(Vec::new());
+static COVERAGE_ON: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn enable_coverage() {
+    COVERAGE_ON.store(true, std::sync::atomic::Ordering::Relaxed);
+    if let Ok(mut c) = COVERAGE.lock() {
+        c.clear();
+    }
+}
+
+pub fn disable_coverage() {
+    COVERAGE_ON.store(false, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn clear_coverage() {
+    if let Ok(mut c) = COVERAGE.lock() {
+        c.clear();
+    }
+}
+
+pub fn take_coverage() -> Vec<u64> {
+    COVERAGE
+        .lock()
+        .map(|mut c| std::mem::take(&mut *c))
+        .unwrap_or_default()
+}
+
+/// The stable identity of a statement (same hash in the counting pass and at
+/// run time).
+pub fn coverage_hash(st: &sem::Stmt) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    format!("{st:?}").hash(&mut h);
+    h.finish()
+}
+
+fn coverage_stmt(st: &sem::Stmt) {
+    if !COVERAGE_ON.load(std::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+    // Test blocks are the drivers, not the code under test.
+    if matches!(st, sem::Stmt::Test { .. }) {
+        return;
+    }
+    let h = coverage_hash(st);
+    if let Ok(mut c) = COVERAGE.lock() {
+        if !c.contains(&h) {
+            c.push(h);
+        }
+    }
+}
+
+// ---- Step 9: DAP debugger support -------------------------------------
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DebugCommand {
+    Continue,
+    Next,
+    StepIn,
+    Pause,
+    Terminate,
+}
+
+#[derive(Clone, Debug)]
+pub struct DebugEvent {
+    pub top: usize,
+    pub line: usize,
+    pub stmt: String,
+    pub out: String,
+    pub vars: Vec<(String, String)>,
+}
+
+static DEBUG_ON: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static DEBUG_STEP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static DEBUG_TOP: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+static DEBUG_LINES: std::sync::Mutex<Vec<usize>> = std::sync::Mutex::new(Vec::new());
+static DEBUG_BREAKS: std::sync::Mutex<Vec<usize>> = std::sync::Mutex::new(Vec::new());
+static DEBUG_CMD_RX: std::sync::Mutex<Option<std::sync::mpsc::Receiver<DebugCommand>>> =
+    std::sync::Mutex::new(None);
+static DEBUG_EVT_TX: std::sync::Mutex<Option<std::sync::mpsc::Sender<DebugEvent>>> =
+    std::sync::Mutex::new(None);
+
+/// Step 9: attach the debugger. `lines` maps a top-level statement index to
+/// its source line; `breaks` is the set of top-level statement indices to
+/// stop at. The interpreter blocks on the command channel while stopped.
+pub fn debug_attach(
+    lines: Vec<usize>,
+    breaks: Vec<usize>,
+    cmd_rx: std::sync::mpsc::Receiver<DebugCommand>,
+    evt_tx: std::sync::mpsc::Sender<DebugEvent>,
+) {
+    if let Ok(mut l) = DEBUG_LINES.lock() {
+        *l = lines;
+    }
+    if let Ok(mut b) = DEBUG_BREAKS.lock() {
+        *b = breaks;
+    }
+    if let Ok(mut r) = DEBUG_CMD_RX.lock() {
+        *r = Some(cmd_rx);
+    }
+    if let Ok(mut t) = DEBUG_EVT_TX.lock() {
+        *t = Some(evt_tx);
+    }
+    DEBUG_ON.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn debug_detach() {
+    DEBUG_ON.store(false, std::sync::atomic::Ordering::SeqCst);
+    // Drop the event sender so the DAP event thread ends. The command
+    // receiver is owned by the worker; it is put back when the worker stops.
+    if let Ok(mut t) = DEBUG_EVT_TX.lock() {
+        *t = None;
+    }
+}
+
+pub fn debug_is_on() -> bool {
+    DEBUG_ON.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+pub fn debug_set_breaks(breaks: Vec<usize>) {
+    if let Ok(mut b) = DEBUG_BREAKS.lock() {
+        *b = breaks;
+    }
+}
+
+pub fn set_debug_top(i: usize) {
+    DEBUG_TOP.store(i, std::sync::atomic::Ordering::SeqCst);
+}
+
+fn debug_vars(frame: &Frame) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for scope in &frame.scopes {
+        for (n, v) in &scope.vars {
+            out.push((n.clone(), format!("{v:?}")));
+        }
+    }
+    out
+}
+
+fn debug_stmt(st: &sem::Stmt, frame: &Frame, out: &str) {
+    if !DEBUG_ON.load(std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+    let step = DEBUG_STEP.swap(false, std::sync::atomic::Ordering::SeqCst);
+    let top = DEBUG_TOP.load(std::sync::atomic::Ordering::SeqCst);
+    let brk = DEBUG_BREAKS
+        .lock()
+        .map(|b| b.contains(&top))
+        .unwrap_or(false);
+    if !(step || brk) {
+        return;
+    }
+    let line = DEBUG_LINES
+        .lock()
+        .ok()
+        .and_then(|l| l.get(top).copied())
+        .unwrap_or(0);
+    let ev = DebugEvent {
+        top,
+        line,
+        stmt: format!("{st:?}"),
+        out: out.to_string(),
+        vars: debug_vars(frame),
+    };
+    // Send the stop event without holding a lock, then take the command
+            // receiver out, block on it, and put it back. debug_detach never
+            // waits on this lock, so there is no deadlock on shutdown.
+            if let Ok(mut g) = DEBUG_EVT_TX.lock() {
+                if let Some(tx) = g.as_ref() {
+                    let _ = tx.send(ev);
+                }
+            }
+            let rx = DEBUG_CMD_RX.lock().ok().and_then(|mut g| g.take());
+            if let Some(rx) = rx {
+                while let Ok(cmd) = rx.recv() {
+                    match cmd {
+                        DebugCommand::Continue => {
+                            DEBUG_STEP.store(false, std::sync::atomic::Ordering::SeqCst);
+                            break;
+                        }
+                        DebugCommand::Next | DebugCommand::StepIn => {
+                            DEBUG_STEP.store(true, std::sync::atomic::Ordering::SeqCst);
+                            break;
+                        }
+                        DebugCommand::Pause => {}
+                        DebugCommand::Terminate => break,
+                    }
+                }
+                if let Ok(mut g) = DEBUG_CMD_RX.lock() {
+                    if g.is_none() {
+                        *g = Some(rx);
+                    }
+                }
+            }
+}
+
+// The interpreter runs on a worker thread, so the trace state is global.
+static TRACE: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+static TRACE_ON: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// M5c item 9: enable a size-limited statement trace.
+pub fn enable_trace() {
+    TRACE_ON.store(true, std::sync::atomic::Ordering::Relaxed);
+    if let Ok(mut t) = TRACE.lock() {
+        t.clear();
+    }
+}
+
+pub fn disable_trace() {
+    TRACE_ON.store(false, std::sync::atomic::Ordering::Relaxed);
+}
+
+pub fn take_trace() -> Vec<String> {
+    TRACE.lock().map(|mut t| std::mem::take(&mut *t)).unwrap_or_default()
+}
+
+fn trace_stmt(st: &sem::Stmt) {
+    if !TRACE_ON.load(std::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+    let text: String = format!("{st:?}").chars().take(200).collect();
+    if let Ok(mut t) = TRACE.lock() {
+        if t.len() >= 2000 {
+            t.remove(0);
+        }
+        t.push(text);
+    }
 }
 
 fn fatal(code: &str, cause: &str, fix: &str) -> TErr {
     TErr::Fatal(format!("Error: {cause} ({code})\nFix: {fix}"))
 }
 
+/// SHA-256 as lower-case hex (the trace and report hash format).
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    use std::fmt::Write as _;
+    let digest = Sha256::digest(bytes);
+    let mut out = String::with_capacity(digest.len() * 2);
+    for b in digest {
+        let _ = write!(&mut out, "{b:02x}");
+    }
+    out
+}
+
+/// The request method as the trace spells it.
+fn net_method_name(m: &net::Method) -> &'static str {
+    match m {
+        net::Method::Get => "GET",
+        net::Method::Post => "POST",
+        net::Method::Put => "PUT",
+        net::Method::Delete => "DELETE",
+        net::Method::Patch => "PATCH",
+    }
+}
+
+/// The request URL as the trace spells it (query included, not encoded).
+fn net_request_url(req: &net::Request) -> String {
+    let scheme = if req.address.secure { "https" } else { "http" };
+    let mut url = format!(
+        "{}://{}:{}{}",
+        scheme, req.address.host, req.address.port, req.address.path
+    );
+    if !req.query.is_empty() {
+        url.push('?');
+        for (i, (k, v)) in req.query.iter().enumerate() {
+            if i > 0 {
+                url.push('&');
+            }
+            url.push_str(k);
+            url.push('=');
+            url.push_str(v);
+        }
+    }
+    url
+}
+
 fn is_truthy(v: &Value) -> bool {
     as_truthy(v)
+}
+
+/// M5-S8: sort cells by kind. Missing cells sort last in both directions;
+/// numbers compare numerically and text uses code-point order.
+fn compare_cells(a: &Value, b: &Value) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    match (a, b) {
+        (Value::Missing, Value::Missing) => Ordering::Equal,
+        (Value::Missing, _) => Ordering::Greater,
+        (_, Value::Missing) => Ordering::Less,
+        (Value::Whole(x), Value::Whole(y)) => x.cmp(y),
+        (Value::Dec(x), Value::Dec(y)) => x.partial_cmp(y).unwrap_or(Ordering::Equal),
+        (Value::Whole(x), Value::Dec(y)) => (*x as f64).partial_cmp(y).unwrap_or(Ordering::Equal),
+        (Value::Dec(x), Value::Whole(y)) => x.partial_cmp(&(*y as f64)).unwrap_or(Ordering::Equal),
+        (Value::Text(x), Value::Text(y)) => x.cmp(y),
+        (Value::Boolean(x), Value::Boolean(y)) => x.cmp(y),
+        _ => crate::data::cell_text(a).cmp(&crate::data::cell_text(b)),
+    }
 }
 
 const T0603_C: &str = "A whole number went past 64 bits.";
@@ -572,6 +990,15 @@ struct Interp<'p> {
     input: String,
     in_pos: usize,
     budget: u64, // 0 = unlimited
+    /// M5g item a: true when a budget was given. Needed because "no budget"
+    /// and "budget spent" both store 0.
+    metered: bool,
+    /// M5g item f: sentences executed, whether or not a budget is set.
+    fuel_used: u64,
+    /// M5g item c: outside-world reads, recorded or replayed.
+    trace: TraceMode,
+    /// M5g item b: the run's clock.
+    clock: Clock,
     depth: usize,
     /// Pretend f gives V. overrides (ch.38), per test run.
     pretend: HashMap<String, Value>,
@@ -585,6 +1012,24 @@ struct Interp<'p> {
     /// resumable bodies never touch these two fields.
     in_generator: bool,
     pending_hands: Vec<Value>,
+    /// M5-S16: the plot counter for `plot-N.svg` (N counts from 1 in each
+    /// run, in the project's output folder).
+    plots: usize,
+    /// M5-S22: the program's seed (`Use seed N.`), 42 in tests.
+    seed: u64,
+    /// M5-S37: transaction nesting depth (transactions do not nest).
+    tx_depth: usize,
+    /// M5-S45: the wall-clock limit and when the run started.
+    limit_time: Option<u64>, // milliseconds on the run's clock
+    limit_start: Option<u64>, // the clock reading when it was set
+    /// M5-S45: the memory limit in bytes (enforcement is a later step).
+    limit_memory: Option<u64>,
+    /// M5g item e: the output byte cap for the run (0 = unlimited). Set from
+    /// LYKAON_OUTPUT_LIMIT by the `--isolate` wrapper, so an isolated run
+    /// stops with T0613 instead of filling memory or the parent's pipe.
+    out_limit: Option<usize>,
+    /// M5-S43: the permission sandbox (lykaon run safely).
+    sandbox: crate::sandbox::Sandbox,
     /// M4 (Appendix K): >0 while a timer block is running; a re-entrant
     /// calendar drive inside a firing round does nothing (deviation
     /// logged: nested timer events just real-sleep).
@@ -827,17 +1272,94 @@ pub fn run_budgeted_streams(
     bindings: &[(String, Value)],
     interactive: bool,
 ) -> (Result<String, RunError>, Vec<(usize, usize)>) {
+    let (result, ranges, _fuel_used) =
+        run_budgeted_streams_metered(prog, stdin_text, budget, bindings, interactive);
+    (result, ranges)
+}
+
+/// The same run, also returning the number of sentences executed (M5g item
+/// f). The count is kept whether or not a budget is set, so a report can show
+/// fuel used for an unlimited run.
+pub fn run_budgeted_streams_metered(
+    prog: &sem::Program,
+    stdin_text: &str,
+    budget: u64,
+    bindings: &[(String, Value)],
+    interactive: bool,
+) -> (Result<String, RunError>, Vec<(usize, usize)>, u64) {
+    let (deterministic, seed) = crate::trace::env_config();
+    let (result, ranges, fuel_used, _events, _left, _permissions) =
+        run_budgeted_streams_traced(
+        prog,
+        stdin_text,
+        budget,
+        bindings,
+        interactive,
+        TraceMode::Off,
+        deterministic,
+        seed,
+    );
+    (result, ranges, fuel_used)
+}
+
+/// The same run with an outside-world trace (M5g item c). In record mode the
+/// fourth element is every read in execution order; in replay mode it is
+/// empty and the fifth element is how many recorded reads were never used
+/// (0 on a clean replay).
+#[allow(clippy::too_many_arguments)]
+pub fn run_budgeted_streams_traced(
+    prog: &sem::Program,
+    stdin_text: &str,
+    budget: u64,
+    bindings: &[(String, Value)],
+    interactive: bool,
+    mut trace: TraceMode,
+    deterministic: bool,
+    seed: u64,
+) -> (
+    Result<String, RunError>,
+    Vec<(usize, usize)>,
+    u64,
+    Vec<TraceEvent>,
+    usize,
+    Vec<String>,
+) {
+    let clock = if deterministic {
+        Clock::Virtual {
+            now_ms: DETERMINISTIC_BASE_MS,
+        }
+    } else {
+        Clock::Real
+    };
+    if trace.is_recording() {
+        trace.push(TraceEvent::Stdin(stdin_text.to_string()));
+    }
     let mut it = Interp {
         prog,
         input: stdin_text.to_string(),
         in_pos: 0,
         budget,
+        metered: budget > 0,
+        fuel_used: 0,
+        trace,
+        clock,
         depth: 0,
         pretend: HashMap::new(),
         failed_checks: Vec::new(),
         in_must_fail: 0,
         in_generator: false,
         pending_hands: Vec::new(),
+        plots: 0,
+        seed: if deterministic { seed } else { 42 },
+        tx_depth: 0,
+        limit_time: None,
+        limit_start: None,
+        limit_memory: None,
+        out_limit: std::env::var("LYKAON_OUTPUT_LIMIT")
+            .ok()
+            .and_then(|v| v.trim().parse::<usize>().ok())
+            .filter(|n| *n > 0),
+        sandbox: make_sandbox(&prog.source_dir),
         timer_firing: 0,
         temp_serial: 0,
         rng: None,
@@ -888,6 +1410,7 @@ pub fn run_budgeted_streams(
     if let Some(scope) = frame.pop() {
         let _ = it.run_cleanups(scope, &mut out);
     }
+    let fuel_used = it.fuel_used;
     let mut err_ranges = std::mem::take(&mut it.err_ranges);
     let result = match run_result {
         Ok(_) => Ok(out),
@@ -896,21 +1419,25 @@ pub fn run_budgeted_streams(
         // sentence. The output printed so far goes out with it (S77: the
         // program's own words print, then the process ends).
         Err(TErr::Exit(code)) => Err(RunError {
+            reason: ExitReason::Exit,
             message: String::new(),
             code: code as i32,
             out,
         }),
         Err(TErr::Fatal(m)) => Err(RunError {
+            reason: classify_failure(&m),
             message: m,
             code: 1,
             out: String::new(),
         }),
         Err(TErr::Signal) => Err(RunError {
+            reason: ExitReason::Signal,
             message: "Error: The program can fail here, and no fallback was written.".to_string(),
             code: 1,
             out: String::new(),
         }),
         Err(TErr::Yield(_)) => Err(RunError {
+            reason: ExitReason::Failure,
             message: "Error: Hand back runs outside a generator.".to_string(),
             code: 1,
             out: String::new(),
@@ -922,7 +1449,11 @@ pub fn run_budgeted_streams(
     if matches!(&result, Err(e) if !e.message.is_empty()) {
         err_ranges = Vec::new();
     }
-    (result, err_ranges)
+    let replay_left = it.trace.replay_left();
+    let events = it.trace.take_recorded();
+    // M5g item f: what the sandbox actually saw this run.
+    let permissions_used = it.sandbox.usage();
+    (result, err_ranges, fuel_used, events, replay_left, permissions_used)
 }
 
 /// budget > 0 caps executed steps (used by the fuzzer). The output is the
@@ -1078,12 +1609,27 @@ pub fn run_test(
         input: stdin_text.to_string(),
         in_pos: 0,
         budget: 0,
+        metered: false,
+        fuel_used: 0,
+        trace: TraceMode::Off,
+        clock: Clock::Real,
         depth: 0,
         pretend: HashMap::new(),
         failed_checks: Vec::new(),
         in_must_fail: 0,
         in_generator: false,
         pending_hands: Vec::new(),
+        plots: 0,
+        seed: 42,
+        tx_depth: 0,
+        limit_time: None,
+        limit_start: None,
+        limit_memory: None,
+        out_limit: std::env::var("LYKAON_OUTPUT_LIMIT")
+            .ok()
+            .and_then(|v| v.trim().parse::<usize>().ok())
+            .filter(|n| *n > 0),
+        sandbox: make_sandbox(&prog.source_dir),
         timer_firing: 0,
         temp_serial: 0,
         // M4-S54: tests use seed 42 unless a program sets another.
@@ -1132,6 +1678,7 @@ pub fn run_test(
     match r {
         Ok(_) | Err(TErr::Signal) | Err(TErr::Yield(_)) => Ok(it.failed_checks),
         Err(TErr::Fatal(m)) => Err(RunError {
+            reason: classify_failure(&m),
             message: m,
             code: 1,
             out: String::new(),
@@ -1143,16 +1690,73 @@ pub fn run_test(
 }
 
 impl<'p> Interp<'p> {
-    fn tick(&mut self) -> R<()> {
-        if self.budget == 0 {
-            return Ok(());
+    /// M5g item b: the current time on the run's clock, in milliseconds
+    /// since the Unix epoch.
+    fn clock_ms(&self) -> u64 {
+        match self.clock {
+            Clock::Real => std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0),
+            Clock::Virtual { now_ms } => now_ms,
         }
-        if self.budget == 1 {
-            return Err(TErr::Fatal(
-                "Error: The program ran for too long.".to_string(),
+    }
+
+    /// M5g item b: advance a virtual clock; a real clock ignores this.
+    fn advance_clock_ms(&mut self, ms: u64) {
+        if let Clock::Virtual { now_ms } = &mut self.clock {
+            *now_ms += ms;
+        }
+    }
+
+    /// M5g item b: wait until `end_ms`, sleeping only on a real clock.
+    fn sleep_until_ms(&mut self, end_ms: u64) {
+        let now = self.clock_ms();
+        if end_ms <= now {
+            return;
+        }
+        match &mut self.clock {
+            Clock::Virtual { now_ms } => *now_ms = end_ms,
+            Clock::Real => {
+                #[cfg(not(target_arch = "wasm32"))]
+                std::thread::sleep(std::time::Duration::from_millis(end_ms - now));
+            }
+        }
+    }
+
+    fn tick(&mut self) -> R<()> {
+        // M5-S45: Limit time N seconds. stops the run after that much
+        // run time (T0612). Checked at every sentence.
+        if let (Some(limit), Some(start)) = (self.limit_time, self.limit_start) {
+            if self.clock_ms().saturating_sub(start) >= limit {
+                return Err(fatal(
+                    "T0612",
+                    "Time limit reached.",
+                    "Raise Limit time or finish sooner.",
+                ));
+            }
+        }
+        if crate::alloc::exceeded() {
+            return Err(fatal(
+                "T0611",
+                "Memory limit reached.",
+                "Raise Limit memory or use less memory.",
             ));
         }
-        self.budget -= 1;
+        // M5g item a: a budget of N allows exactly N sentences; the next
+        // sentence stops before it runs. `metered` separates "no budget"
+        // from "budget spent", because both would otherwise store 0.
+        if self.metered {
+            if self.budget == 0 {
+                return Err(TErr::Fatal(
+                    "Error: The program ran for too long.".to_string(),
+                ));
+            }
+            self.budget -= 1;
+        }
+        // M5g item f: count sentences that actually run, so `fuel_used` is
+        // the executed count and never includes a refused sentence.
+        self.fuel_used += 1;
         Ok(())
     }
 
@@ -1242,7 +1846,13 @@ impl<'p> Interp<'p> {
             query: qs,
             skip_tls,
         };
-        let resp = net::request(&req).map_err(|_| TErr::Signal)?;
+        self.sandbox
+            .check_host(&req.address.host)
+            .map_err(|_| fatal("T0622", "Sandbox refused.", "Add the permission or remove the sentence."))?;
+        self.sandbox
+            .check_host(&req.address.host)
+            .map_err(|_| fatal("T0622", "Sandbox refused.", "Add the permission or remove the sentence."))?;
+        let resp = self.trace_net(&req)?;
         // the response record (S60): status (whole), body (text),
         // headers (map of text to text). A status of 400 or more is a
         // response, not a failure.
@@ -1311,7 +1921,7 @@ impl<'p> Interp<'p> {
                 // and its names; here it is filled.
                 let path =
                     std::path::Path::new(&self.prog.source_dir).join(format!("{name}.template"));
-                let text = std::fs::read_to_string(&path).map_err(|_| TErr::Signal)?;
+                let text = self.trace_read_text(&path)?;
                 let filled = self.fill_template(&text, frame, out)?;
                 Ok(plain_response(200, filled))
             }
@@ -1445,7 +2055,14 @@ impl<'p> Interp<'p> {
             other => return Ok(other),
         }
         // the accept loop (nonblocking, so the signals stay pollable);
-        // the parked live sessions are polled on every pass too
+        // the parked live sessions are polled on every pass too.
+        // LYKAON_SERVE_MAX_REQUESTS is a test knob: when set, the loop exits
+        // after that many connections so a server can be tested without
+        // running forever. It is unset in normal runs.
+        let max_serves: Option<u32> = std::env::var("LYKAON_SERVE_MAX_REQUESTS")
+            .ok()
+            .and_then(|v| v.parse().ok());
+        let mut served: u32 = 0;
         loop {
             self.tick()?;
             self.poll_signals(frame, out)?;
@@ -1463,6 +2080,12 @@ impl<'p> Interp<'p> {
                     // one idle read minute; the loop keeps serving after
                     conn.set_timeouts(Some(std::time::Duration::from_secs(60)));
                     self.serve_one_connection(conn, body, secure, frame, out)?;
+                    served += 1;
+                    if let Some(max) = max_serves {
+                        if served >= max {
+                            break Ok(Flow::Normal);
+                        }
+                    }
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
                 Err(_) => {}
@@ -1597,7 +2220,7 @@ impl<'p> Interp<'p> {
                             .map(|s| s.to_string())
                     })
                 });
-            let (session_value, session_cookie) = self.take_session(cookie.clone());
+            let (session_value, session_cookie) = self.take_session(cookie.clone())?;
             // the handler body runs with request and session provided
             // (M4-S68); the eager model runs it inline on this thread
             frame.push();
@@ -2023,7 +2646,7 @@ impl<'p> Interp<'p> {
     /// The server's session store: an in-memory map from the cookie
     /// value to the session map, purged of the 30-minute-expired
     /// entries on every look-up (S72; sessions are lost on restart).
-    fn take_session(&mut self, cookie: Option<String>) -> (Value, String) {
+    fn take_session(&mut self, cookie: Option<String>) -> R<(Value, String)> {
         let now = std::time::SystemTime::now();
         self.sessions.retain(|_, (_, seen)| {
             now.duration_since(*seen)
@@ -2038,13 +2661,13 @@ impl<'p> Interp<'p> {
                     .cloned()
                     .unwrap_or((Value::Map(Vec::new()), now));
                 self.sessions.insert(c.clone(), (v.clone(), now));
-                (v, c)
+                Ok((v, c))
             }
             _ => {
-                let c = random_cookie_value();
+                let c = self.trace_cookie()?;
                 let v = Value::Map(Vec::new());
                 self.sessions.insert(c.clone(), (v.clone(), now));
-                (v, c)
+                Ok((v, c))
             }
         }
     }
@@ -2100,7 +2723,11 @@ impl<'p> Interp<'p> {
     }
 
     fn exec_stmts(&mut self, stmts: &[sem::Stmt], frame: &mut Frame, out: &mut String) -> R<Flow> {
-        for st in stmts {
+        let is_top = std::ptr::eq(stmts, &self.prog.body[..]);
+        for (i, st) in stmts.iter().enumerate() {
+            if is_top {
+                set_debug_top(i);
+            }
             self.tick()?;
             match self.exec_stmt(st, frame, out)? {
                 Flow::Normal => {}
@@ -2165,12 +2792,19 @@ impl<'p> Interp<'p> {
     /// nothing (re-entrancy guard; logged).
     fn drive_timers_until(
         &mut self,
-        end: std::time::Instant,
+        end_ms: u64,
         frame: &mut Frame,
         out: &mut String,
     ) -> R<()> {
+        // No timers and no watchers: just wait out the sleep. On WASI-less
+        // wasm32-unknown-unknown there is no clock, so the wait is a no-op
+        // (the browser playground does not support time).
+        if frame.timers.is_empty() && frame.watchers.is_empty() {
+            self.sleep_until_ms(end_ms);
+            return Ok(());
+        }
         loop {
-            let now = std::time::Instant::now();
+            let now = self.clock_ms();
             // The earliest due round fires FIRST, even when the clock
             // already passed `end` (a sleep can overshoot the window, and
             // an event that reached its deadline inside the window must
@@ -2188,10 +2822,10 @@ impl<'p> Interp<'p> {
                     continue;
                 }
                 // nothing due: wait until the next event or the window end
-                if now >= end {
+                if now >= end_ms {
                     return Ok(());
                 }
-                let mut wake = end;
+                let mut wake = end_ms;
                 for t in &frame.timers {
                     if t.every && !t.stopped && t.next_round < wake {
                         wake = t.next_round;
@@ -2205,13 +2839,13 @@ impl<'p> Interp<'p> {
                     if w.stopped {
                         continue;
                     }
-                    let next = w.last_poll + WATCH_POLL;
+                    let next = w.last_poll + WATCH_POLL_MS;
                     if next < wake {
                         wake = next;
                     }
                 }
                 if wake > now {
-                    std::thread::sleep(wake - now);
+                    self.sleep_until_ms(wake);
                 }
                 continue;
             };
@@ -2269,10 +2903,10 @@ impl<'p> Interp<'p> {
             // the timers)
             return Ok(false);
         }
-        let now = std::time::Instant::now();
+        let now = self.clock_ms();
         let mut fired_any = false;
         for wi in 0..frame.watchers.len() {
-            if frame.watchers[wi].stopped || frame.watchers[wi].last_poll + WATCH_POLL > now {
+            if frame.watchers[wi].stopped || frame.watchers[wi].last_poll + WATCH_POLL_MS > now {
                 continue;
             }
             let snapshot = {
@@ -2330,6 +2964,18 @@ impl<'p> Interp<'p> {
     /// join from the file outward (M4-S31: the first named folder is
     /// closest to the file, so they join in reverse text order).
     fn resolve_file(&self, f: &sem::FileRef, frame: &Frame) -> R<std::path::PathBuf> {
+        let path = self.resolve_file_inner(f, frame)?;
+        self.sandbox.check_file(&path).map_err(|_| {
+            fatal(
+                "T0622",
+                "Sandbox refused.",
+                "Add the permission or remove the sentence.",
+            )
+        })?;
+        Ok(path)
+    }
+
+    fn resolve_file_inner(&self, f: &sem::FileRef, frame: &Frame) -> R<std::path::PathBuf> {
         if let Some(t) = &f.temp {
             for sc in frame.scopes.iter().rev() {
                 if let Some(v) = sc.vars.get(t.as_str()) {
@@ -2364,7 +3010,7 @@ impl<'p> Interp<'p> {
                 base = std::env::current_dir().map_err(|_| TErr::Signal)?;
             }
             Some(sem::FileRoot::Temporary) => {
-                base = std::env::temp_dir();
+                base = lykaon_temp_dir();
             }
             Some(sem::FileRoot::Root) => {
                 // "/" on Linux; the root of the current drive like "C:\"
@@ -2458,11 +3104,53 @@ impl<'p> Interp<'p> {
             let Some(dl) = dl else {
                 return Ok(());
             };
-            self.drive_timers_until(dl + std::time::Duration::from_millis(1), frame, out)?;
+            self.drive_timers_until(dl + 1, frame, out)?;
         }
     }
 
+    fn check_limits(&self) -> R<()> {
+        if let (Some(limit), Some(start)) = (self.limit_time, self.limit_start) {
+            if self.clock_ms().saturating_sub(start) >= limit {
+                return Err(fatal(
+                    "T0612",
+                    "Time limit reached.",
+                    "Raise Limit time or finish sooner.",
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// M5g item e: the output byte cap. The cap is checked after every
+    /// sentence (not inside `tick()`, which does not see the output
+    /// buffer): a run that prints past the cap stops with T0613 instead of
+    /// filling memory or the parent pipe. The child of `--isolate` gets the
+    /// cap from LYKAON_OUTPUT_LIMIT; a plain run is uncapped.
     fn exec_stmt(&mut self, st: &sem::Stmt, frame: &mut Frame, out: &mut String) -> R<Flow> {
+        let flow = self.exec_stmt_inner(st, frame, out)?;
+        if let Some(limit) = self.out_limit {
+            if out.len() > limit {
+                return Err(fatal(
+                    "T0613",
+                    "Output limit reached.",
+                    "Raise the output limit or print less.",
+                ));
+            }
+        }
+        Ok(flow)
+    }
+
+    fn exec_stmt_inner(
+        &mut self,
+        st: &sem::Stmt,
+        frame: &mut Frame,
+        out: &mut String,
+    ) -> R<Flow> {
+        self.check_limits()?;
+        trace_stmt(st);
+        coverage_stmt(st);
+        profile_stmt(st);
+        debug_stmt(st, frame, out);
         match st {
             sem::Stmt::Note => Ok(Flow::Normal),
             // ---- M4 (Appendix K) tasks --------------------------------
@@ -2569,13 +3257,21 @@ impl<'p> Interp<'p> {
                 Ok(Flow::Normal)
             }
             sem::Stmt::SleepFor { amount, unit } => {
-                use std::time::Duration;
                 // M4-S9: Sleep for pauses; it is on the pause list. In the
                 // eager first cut the sleep ALSO drives the timer calendar
                 // (M4-4): due Everies run fixed-rate rounds (M4-D12) and
                 // past-deadline Afters run once, real-walled.
                 let ms = timer_unit_ms(*amount, unit);
-                let end = std::time::Instant::now() + Duration::from_millis(ms);
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::Sleep(ms));
+                }
+                if self.trace.is_replay() {
+                    // The recorded clock values are what the program saw;
+                    // waiting again would only make replay slower.
+                    self.trace_next(TraceKind::Sleep)?;
+                    return Ok(Flow::Normal);
+                }
+                let end = self.clock_ms() + ms;
                 self.drive_timers_until(end, frame, out)?;
                 Ok(Flow::Normal)
             }
@@ -2712,34 +3408,45 @@ impl<'p> Interp<'p> {
                 Ok(Flow::Normal)
             }
             sem::Stmt::AfterTimer { amount, unit, body } => {
+                // M5g item c: a timer is real-clock state; replay refuses it
+                // rather than pretending the same deadlines still hold.
+                if self.trace.is_replay() {
+                    return Err(Self::replay_err("timers are not replayable in trace v1"));
+                }
                 // M4-G14: After N <unit>. starts a one-shot timer and goes
                 // on (M4-S25). The eager cut drives timers off real-clock
                 // deadlines at Sleep passes (drive_timers_until); an After
                 // that never meets a Sleep fires at main end (M4-S28).
                 let ms = timer_unit_ms(*amount, unit);
+                let now = self.clock_ms();
                 frame.timers.push(TimerTask {
                     every: false,
                     body: std::rc::Rc::new(body.clone()),
-                    deadline: instant_after(ms),
-                    interval: std::time::Duration::ZERO,
-                    next_round: std::time::Instant::now(),
+                    deadline: now + ms,
+                    interval: 0,
+                    next_round: now,
                     stopped: false,
                     done: false,
                 });
                 Ok(Flow::Normal)
             }
             sem::Stmt::EveryTimer { amount, unit, body } => {
+                // M5g item c: see AfterTimer - not replayable in v1.
+                if self.trace.is_replay() {
+                    return Err(Self::replay_err("timers are not replayable in trace v1"));
+                }
                 // M4-G15: Every N <unit>. repeats the block at a fixed rate
                 // (M4-D12); the first round starts after one interval.
                 // Stop. inside a round ends it; it is cancelled with the
                 // enclosing scope and at main end (M4-S26).
                 let ms = timer_unit_ms(*amount, unit);
+                let now = self.clock_ms();
                 frame.timers.push(TimerTask {
                     every: true,
                     body: std::rc::Rc::new(body.clone()),
-                    deadline: std::time::Instant::now(),
-                    interval: std::time::Duration::from_millis(ms),
-                    next_round: instant_after(ms),
+                    deadline: now,
+                    interval: ms,
+                    next_round: now + ms,
                     stopped: false,
                     done: false,
                 });
@@ -2863,14 +3570,14 @@ impl<'p> Interp<'p> {
                 // M4-G34/S36: the whole text into it, line endings kept;
                 // a file that is not valid UTF-8 fails (bad format, S33)
                 let path = self.resolve_file(file, frame)?;
-                let text = std::fs::read_to_string(&path).map_err(|_| TErr::Signal)?;
+                let text = self.trace_read_text(&path)?;
                 frame.last_result = Some(Value::Text(text));
                 Ok(Flow::Normal)
             }
             sem::Stmt::ReadBytes { file } => {
                 // M4-G35: the bytes of the file as a list of whole numbers
                 let path = self.resolve_file(file, frame)?;
-                let bytes = std::fs::read(&path).map_err(|_| TErr::Signal)?;
+                let bytes = self.trace_read_bytes(&path)?;
                 frame.last_result = Some(Value::List(
                     bytes.into_iter().map(|b| Value::Whole(b as i64)).collect(),
                 ));
@@ -2883,23 +3590,60 @@ impl<'p> Interp<'p> {
                 // wording of the run (no per-kind text at run time here;
                 // logged with the Ask precedent).
                 let path = self.resolve_file(file, frame)?;
+                if self.trace.is_replay() {
+                    let event = self.trace_next(TraceKind::FileWrite)?;
+                    let TraceEvent::FileWrite {
+                        path: recorded,
+                        len,
+                        sha256,
+                        ok,
+                    } = event
+                    else {
+                        return Err(Self::replay_err("write event has the wrong shape"));
+                    };
+                    if recorded != path.to_string_lossy() {
+                        return Err(Self::replay_err(format!(
+                            "expected to write {recorded} but the run wrote {}",
+                            path.display()
+                        )));
+                    }
+                    if !ok {
+                        return Err(TErr::Signal);
+                    }
+                    let bytes = self.file_bytes(value, frame, out)?;
+                    if bytes.len() as u64 != len || sha256_hex(&bytes) != sha256 {
+                        return Err(Self::replay_err(format!(
+                            "{recorded} would be written with different bytes"
+                        )));
+                    }
+                    return Ok(Flow::Normal);
+                }
                 if file.temp.is_none() && std::fs::metadata(&path).is_ok() {
+                    if self.trace.is_recording() {
+                        self.trace.push(TraceEvent::FileWrite {
+                            path: path.to_string_lossy().into_owned(),
+                            len: 0,
+                            sha256: sha256_hex(b""),
+                            ok: false,
+                        });
+                    }
                     return Err(TErr::Signal);
                 }
                 let bytes = self.file_bytes(value, frame, out)?;
-                std::fs::write(&path, bytes).map_err(|_| TErr::Signal)?;
+                self.trace_write(&path, &bytes, || std::fs::write(&path, &bytes))?;
                 Ok(Flow::Normal)
             }
             sem::Stmt::AppendFile { file, value } => {
                 // M4-G37/S34: append creates the file when needed
                 let path = self.resolve_file(file, frame)?;
                 let bytes = self.file_bytes(value, frame, out)?;
-                let mut f = std::fs::OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(&path)
-                    .map_err(|_| TErr::Signal)?;
-                f.write_all(&bytes).map_err(|_| TErr::Signal)?;
+                self.trace_write(&path, &bytes, || {
+                    let mut f = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(&path)?;
+                    f.write_all(&bytes)
+                })?;
                 Ok(Flow::Normal)
             }
             sem::Stmt::ReplaceFile { file, value } => {
@@ -2908,39 +3652,70 @@ impl<'p> Interp<'p> {
                 // target (one same-volume rename)
                 let path = self.resolve_file(file, frame)?;
                 let bytes = self.file_bytes(value, frame, out)?;
-                let mut tmp = path.clone();
-                let stamp = format!("tmp{}", std::process::id());
-                tmp.set_extension(stamp);
-                if std::fs::write(&tmp, &bytes)
-                    .and_then(|()| std::fs::rename(&tmp, &path))
-                    .is_err()
-                {
-                    let _ = std::fs::remove_file(&tmp);
-                    return Err(TErr::Signal);
-                }
+                self.trace_write(&path, &bytes, || {
+                    let mut tmp = path.clone();
+                    let stamp = format!("tmp{}", std::process::id());
+                    tmp.set_extension(stamp);
+                    if std::fs::write(&tmp, &bytes)
+                        .and_then(|()| std::fs::rename(&tmp, &path))
+                        .is_err()
+                    {
+                        let _ = std::fs::remove_file(&tmp);
+                        return Err(std::io::Error::other("replace failed"));
+                    }
+                    Ok(())
+                })?;
                 Ok(Flow::Normal)
             }
             sem::Stmt::ForEachLine { var, file, body } => {
                 // M4-G39/S36: the lines of the file one by one, each
                 // without its line ending (LF or CRLF), streamed. Stop.
                 // leaves the loop; the var is the line and so is it.
+                // M5g item c: with tracing on, the whole file comes from
+                // the trace; with tracing off the stream is unchanged.
                 let path = self.resolve_file(file, frame)?;
-                let f = std::fs::File::open(&path).map_err(|_| TErr::Signal)?;
-                let mut rdr = std::io::BufReader::new(f);
-                let mut line = String::new();
-                loop {
-                    line.clear();
-                    match rdr.read_line(&mut line) {
-                        Ok(0) => break,
-                        Ok(_) => {}
-                        Err(_) => return Err(TErr::Signal),
-                    }
-                    if line.ends_with('\n') {
-                        line.pop();
-                        if line.ends_with('\r') {
-                            line.pop();
+                enum LineSource {
+                    Stream(std::io::BufReader<std::fs::File>),
+                    Trace(std::vec::IntoIter<String>),
+                }
+                impl LineSource {
+                    fn next_line(&mut self) -> std::io::Result<Option<String>> {
+                        match self {
+                            LineSource::Stream(rdr) => {
+                                let mut line = String::new();
+                                match rdr.read_line(&mut line)? {
+                                    0 => Ok(None),
+                                    _ => {
+                                        if line.ends_with('\n') {
+                                            line.pop();
+                                            if line.ends_with('\r') {
+                                                line.pop();
+                                            }
+                                        }
+                                        Ok(Some(line))
+                                    }
+                                }
+                            }
+                            LineSource::Trace(lines) => Ok(lines.next()),
                         }
                     }
+                }
+                let mut lines = if self.trace.is_off() {
+                    let f = std::fs::File::open(&path).map_err(|_| TErr::Signal)?;
+                    LineSource::Stream(std::io::BufReader::new(f))
+                } else {
+                    let text = self.trace_read_text(&path)?;
+                    LineSource::Trace(
+                        text.lines()
+                            .map(|l| l.to_string())
+                            .collect::<Vec<_>>()
+                            .into_iter(),
+                    )
+                };
+                loop {
+                    let Some(line) = lines.next_line().map_err(|_| TErr::Signal)? else {
+                        break;
+                    };
                     self.tick()?;
                     frame.last_result = Some(Value::Text(line.clone()));
                     frame.push();
@@ -2966,7 +3741,10 @@ impl<'p> Interp<'p> {
             sem::Stmt::MakeFolder { file } => {
                 // M4-G40: the folder and its missing parents are made
                 let path = self.resolve_file(file, frame)?;
-                std::fs::create_dir_all(&path).map_err(|_| TErr::Signal)?;
+                let shown = path.to_string_lossy().into_owned();
+                self.trace_fs_op("make_folder", &[shown], || {
+                    std::fs::create_dir_all(&path)
+                })?;
                 Ok(Flow::Normal)
             }
             sem::Stmt::RemovePath { file } => {
@@ -2974,13 +3752,37 @@ impl<'p> Interp<'p> {
                 // (or any folder) is removed with all its contents (the
                 // recursive reading is logged)
                 let path = self.resolve_file(file, frame)?;
-                match std::fs::symlink_metadata(&path) {
-                    Ok(m) if m.is_dir() => {
-                        std::fs::remove_dir_all(&path).map_err(|_| TErr::Signal)?
+                let shown = path.to_string_lossy().into_owned();
+                if self.trace.is_replay() {
+                    // Check the recording BEFORE touching the disk: a
+                    // replay must not delete anything.
+                    let event = self.trace_next(TraceKind::FsOp)?;
+                    let TraceEvent::FsOp {
+                        op,
+                        paths,
+                        ok,
+                    } = event
+                    else {
+                        return Err(Self::replay_err("filesystem event has the wrong shape"));
+                    };
+                    if op != "remove" || paths.len() != 1 || paths[0] != shown {
+                        return Err(Self::replay_err(format!(
+                            "expected remove on {shown} but the trace has {op} on {paths:?}"
+                        )));
                     }
-                    Ok(_) => std::fs::remove_file(&path).map_err(|_| TErr::Signal)?,
-                    Err(_) => return Err(TErr::Signal),
+                    if !ok {
+                        return Err(TErr::Signal);
+                    }
+                    return Ok(Flow::Normal);
                 }
+                let result = std::fs::symlink_metadata(&path).and_then(|m| {
+                    if m.is_dir() {
+                        std::fs::remove_dir_all(&path)
+                    } else {
+                        std::fs::remove_file(&path)
+                    }
+                });
+                self.trace_fs_op("remove", &[shown], || result)?;
                 Ok(Flow::Normal)
             }
             sem::Stmt::MovePath { from, to } => {
@@ -2988,10 +3790,17 @@ impl<'p> Interp<'p> {
                 // system, for example) a copy then a remove
                 let a = self.resolve_file(from, frame)?;
                 let b = self.resolve_file(to, frame)?;
-                if std::fs::rename(&a, &b).is_err() {
-                    std::fs::copy(&a, &b).map_err(|_| TErr::Signal)?;
-                    std::fs::remove_file(&a).map_err(|_| TErr::Signal)?;
-                }
+                let shown = [
+                    a.to_string_lossy().into_owned(),
+                    b.to_string_lossy().into_owned(),
+                ];
+                self.trace_fs_op("move", &shown, || {
+                    if std::fs::rename(&a, &b).is_err() {
+                        std::fs::copy(&a, &b)?;
+                        std::fs::remove_file(&a)?;
+                    }
+                    Ok(())
+                })?;
                 Ok(Flow::Normal)
             }
             sem::Stmt::DuplicatePath { from, to } => {
@@ -2999,31 +3808,32 @@ impl<'p> Interp<'p> {
                 // its contents (recursive, logged)
                 let a = self.resolve_file(from, frame)?;
                 let b = self.resolve_file(to, frame)?;
-                let ok = if std::fs::symlink_metadata(&a)
-                    .map(|m| m.is_dir())
-                    .unwrap_or(false)
-                {
-                    copy_dir_all(&a, &b).is_ok()
-                } else {
-                    std::fs::copy(&a, &b).is_ok()
-                };
-                if !ok {
-                    return Err(TErr::Signal);
-                }
+                let shown = [
+                    a.to_string_lossy().into_owned(),
+                    b.to_string_lossy().into_owned(),
+                ];
+                self.trace_fs_op("duplicate", &shown, || {
+                    let ok = if std::fs::symlink_metadata(&a)
+                        .map(|m| m.is_dir())
+                        .unwrap_or(false)
+                    {
+                        copy_dir_all(&a, &b).is_ok()
+                    } else {
+                        std::fs::copy(&a, &b).is_ok()
+                    };
+                    if ok {
+                        Ok(())
+                    } else {
+                        Err(std::io::Error::other("duplicate failed"))
+                    }
+                })?;
                 Ok(Flow::Normal)
             }
             sem::Stmt::ListFolder { file } => {
                 // M4-G44: the entry names (files and folders both) into
                 // it, sorted byte-wise (the sort choice is logged)
                 let path = self.resolve_file(file, frame)?;
-                let mut names: Vec<String> = Vec::new();
-                for entry in std::fs::read_dir(&path).map_err(|_| TErr::Signal)? {
-                    match entry {
-                        Ok(e) => names.push(e.file_name().to_string_lossy().to_string()),
-                        Err(_) => return Err(TErr::Signal),
-                    }
-                }
-                names.sort();
+                let names = self.trace_dir_list(&path)?;
                 frame.last_result = Some(Value::List(names.into_iter().map(Value::Text).collect()));
                 Ok(Flow::Normal)
             }
@@ -3032,15 +3842,35 @@ impl<'p> Interp<'p> {
                 // text bound to NAME, and the file (when it still exists)
                 // is removed when the block that holds it ends, even
                 // after a failure (the deletion runs at clean-up time)
+                if self.trace.is_replay() {
+                    let event = self.trace_next(TraceKind::TempFile)?;
+                    let TraceEvent::TempFile { path, ok } = event else {
+                        return Err(Self::replay_err("temporary file event has the wrong shape"));
+                    };
+                    if !ok {
+                        return Err(TErr::Signal);
+                    }
+                    // Reuse the recorded path (it contains the recording
+                    // process id) and create nothing.
+                    frame.define(name.as_str(), Value::Text(path));
+                    return Ok(Flow::Normal);
+                }
                 self.temp_serial += 1;
-                let mut path = std::env::temp_dir();
+                let mut path = lykaon_temp_dir();
                 path.push(format!(
                     "{}_{}_{}.tmp",
                     name.trim().to_string(),
                     std::process::id(),
                     self.temp_serial
                 ));
-                std::fs::write(&path, b"").map_err(|_| TErr::Signal)?;
+                let result = std::fs::write(&path, b"");
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::TempFile {
+                        path: path.to_string_lossy().into_owned(),
+                        ok: result.is_ok(),
+                    });
+                }
+                result.map_err(|_| TErr::Signal)?;
                 frame.define(
                     name.as_str(),
                     Value::Text(path.to_string_lossy().to_string()),
@@ -3051,6 +3881,16 @@ impl<'p> Interp<'p> {
                 Ok(Flow::Normal)
             }
             sem::Stmt::WhenFileChanges { file, body } => {
+                // M5g item c: a watcher polls the real clock; replay refuses
+                // it rather than firing on a different beat.
+                if self.clock.is_virtual() {
+                    return Err(TErr::Fatal(
+                        "Error: File watchers are not deterministic.".to_string(),
+                    ));
+                }
+                if self.trace.is_replay() {
+                    return Err(Self::replay_err("file watchers are not replayable in trace v1"));
+                }
                 // M4-G47/S39: the block is a task in the enclosing scope;
                 // the eager cut polls on the timer calendar (during
                 // Sleeps), changes closer than 100 milliseconds merge
@@ -3061,7 +3901,7 @@ impl<'p> Interp<'p> {
                     file: file.clone(),
                     body: std::rc::Rc::new(body.clone()),
                     state: Some(snapshot),
-                    last_poll: std::time::Instant::now(),
+                    last_poll: self.clock_ms(),
                     stopped: false,
                 });
                 Ok(Flow::Normal)
@@ -3076,26 +3916,36 @@ impl<'p> Interp<'p> {
                     sem::ZipKind::Zip => {
                         let src = self.resolve_file(from, frame)?;
                         let dst = self.resolve_file(to, frame)?;
-                        write_zip(&src, &dst).map_err(|_| TErr::Signal)?;
+                        let shown = [
+                            src.to_string_lossy().into_owned(),
+                            dst.to_string_lossy().into_owned(),
+                        ];
+                        self.trace_fs_op("zip", &shown, || write_zip(&src, &dst))?;
                         Ok(Flow::Normal)
                     }
                     sem::ZipKind::Unzip => {
                         let src = self.resolve_file(from, frame)?;
                         let dst = self.resolve_file(to, frame)?;
-                        unzip_archive(&src, &dst).map_err(|_| TErr::Signal)?;
+                        let shown = [
+                            src.to_string_lossy().into_owned(),
+                            dst.to_string_lossy().into_owned(),
+                        ];
+                        self.trace_fs_op("unzip", &shown, || {
+                            unzip_archive(&src, &dst)
+                        })?;
                         Ok(Flow::Normal)
                     }
                     sem::ZipKind::Gzip => {
                         let src = self.resolve_file(from, frame)?;
                         let dst = self.resolve_file(to, frame)?;
-                        let raw = std::fs::read(&src).map_err(|_| TErr::Signal)?;
+                        let raw = self.trace_read_bytes(&src)?;
                         let mut enc = flate2::write::GzEncoder::new(
                             Vec::new(),
                             flate2::Compression::default(),
                         );
                         enc.write_all(&raw).map_err(|_| TErr::Signal)?;
                         let gz = enc.finish().map_err(|_| TErr::Signal)?;
-                        std::fs::write(&dst, gz).map_err(|_| TErr::Signal)?;
+                        self.trace_write(&dst, &gz, || std::fs::write(&dst, &gz))?;
                         Ok(Flow::Normal)
                     }
                 }
@@ -3112,7 +3962,7 @@ impl<'p> Interp<'p> {
                 // ordinary anonymous run-time failure (deviation logged;
                 // the doc's per-part message needs diagnostics).
                 let path = self.resolve_file(file, frame)?;
-                let text = std::fs::read_to_string(&path).map_err(|_| TErr::Signal)?;
+                let text = self.trace_read_text(&path)?;
                 let v = crate::formats::decode_format(format, &text, target)
                     .map_err(|_| TErr::Signal)?;
                 frame.last_result = Some(v);
@@ -3152,7 +4002,8 @@ impl<'p> Interp<'p> {
                     text.push('\n');
                 }
                 let path = self.resolve_file(file, frame)?;
-                std::fs::write(&path, text.as_bytes()).map_err(|_| TErr::Signal)?;
+                let bytes = text.as_bytes();
+                self.trace_write(&path, bytes, || std::fs::write(&path, bytes))?;
                 Ok(Flow::Normal)
             }
             // ---- M4-7 (Appendix K 7.7): random seed --------------------
@@ -3160,10 +4011,18 @@ impl<'p> Interp<'p> {
                 // M4-G58: Use seed N. sets the program's generator,
                 // xoshiro256++ seeded by splitmix64 from the number.
                 self.rng = Some(crate::time4::xoshiro_seed(*seed));
+                self.seed = *seed as u64;
                 Ok(Flow::Normal)
             }
             // ---- M4-8 (Appendix K 7.10/7.11): system, tools ------------
             sem::Stmt::RunProc { name, args } => {
+                self.sandbox.check_process().map_err(|_| {
+                    fatal(
+                        "T0622",
+                        "Sandbox refused.",
+                        "Add the permission or remove the sentence.",
+                    )
+                })?;
                 // M4-S76: the program found on the path (the compile check
                 // refused a name with a path), one argument per operand,
                 // no shell. Run is a pause point (the pause list) - a
@@ -3867,7 +4726,7 @@ impl<'p> Interp<'p> {
                 let inward: Vec<String> = parts.iter().rev().cloned().collect();
                 // the Always invariants of the (outermost) record re-run when
                 // the program changes a part through any depth of the path
-                // (ch.64, M3-S38) ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â checked AFTER the write, over the new
+                // (ch.64, M3-S38) ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â checked AFTER the write, over the new
                 // part values
                 set_part_into(cur, &inward, &v)?;
                 let inv_target = frame.find(base).and_then(|c| match c {
@@ -4011,7 +4870,7 @@ impl<'p> Interp<'p> {
                 body,
             } => {
                 if let Some((kind_words, gen_name)) = prop {
-                    // Check for any <kind> <name>. ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â property test (ch.38):
+                    // Check for any <kind> <name>. ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â property test (ch.38):
                     // 100 inputs, seed 42. No shrinking (deviation).
                     let mut state: u64 = 42;
                     let mut next = || {
@@ -4210,7 +5069,787 @@ impl<'p> Interp<'p> {
                 }
                 Ok(Flow::Normal)
             }
+            // ---- M5 (Appendix L 7.1): tables and data sentences ----
+            sem::Stmt::LoadTable { name, origin } => {
+                let t = self.load_table(name, origin, frame)?;
+                frame.define(name, Value::Table(std::rc::Rc::new(t)));
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::SayData { table, items } => {
+                let t = self.named_table(table, frame)?;
+                let mut first_line = true;
+                for item in items {
+                    if !first_line {
+                        out.push('\n');
+                    }
+                    first_line = false;
+                    match item {
+                        sem::DataItem::Rows => {
+                            out.push_str("rows ");
+                            out.push_str(&t.rows.len().to_string());
+                        }
+                        sem::DataItem::Columns => {
+                            out.push_str("columns ");
+                            let names: Vec<String> = t
+                                .columns
+                                .iter()
+                                .map(|c| c.name.clone())
+                                .collect();
+                            out.push_str(&names.join(" "));
+                        }
+                        sem::DataItem::Stat(word, column) => {
+                            let ci = match t.column_index(column) {
+                                Some(i) => i,
+                                None => {
+                                    return Err(fatal(
+                                        "T0175",
+                                        &format!(
+                                            "The table {table} does not have a column {column}."
+                                        ),
+                                        "Check the column names.",
+                                    ))
+                                }
+                            };
+                            let sv = crate::data::stat(&t, ci, *word).map_err(|cause| {
+                                fatal("T0305", cause, "Use a numeric column.")
+                            })?;
+                            out.push_str(word.words());
+                            out.push(' ');
+                            out.push_str(column);
+                            out.push(' ');
+                            out.push_str(&sv.text);
+                            if let Some(note) = crate::data::missing_note(column, sv.missing) {
+                                out.push('\n');
+                                out.push_str(&note);
+                            }
+                        }
+                    }
+                }
+                out.push('\n');
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::SayGroup {
+                table,
+                highest,
+                count,
+                group_column,
+                stat,
+                column,
+            } => {
+                let t = self.named_table(table, frame)?;
+                let gi = t.column_index(group_column).ok_or_else(|| {
+                    fatal(
+                        "T0175",
+                        &format!("The table {table} does not have a column {group_column}."),
+                        "Check the column names.",
+                    )
+                })?;
+                let ci = t.column_index(column).ok_or_else(|| {
+                    fatal(
+                        "T0175",
+                        &format!("The table {table} does not have a column {column}."),
+                        "Check the column names.",
+                    )
+                })?;
+                let top = match (highest, count) {
+                    (Some(h), Some(n)) => Some((*h, *n)),
+                    (None, _) => None,
+                    (Some(h), None) => Some((*h, 0)),
+                };
+                let grouped = crate::data::group_table(&t, gi, *stat, ci, top)
+                    .map_err(|cause| fatal("T0305", cause, "Use a numeric column."))?;
+                out.push_str(&crate::data::print_table(&grouped));
+                out.push('\n');
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::SayRows {
+                table,
+                first,
+                cond,
+                sorted_by,
+                descending,
+            } => {
+                let t = self.named_table(table, frame)?;
+                let mut rows: Vec<Vec<Value>> = Vec::new();
+                for row in &t.rows {
+                    if let Some(c) = cond {
+                        frame.push();
+                        for (ci, col) in t.columns.iter().enumerate() {
+                            frame.define(
+                                &col.name,
+                                row.get(ci).cloned().unwrap_or(Value::Missing),
+                            );
+                        }
+                        let record = Value::Record(
+                            format!("row of {table}"),
+                            t.columns
+                                .iter()
+                                .enumerate()
+                                .map(|(ci, col)| {
+                                    (
+                                        col.name.clone(),
+                                        row.get(ci).cloned().unwrap_or(Value::Missing),
+                                    )
+                                })
+                                .collect(),
+                        );
+                        let saved = frame.where_item.replace(record);
+                        let keep = self.eval_expr(c, frame, out);
+                        frame.where_item = saved;
+                        frame.pop();
+                        if !as_truthy(&keep?) {
+                            continue;
+                        }
+                    }
+                    rows.push(row.clone());
+                }
+                if let Some(col) = sorted_by {
+                    let ci = t.column_index(col).ok_or_else(|| {
+                        fatal(
+                            "T0175",
+                            &format!("The table {table} does not have a column {col}."),
+                            "Check the column names.",
+                        )
+                    })?;
+                    rows.sort_by(|a, b| {
+                        let ord = compare_cells(
+                            a.get(ci).unwrap_or(&Value::Missing),
+                            b.get(ci).unwrap_or(&Value::Missing),
+                        );
+                        if *descending {
+                            // missing stays last in both directions
+                            let a_miss = matches!(a.get(ci), None | Some(Value::Missing));
+                            let b_miss = matches!(b.get(ci), None | Some(Value::Missing));
+                            match (a_miss, b_miss) {
+                                (true, false) => std::cmp::Ordering::Greater,
+                                (false, true) => std::cmp::Ordering::Less,
+                                _ => ord.reverse(),
+                            }
+                        } else {
+                            ord
+                        }
+                    });
+                }
+                if let Some(n) = first {
+                    rows.truncate(*n);
+                }
+                let shown = crate::data::Table {
+                    columns: t.columns.clone(),
+                    rows,
+                };
+                out.push_str(&crate::data::print_table(&shown));
+                out.push('\n');
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::ForEachRow { table, var, body } => {
+                let t = self.named_table(table, frame)?;
+                for row in &t.rows {
+                    self.tick()?;
+                    let parts: Vec<(String, Value)> = t
+                        .columns
+                        .iter()
+                        .enumerate()
+                        .map(|(ci, col)| {
+                            (
+                                col.name.clone(),
+                                row.get(ci).cloned().unwrap_or(Value::Missing),
+                            )
+                        })
+                        .collect();
+                    frame.push();
+                    frame.define(
+                        var,
+                        Value::Record(format!("row of {table}"), parts),
+                    );
+                    let flow = self.exec_stmts(body, frame, out);
+                    frame.pop();
+                    match flow {
+                        Ok(Flow::Normal) | Ok(Flow::Skip) => {}
+                        Ok(Flow::Stop) => return Ok(Flow::Normal),
+                        Ok(Flow::Hand(v)) => {
+                            if self.in_generator {
+                                self.pending_hands.push(v);
+                            } else {
+                                return Ok(Flow::Hand(v));
+                            }
+                        }
+                        Ok(f @ Flow::Back(_, _)) => return Ok(f),
+                        Err(e) => return Err(e),
+                    }
+                }
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::Plot {
+                table,
+                vertical,
+                horizontal,
+                kind,
+                file,
+            } => {
+                let t = self.named_table(table, frame)?;
+                let vi = t.column_index(vertical).ok_or_else(|| {
+                    fatal(
+                        "T0175",
+                        &format!("The table {table} does not have a column {vertical}."),
+                        "Check the column names.",
+                    )
+                })?;
+                let hi = t.column_index(horizontal).ok_or_else(|| {
+                    fatal(
+                        "T0175",
+                        &format!("The table {table} does not have a column {horizontal}."),
+                        "Check the column names.",
+                    )
+                })?;
+                let is_png = file
+                    .as_ref()
+                    .and_then(|fr| fr.ext.as_deref())
+                    .is_some_and(|e| e.eq_ignore_ascii_case("png"));
+                let bytes = if is_png {
+                    crate::chart::render_png(&t, vi, hi, *kind)
+                        .map_err(|e| fatal("T0184", e.message(), "Use a numeric column."))?
+                } else {
+                    crate::chart::render_svg(&t, vi, hi, *kind)
+                        .map_err(|e| fatal("T0184", e.message(), "Use a numeric column."))?
+                        .into_bytes()
+                };
+                let path = match file {
+                    Some(fr) => {
+                        let mut fr = fr.clone();
+                        if fr.ext.is_none() {
+                            // M5-S16: `to file NAME` writes NAME.svg.
+                            fr.ext = Some("svg".to_string());
+                        }
+                        self.resolve_file(&fr, frame)?
+                    }
+                    None => {
+                        // M5-S16: no file means output/plot-N.svg in the
+                        // project folder, N counting from 1 in this run.
+                        let dir = std::path::Path::new(&self.prog.source_dir).join("output");
+                        if !self.trace.is_replay() {
+                            std::fs::create_dir_all(&dir).map_err(|_| TErr::Signal)?;
+                        }
+                        self.plots += 1;
+                        dir.join(format!("plot-{}.svg", self.plots))
+                    }
+                };
+                self.trace_write(&path, &bytes, || std::fs::write(&path, &bytes))?;
+                Ok(Flow::Normal)
+            }
+            // ---- M5 (Appendix L 7.3): models ----
+            sem::Stmt::Predict {
+                table,
+                target,
+                inputs,
+                kind,
+            } => {
+                let t = self.named_table(table, frame)?;
+                let mut m = crate::model::train(&t, target, inputs.as_deref(), *kind, self.seed)
+                    .map_err(|e| {
+                        if e.contains("Too few rows") {
+                            fatal("T0187", &e, "Use more rows.")
+                        } else {
+                            fatal("T0179", &e, "Use a column name.")
+                        }
+                    })?;
+                m.table = table.clone();
+                let value = Value::Model(std::rc::Rc::new(m));
+                frame.define("model", value.clone());
+                frame.last_result = Some(value);
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::SayModel { items } => {
+                let model = match frame.find("model") {
+                    Some(Value::Model(m)) => m.clone(),
+                    _ => {
+                        return Err(fatal(
+                            "T0179",
+                            "There is no model yet.",
+                            "Write Predict <column> from the rest.",
+                        ))
+                    }
+                };
+                let mut first_line = true;
+                for item in items {
+                    if !first_line {
+                        out.push('\n');
+                    }
+                    first_line = false;
+                    match item {
+                        sem::ModelItem::Accuracy => {
+                            if model.task != crate::model::Task::Classification {
+                                return Err(fatal(
+                                    "T0180",
+                                    "Wrong measure for the target.",
+                                    "Use error (number) or accuracy (text).",
+                                ));
+                            }
+                            let p = self.prepared_for_model(&model, frame)?;
+                            let s = crate::model::score(&model, &p.xs, &p.ys, &p.test);
+                            out.push_str(&format!("accuracy {s:.2}"));
+                        }
+                        sem::ModelItem::Error => {
+                            if model.task != crate::model::Task::Regression {
+                                return Err(fatal(
+                                    "T0180",
+                                    "Wrong measure for the target.",
+                                    "Use error (number) or accuracy (text).",
+                                ));
+                            }
+                            let p = self.prepared_for_model(&model, frame)?;
+                            let s = crate::model::score(&model, &p.xs, &p.ys, &p.test);
+                            out.push_str(&format!("error {s:.2}"));
+                        }
+                        sem::ModelItem::Importance => {
+                            let p = self.prepared_for_model(&model, frame)?;
+                            let imp = crate::model::importance(&model, &p, self.seed);
+                            out.push_str("what matters most");
+                            if imp.is_empty() {
+                                out.push_str("\nnothing stands out");
+                            } else {
+                                for (name, share) in imp {
+                                    out.push('\n');
+                                    out.push_str(&format!("{name} {share:.2}"));
+                                }
+                            }
+                        }
+                        sem::ModelItem::Cleaning => {
+                            if model.cleaning.is_empty() {
+                                out.push_str("nothing needed cleaning");
+                            } else {
+                                for (i, line) in model.cleaning.iter().enumerate() {
+                                    if i > 0 {
+                                        out.push('\n');
+                                    }
+                                    out.push_str(line);
+                                }
+                            }
+                        }
+                        sem::ModelItem::Prediction(pairs) => {
+                            let mut vals: Vec<(String, Value)> = Vec::new();
+                            for (name, expr) in pairs {
+                                let v = self.eval_expr(expr, frame, out)?;
+                                vals.push((name.clone(), v));
+                            }
+                            let x = model.row_from_parts(&vals);
+                            match model.predict(&x) {
+                                crate::model::Pred::Class(c) => {
+                                    let text = model
+                                        .classes
+                                        .get(c)
+                                        .cloned()
+                                        .unwrap_or_else(|| "missing".to_string());
+                                    out.push_str(&text);
+                                }
+                                crate::model::Pred::Value(v) => {
+                                    out.push_str(&format!("{v:.2}"));
+                                }
+                            }
+                        }
+                    }
+                }
+                out.push('\n');
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::SaveModel { name } => {
+                let model = match frame.find("model") {
+                    Some(Value::Model(m)) => m.clone(),
+                    _ => {
+                        return Err(fatal(
+                            "T0179",
+                            "There is no model yet.",
+                            "Write Predict <column> from the rest.",
+                        ))
+                    }
+                };
+                let dir = std::path::Path::new(&self.prog.source_dir).join("output");
+                if !self.trace.is_replay() {
+                    std::fs::create_dir_all(&dir).map_err(|_| TErr::Signal)?;
+                }
+                let path = dir.join(format!("{name}.model"));
+                let bytes = crate::model::save_bytes(&model);
+                self.trace_write(&path, &bytes, || std::fs::write(&path, &bytes))?;
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::LoadModel { name } => {
+                let dir = std::path::Path::new(&self.prog.source_dir).join("output");
+                let path = dir.join(format!("{name}.model"));
+                let bytes = match self.trace_read_bytes(&path) {
+                    Ok(bytes) => bytes,
+                    // A replay divergence must keep its own message.
+                    Err(e @ TErr::Fatal(_)) => return Err(e),
+                    Err(_) => {
+                        return Err(fatal(
+                            "T0621",
+                            "Model file damaged.",
+                            "Train and save again.",
+                        ))
+                    }
+                };
+                let model = crate::model::load_bytes(&bytes).ok_or_else(|| {
+                    fatal(
+                        "T0621",
+                        "Model file damaged.",
+                        "Train and save again.",
+                    )
+                })?;
+                let value = Value::Model(std::rc::Rc::new(model));
+                frame.define("model", value.clone());
+                frame.last_result = Some(value);
+                Ok(Flow::Normal)
+            }
+            // ---- M5 (Appendix L 7.4): databases ----
+            sem::Stmt::OpenDatabase { name, driver } => {
+                match driver {
+                    sem::DbDriver::Sqlite(fr) => {
+                        let path = self.resolve_file(fr, frame)?;
+                        let shown = path.to_string_lossy().into_owned();
+                        self.trace_db_open(name, "sqlite", "Fix the file or address.", || {
+                            crate::db::open_sqlite(name, &shown)
+                        })?;
+                    }
+                    sem::DbDriver::Postgres(addr) => {
+                        let user = std::env::var("Lykaon_PGUSER")
+                            .or_else(|_| std::env::var("USER"))
+                            .unwrap_or_else(|_| "postgres".to_string());
+                        let password =
+                            std::env::var("Lykaon_PGPASSWORD").unwrap_or_default();
+                        let database = addr.path.trim_matches('/').to_string();
+                        self.trace_db_open(name, "postgres", "Fix the file or address.", || {
+                            crate::db::open_postgres(
+                                name,
+                                &addr.host,
+                                addr.port,
+                                &user,
+                                &password,
+                                &database,
+                            )
+                        })?;
+                    }
+                }
+                frame.define(name, Value::Database(name.clone()));
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::LoadDatabase { name, db } => {
+                let t = self.trace_db_table(db, name, "Fix the file or address.", || {
+                    crate::db::read_table(db, name)
+                })?;
+                frame.define(name, Value::Table(std::rc::Rc::new(t)));
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::DbAdd { db, table, value } => {
+                let v = self.eval_expr(value, frame, out)?;
+                let Value::Record(_, parts) = v else {
+                    return Err(fatal(
+                        "T0313",
+                        "A part is missing.",
+                        "Give every column of the table.",
+                    ));
+                };
+                self.trace_db_write("insert", db, table, "Fix the table or the row.", || {
+                    crate::db::insert(db, table, &parts)
+                })?;
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::DbRemove { db, table, cond } => {
+                let (names, rows, ids) = self.trace_db_rows(
+                    db,
+                    table,
+                    "Fix the table or the rows.",
+                    || crate::db::select_rows(db, table),
+                )?;
+                let mut kill: Vec<String> = Vec::new();
+                for (ri, row) in rows.iter().enumerate() {
+                    if self.row_matches(&names, row, cond, frame, out)? {
+                        kill.push(ids[ri].clone());
+                    }
+                }
+                self.trace_db_write("delete", db, table, "Fix the table or the rows.", || {
+                    crate::db::delete_rows(db, table, &kill)
+                })?;
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::DbSet {
+                db,
+                table,
+                column,
+                value,
+                cond,
+            } => {
+                let v = self.eval_expr(value, frame, out)?;
+                let (names, rows, ids) = self.trace_db_rows(
+                    db,
+                    table,
+                    "Fix the table or the rows.",
+                    || crate::db::select_rows(db, table),
+                )?;
+                for (ri, row) in rows.iter().enumerate() {
+                    if self.row_matches(&names, row, cond, frame, out)? {
+                        let column = column.clone();
+                        let value = v.clone();
+                        let rowid = ids[ri].clone();
+                        self.trace_db_write(
+                            "update",
+                            db,
+                            table,
+                            "Fix the table or the rows.",
+                            || crate::db::update_cell(db, table, &column, &value, &rowid),
+                        )?;
+                    }
+                }
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::Transaction { body } => {
+                if self.tx_depth > 0 {
+                    return Err(fatal(
+                        "T0188",
+                        "Nested transaction.",
+                        "Use one.",
+                    ));
+                }
+                self.tx_depth += 1;
+                self.trace_db_write("begin", "", "", "Fix the file or address.", || {
+                    crate::db::begin_all()
+                })?;
+                let flow = self.exec_stmts(body, frame, out);
+                match flow {
+                    Ok(f) => {
+                        self.trace_db_write("commit", "", "", "Fix the file or address.", || {
+                            crate::db::commit_all()
+                        })?;
+                        self.tx_depth -= 1;
+                        Ok(f)
+                    }
+                    Err(e) => {
+                        self.trace_db_write("rollback", "", "", "Fix the file or address.", || {
+                            crate::db::rollback_all();
+                            Ok(())
+                        })?;
+                        self.tx_depth -= 1;
+                        Err(e)
+                    }
+                }
+            }
+            sem::Stmt::Limit { kind, amount, unit } => {
+                match kind {
+                    sem::LimitKind::Time => {
+                        let ms = match unit.as_str() {
+                            "millisecond" | "milliseconds" => *amount,
+                            "minute" | "minutes" => amount.saturating_mul(60_000),
+                            "hour" | "hours" => amount.saturating_mul(3_600_000),
+                            "day" | "days" => amount.saturating_mul(86_400_000),
+                            _ => amount.saturating_mul(1000),
+                        };
+                        self.limit_time = Some(ms);
+                        self.limit_start = Some(self.clock_ms());
+                    }
+                    sem::LimitKind::Memory => {
+                        let bytes = match unit.as_str() {
+                            "gigabyte" | "gigabytes" => {
+                                amount.saturating_mul(1024 * 1024 * 1024)
+                            }
+                            _ => amount.saturating_mul(1024 * 1024),
+                        };
+                        self.limit_memory = Some(bytes);
+                        crate::alloc::set_limit(bytes);
+                    }
+                }
+                Ok(Flow::Normal)
+            }
+            sem::Stmt::AskAssistant { text } => {
+                let reply = self.ask_assistant(text)?;
+                out.push_str(&reply);
+                out.push('\n');
+                frame.last_result = Some(Value::Text(reply));
+                Ok(Flow::Normal)
+            }
         }
+    }
+
+    /// M5-S35/S36: evaluate a where condition against one database row,
+    /// with the column names bound like a table row.
+    fn row_matches(
+        &mut self,
+        names: &[String],
+        row: &[Value],
+        cond: &sem::Expr,
+        frame: &mut Frame,
+        out: &mut String,
+    ) -> R<bool> {
+        frame.push();
+        for (i, name) in names.iter().enumerate() {
+            frame.define(name, row.get(i).cloned().unwrap_or(Value::Missing));
+        }
+        let record = Value::Record(
+            "row".to_string(),
+            names
+                .iter()
+                .enumerate()
+                .map(|(i, n)| (n.clone(), row.get(i).cloned().unwrap_or(Value::Missing)))
+                .collect(),
+        );
+        let saved = frame.where_item.replace(record);
+        let result = self.eval_expr(cond, frame, out);
+        frame.where_item = saved;
+        frame.pop();
+        Ok(as_truthy(&result?))
+    }
+
+    /// M5-S26: rebuild the prepared data for a model's own table and input
+    /// columns, so accuracy/error/importance use the same test split.
+    fn prepared_for_model(
+        &self,
+        model: &crate::model::Model,
+        frame: &Frame,
+    ) -> R<crate::model::Prepared> {
+        let t = self.named_table(&model.table, frame)?;
+        crate::model::prepare(&t, &model.target, Some(&model.input_names), self.seed).map_err(|e| {
+            if e.contains("Too few rows") {
+                fatal("T0187", &e, "Use more rows.")
+            } else {
+                fatal("T0179", &e, "Use a column name.")
+            }
+        })
+    }
+
+    /// M5-S40/S41: settings.lykaon -> one chat request -> the reply text.
+    fn ask_assistant(&self, text: &str) -> R<String> {
+        let dir = std::path::Path::new(&self.prog.source_dir);
+        let settings = std::fs::read_to_string(dir.join("settings.lykaon"))
+            .or_else(|_| std::fs::read_to_string(dir.join("settings.tern")))
+            .map_err(|_| {
+                fatal(
+                    "T0113",
+                    "the assistant is not set up (settings.lykaon is missing).",
+                    "Set Assistant address, Assistant model and Assistant key.",
+                )
+            })?;
+        let mut address = None;
+        let mut model = String::new();
+        let mut key = String::new();
+        for line in settings.lines() {
+            let lower = line.trim().to_ascii_lowercase();
+            let value = |prefix: &str| -> Option<String> {
+                let rest = line.trim().strip_prefix(prefix)?;
+                Some(rest.trim().trim_end_matches('.').to_string())
+            };
+            if lower.starts_with("assistant address is ") {
+                address = value("Assistant address is ");
+            } else if lower.starts_with("assistant model is ") {
+                model = value("Assistant model is ").unwrap_or_default();
+            } else if lower.starts_with("assistant key comes from environment ") {
+                let rest = line
+                    .trim()
+                    .strip_prefix("Assistant key comes from environment ")
+                    .unwrap_or("")
+                    .trim()
+                    .trim_end_matches('.');
+                let name = rest.split_whitespace().next().unwrap_or("");
+                key = std::env::var(name).unwrap_or_default();
+            }
+        }
+        let address = address.ok_or_else(|| {
+            fatal(
+                "T0113",
+                "the assistant address is missing.",
+                "Set Assistant address is <address>.",
+            )
+        })?;
+        let parsed = parse_http_address(&address).ok_or_else(|| {
+            fatal(
+                "T0113",
+                "the assistant address cannot be read.",
+                "Use an http or https address.",
+            )
+        })?;
+        let body = format!(
+            "{{\"model\":{},\"messages\":[{{\"role\":\"user\",\"content\":{}}}]}}",
+            json_string(&model),
+            json_string(text)
+        );
+        let req = crate::net::Request {
+            method: crate::net::Method::Post,
+            address: parsed,
+            data: Some(crate::net::Data::Json(body)),
+            headers: vec![
+                ("Authorization".to_string(), format!("Bearer {key}")),
+                ("Content-Type".to_string(), "application/json".to_string()),
+            ],
+            query: Vec::new(),
+            skip_tls: false,
+        };
+        let response = crate::net::request(&req).map_err(|_| TErr::Signal)?;
+        let text = String::from_utf8_lossy(&response.body).to_string();
+        let json = crate::formats::parse_json(&text).map_err(|_| TErr::Signal)?;
+        let content = fval_get(&json, "choices")
+            .and_then(fval_first)
+            .and_then(|c| fval_get(c, "message"))
+            .and_then(|m| fval_get(m, "content"))
+            .and_then(fval_text)
+            .ok_or(TErr::Signal)?;
+        Ok(content)
+    }
+
+    // ---- M5 data helpers ----
+
+    fn named_table(
+        &self,
+        name: &str,
+        frame: &Frame,
+    ) -> R<std::rc::Rc<crate::data::Table>> {
+        match frame.find(name) {
+            Some(Value::Table(t)) => Ok(t.clone()),
+            _ => Err(fatal(
+                "T0178",
+                "No table loaded.",
+                "Load a table first.",
+            )),
+        }
+    }
+
+    /// M5-D2: Load NAME looks in the project's data folder first, then in
+    /// the folder of the sentence's file. An explicit file reference wins.
+    fn load_table(
+        &mut self,
+        name: &str,
+        origin: &sem::TableOrigin,
+        frame: &mut Frame,
+    ) -> R<crate::data::Table> {
+        let path = match origin {
+            sem::TableOrigin::File(fr) => self.resolve_file(fr, frame)?,
+            sem::TableOrigin::Data(stem) => {
+                // A replay trusts the recorded path: the lookup below could
+                // otherwise pick a same-named file in the working directory.
+                if self.trace.is_replay() {
+                    match self.trace.peek_file_path() {
+                        Some(p) => std::path::PathBuf::from(p),
+                        None => return Err(TErr::Signal),
+                    }
+                } else {
+                    let stem = if stem.is_empty() { name } else { stem.as_str() };
+                    let dir = std::path::Path::new(&self.prog.source_dir);
+                    let cands = [
+                        dir.join("data").join(format!("{stem}.csv")),
+                        dir.join(format!("{stem}.csv")),
+                        std::path::Path::new("data").join(format!("{stem}.csv")),
+                        std::path::PathBuf::from(format!("{stem}.csv")),
+                    ];
+                    match cands.iter().find(|p| p.exists()) {
+                        Some(p) => p.clone(),
+                        None => return Err(TErr::Signal),
+                    }
+                }
+            }
+            sem::TableOrigin::Database(_) => {
+                return Err(fatal(
+                    "T0522",
+                    "Database failed to open.",
+                    "Fix the file or address.",
+                ))
+            }
+        };
+        let text = self.trace_read_text(&path)?;
+        crate::data::load_csv_text(&text).map_err(|_| TErr::Signal)
     }
 
     fn exec_if(
@@ -4268,12 +5907,702 @@ impl<'p> Interp<'p> {
         }
     }
 
+    /// M5g item c: a replay divergence, in the same shape as any other
+    /// stopping failure (the message prints with its trailing line feed).
+    fn replay_err(msg: impl AsRef<str>) -> TErr {
+        TErr::Fatal(format!(
+            "Error: Trace replay diverged: {}.",
+            msg.as_ref()
+        ))
+    }
+
+    /// M5g item c: pop the next replay event of the expected family.
+    fn trace_next(&mut self, kind: TraceKind) -> R<TraceEvent> {
+        self.trace.next(kind).map_err(Self::replay_err)
+    }
+
+    /// M5g item c: `now` - record or replay the instant and its zone.
+    fn trace_clock(&mut self, nanos: i128, zone: &str) -> R<(i128, String)> {
+        if self.trace.is_recording() {
+            self.trace.push(TraceEvent::Clock {
+                nanos,
+                zone: zone.to_string(),
+            });
+            return Ok((nanos, zone.to_string()));
+        }
+        if self.trace.is_replay() {
+            return match self.trace_next(TraceKind::Clock)? {
+                TraceEvent::Clock { nanos, zone } => Ok((nanos, zone)),
+                _ => Err(Self::replay_err("clock event has the wrong shape")),
+            };
+        }
+        Ok((nanos, zone.to_string()))
+    }
+
+    /// M5g item c: `today` - record or replay the date.
+    fn trace_today(&mut self, year: i64, month: i64, day: i64) -> R<(i64, i64, i64)> {
+        if self.trace.is_recording() {
+            self.trace.push(TraceEvent::Today { year, month, day });
+            return Ok((year, month, day));
+        }
+        if self.trace.is_replay() {
+            return match self.trace_next(TraceKind::Today)? {
+                TraceEvent::Today { year, month, day } => Ok((year, month, day)),
+                _ => Err(Self::replay_err("today event has the wrong shape")),
+            };
+        }
+        Ok((year, month, day))
+    }
+
+    /// M5g item c: a text file read. A recording stores the length, hash and
+    /// (when small) the content; a replay serves the stored content and only
+    /// re-reads when the content was too large to store.
+    fn trace_read_text(&mut self, path: &std::path::Path) -> R<String> {
+        let shown = path.to_string_lossy().into_owned();
+        if self.trace.is_recording() {
+            let text = std::fs::read_to_string(path).map_err(|_| TErr::Signal)?;
+            let bytes = text.as_bytes();
+            self.trace.push(TraceEvent::FileRead {
+                path: shown,
+                len: bytes.len() as u64,
+                sha256: sha256_hex(bytes),
+                content: Some(bytes.to_vec()),
+            });
+            return Ok(text);
+        }
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::FileRead)?;
+            let TraceEvent::FileRead {
+                path: recorded,
+                len,
+                sha256,
+                content,
+            } = event
+            else {
+                return Err(Self::replay_err("file event has the wrong shape"));
+            };
+            if recorded != shown {
+                return Err(Self::replay_err(format!(
+                    "expected to read {recorded} but the run read {shown}"
+                )));
+            }
+            if let Some(bytes) = content {
+                if bytes.len() as u64 != len || sha256_hex(&bytes) != sha256 {
+                    return Err(Self::replay_err(format!(
+                        "the stored content of {recorded} is damaged"
+                    )));
+                }
+                return String::from_utf8(bytes).map_err(|_| TErr::Signal);
+            }
+            let text = std::fs::read_to_string(path).map_err(|_| TErr::Signal)?;
+            if text.len() as u64 != len || sha256_hex(text.as_bytes()) != sha256 {
+                return Err(Self::replay_err(format!("{recorded} changed")));
+            }
+            return Ok(text);
+        }
+        std::fs::read_to_string(path).map_err(|_| TErr::Signal)
+    }
+
+    /// M5g item c: the bytes form of trace_read_text.
+    fn trace_read_bytes(&mut self, path: &std::path::Path) -> R<Vec<u8>> {
+        let shown = path.to_string_lossy().into_owned();
+        if self.trace.is_recording() {
+            let bytes = std::fs::read(path).map_err(|_| TErr::Signal)?;
+            self.trace.push(TraceEvent::FileRead {
+                path: shown,
+                len: bytes.len() as u64,
+                sha256: sha256_hex(&bytes),
+                content: Some(bytes.clone()),
+            });
+            return Ok(bytes);
+        }
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::FileRead)?;
+            let TraceEvent::FileRead {
+                path: recorded,
+                len,
+                sha256,
+                content,
+            } = event
+            else {
+                return Err(Self::replay_err("file event has the wrong shape"));
+            };
+            if recorded != shown {
+                return Err(Self::replay_err(format!(
+                    "expected to read {recorded} but the run read {shown}"
+                )));
+            }
+            if let Some(bytes) = content {
+                if bytes.len() as u64 != len || sha256_hex(&bytes) != sha256 {
+                    return Err(Self::replay_err(format!(
+                        "the stored content of {recorded} is damaged"
+                    )));
+                }
+                return Ok(bytes);
+            }
+            let bytes = std::fs::read(path).map_err(|_| TErr::Signal)?;
+            if bytes.len() as u64 != len || sha256_hex(&bytes) != sha256 {
+                return Err(Self::replay_err(format!("{recorded} changed")));
+            }
+            return Ok(bytes);
+        }
+        std::fs::read(path).map_err(|_| TErr::Signal)
+    }
+
+    /// M5g item c: a session cookie value.
+    fn trace_cookie(&mut self) -> R<String> {
+        if self.trace.is_replay() {
+            return match self.trace_next(TraceKind::Cookie)? {
+                TraceEvent::Cookie(value) => Ok(value),
+                _ => Err(Self::replay_err("cookie event has the wrong shape")),
+            };
+        }
+        let value = random_cookie_value();
+        if self.trace.is_recording() {
+            self.trace.push(TraceEvent::Cookie(value.clone()));
+        }
+        Ok(value)
+    }
+
+    /// M5g item c: encode selected database rows as CSV for the trace.
+    fn db_rows_csv(names: &[String], rows: &[Vec<Value>]) -> String {
+        let table = crate::data::Table {
+            columns: names
+                .iter()
+                .map(|n| crate::data::Column {
+                    name: n.clone(),
+                    kind: crate::sem::Kind::Unknown,
+                })
+                .collect(),
+            rows: rows.to_vec(),
+        };
+        crate::data::table_to_csv(&table)
+    }
+
+    /// M5g item c: a database open. A replay returns the recorded outcome
+    /// and never connects.
+    fn trace_db_open<F>(&mut self, name: &str, driver: &str, fix: &str, open: F) -> R<()>
+    where
+        F: FnOnce() -> Result<(), String>,
+    {
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::DbOpen)?;
+            let TraceEvent::DbOpen {
+                name: n,
+                driver: d,
+                ok,
+                message,
+            } = event
+            else {
+                return Err(Self::replay_err("db_open event has the wrong shape"));
+            };
+            if n != name || d != driver {
+                return Err(Self::replay_err(format!(
+                    "expected {driver} database {name} but the trace has {d} {n}"
+                )));
+            }
+            if !ok {
+                return Err(fatal("T0522", &message, fix));
+            }
+            return Ok(());
+        }
+        match open() {
+            Ok(()) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbOpen {
+                        name: name.to_string(),
+                        driver: driver.to_string(),
+                        ok: true,
+                        message: String::new(),
+                    });
+                }
+                Ok(())
+            }
+            Err(message) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbOpen {
+                        name: name.to_string(),
+                        driver: driver.to_string(),
+                        ok: false,
+                        message: message.clone(),
+                    });
+                }
+                Err(fatal("T0522", &message, fix))
+            }
+        }
+    }
+
+    /// M5g item c: a whole-table database read.
+    fn trace_db_table<F>(
+        &mut self,
+        db: &str,
+        table: &str,
+        fix: &str,
+        read: F,
+    ) -> R<crate::data::Table>
+    where
+        F: FnOnce() -> Result<crate::data::Table, String>,
+    {
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::DbTable)?;
+            let TraceEvent::DbTable {
+                db: d,
+                table: t,
+                csv,
+                ok,
+                message,
+            } = event
+            else {
+                return Err(Self::replay_err("db_table event has the wrong shape"));
+            };
+            if d != db || t != table {
+                return Err(Self::replay_err(format!(
+                    "expected {db}.{table} but the trace has {d}.{t}"
+                )));
+            }
+            if !ok {
+                return Err(fatal("T0522", &message, fix));
+            }
+            return crate::data::load_csv_text(&csv)
+                .map_err(|_| Self::replay_err("the stored database table is damaged"));
+        }
+        match read() {
+            Ok(found) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbTable {
+                        db: db.to_string(),
+                        table: table.to_string(),
+                        csv: crate::data::table_to_csv(&found),
+                        ok: true,
+                        message: String::new(),
+                    });
+                }
+                Ok(found)
+            }
+            Err(message) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbTable {
+                        db: db.to_string(),
+                        table: table.to_string(),
+                        csv: String::new(),
+                        ok: false,
+                        message: message.clone(),
+                    });
+                }
+                Err(fatal("T0522", &message, fix))
+            }
+        }
+    }
+
+    /// M5g item c: a select used by update/delete.
+    fn trace_db_rows<F>(
+        &mut self,
+        db: &str,
+        table: &str,
+        fix: &str,
+        select: F,
+    ) -> R<(Vec<String>, Vec<Vec<Value>>, Vec<String>)>
+    where
+        F: FnOnce() -> Result<(Vec<String>, Vec<Vec<Value>>, Vec<String>), String>,
+    {
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::DbRows)?;
+            let TraceEvent::DbRows {
+                db: d,
+                table: t,
+                csv,
+                ids,
+                ok,
+                message,
+            } = event
+            else {
+                return Err(Self::replay_err("db_rows event has the wrong shape"));
+            };
+            if d != db || t != table {
+                return Err(Self::replay_err(format!(
+                    "expected {db}.{table} but the trace has {d}.{t}"
+                )));
+            }
+            if !ok {
+                return Err(fatal("T0522", &message, fix));
+            }
+            let table = crate::data::load_csv_text(&csv)
+                .map_err(|_| Self::replay_err("the stored database rows are damaged"))?;
+            let names = table
+                .columns
+                .iter()
+                .map(|c| c.name.clone())
+                .collect::<Vec<_>>();
+            return Ok((names, table.rows, ids));
+        }
+        match select() {
+            Ok((names, rows, ids)) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbRows {
+                        db: db.to_string(),
+                        table: table.to_string(),
+                        csv: Self::db_rows_csv(&names, &rows),
+                        ids: ids.clone(),
+                        ok: true,
+                        message: String::new(),
+                    });
+                }
+                Ok((names, rows, ids))
+            }
+            Err(message) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbRows {
+                        db: db.to_string(),
+                        table: table.to_string(),
+                        csv: String::new(),
+                        ids: Vec::new(),
+                        ok: false,
+                        message: message.clone(),
+                    });
+                }
+                Err(fatal("T0522", &message, fix))
+            }
+        }
+    }
+
+    /// M5g item c: a database mutation or transaction step. A replay
+    /// returns the recorded outcome and does not touch the database.
+    fn trace_db_write<F>(
+        &mut self,
+        op: &str,
+        db: &str,
+        table: &str,
+        fix: &str,
+        perform: F,
+    ) -> R<()>
+    where
+        F: FnOnce() -> Result<(), String>,
+    {
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::DbWrite)?;
+            let TraceEvent::DbWrite {
+                op: o,
+                db: d,
+                table: t,
+                ok,
+                message,
+            } = event
+            else {
+                return Err(Self::replay_err("db_write event has the wrong shape"));
+            };
+            if o != op || d != db || t != table {
+                return Err(Self::replay_err(format!(
+                    "expected {op} {db}.{table} but the trace has {o} {d}.{t}"
+                )));
+            }
+            if !ok {
+                return Err(fatal("T0522", &message, fix));
+            }
+            return Ok(());
+        }
+        match perform() {
+            Ok(()) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbWrite {
+                        op: op.to_string(),
+                        db: db.to_string(),
+                        table: table.to_string(),
+                        ok: true,
+                        message: String::new(),
+                    });
+                }
+                Ok(())
+            }
+            Err(message) => {
+                if self.trace.is_recording() {
+                    self.trace.push(TraceEvent::DbWrite {
+                        op: op.to_string(),
+                        db: db.to_string(),
+                        table: table.to_string(),
+                        ok: false,
+                        message: message.clone(),
+                    });
+                }
+                Err(fatal("T0522", &message, fix))
+            }
+        }
+    }
+
+    /// M5g item c: a file write. A recording stores the byte count and hash
+    /// and whether the write succeeded; a replay verifies the bytes it would
+    /// write and skips the write itself.
+    fn trace_write<F>(&mut self, path: &std::path::Path, bytes: &[u8], perform: F) -> R<()>
+    where
+        F: FnOnce() -> std::io::Result<()>,
+    {
+        let shown = path.to_string_lossy().into_owned();
+        let len = bytes.len() as u64;
+        let sha256 = sha256_hex(bytes);
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::FileWrite)?;
+            let TraceEvent::FileWrite {
+                path: recorded,
+                len: recorded_len,
+                sha256: recorded_sha,
+                ok,
+            } = event
+            else {
+                return Err(Self::replay_err("write event has the wrong shape"));
+            };
+            if recorded != shown {
+                return Err(Self::replay_err(format!(
+                    "expected to write {recorded} but the run wrote {shown}"
+                )));
+            }
+            if !ok {
+                return Err(TErr::Signal);
+            }
+            if recorded_len != len || recorded_sha != sha256 {
+                return Err(Self::replay_err(format!(
+                    "{shown} would be written with different bytes"
+                )));
+            }
+            return Ok(());
+        }
+        let result = perform();
+        if self.trace.is_recording() {
+            self.trace.push(TraceEvent::FileWrite {
+                path: shown,
+                len,
+                sha256,
+                ok: result.is_ok(),
+            });
+        }
+        result.map_err(|_| TErr::Signal)
+    }
+
+    /// M5g item c: a directory listing.
+    fn trace_dir_list(&mut self, path: &std::path::Path) -> R<Vec<String>> {
+        let shown = path.to_string_lossy().into_owned();
+        let read = |p: &std::path::Path| -> std::io::Result<Vec<String>> {
+            let mut names = Vec::new();
+            for entry in std::fs::read_dir(p)? {
+                let entry = entry?;
+                names.push(entry.file_name().to_string_lossy().to_string());
+            }
+            names.sort();
+            Ok(names)
+        };
+        if self.trace.is_recording() {
+            let names = read(path).map_err(|_| TErr::Signal)?;
+            self.trace.push(TraceEvent::DirList {
+                path: shown,
+                names: names.clone(),
+            });
+            return Ok(names);
+        }
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::DirList)?;
+            let TraceEvent::DirList {
+                path: recorded,
+                names,
+            } = event
+            else {
+                return Err(Self::replay_err("directory event has the wrong shape"));
+            };
+            if recorded != shown {
+                return Err(Self::replay_err(format!(
+                    "expected to list {recorded} but the run listed {shown}"
+                )));
+            }
+            return Ok(names);
+        }
+        read(path).map_err(|_| TErr::Signal)
+    }
+
+    /// M5g item c: a filesystem mutation. A replay returns the recorded
+    /// outcome and does not touch the disk.
+    fn trace_fs_op<F>(&mut self, op: &str, paths: &[String], perform: F) -> R<()>
+    where
+        F: FnOnce() -> std::io::Result<()>,
+    {
+        if self.trace.is_replay() {
+            let event = self.trace_next(TraceKind::FsOp)?;
+            let TraceEvent::FsOp {
+                op: recorded_op,
+                paths: recorded_paths,
+                ok,
+            } = event
+            else {
+                return Err(Self::replay_err("filesystem event has the wrong shape"));
+            };
+            if recorded_op != op || recorded_paths != paths {
+                return Err(Self::replay_err(format!(
+                    "expected {op} on {paths:?} but the trace has {recorded_op} on {recorded_paths:?}"
+                )));
+            }
+            if !ok {
+                return Err(TErr::Signal);
+            }
+            return Ok(());
+        }
+        let result = perform();
+        if self.trace.is_recording() {
+            self.trace.push(TraceEvent::FsOp {
+                op: op.to_string(),
+                paths: paths.to_vec(),
+                ok: result.is_ok(),
+            });
+        }
+        result.map_err(|_| TErr::Signal)
+    }
+
+    /// M5g item c: an environment read.
+    fn trace_env(&mut self, name: &str) -> R<Option<String>> {
+        if self.trace.is_recording() {
+            let value = std::env::var(name).ok();
+            self.trace.push(TraceEvent::Env {
+                name: name.to_string(),
+                value: value.clone(),
+            });
+            return Ok(value);
+        }
+        if self.trace.is_replay() {
+            return match self.trace_next(TraceKind::Env)? {
+                TraceEvent::Env { name: n, value } => {
+                    if n != name {
+                        return Err(Self::replay_err(format!(
+                            "expected environment {name} but the trace has {n}"
+                        )));
+                    }
+                    Ok(value)
+                }
+                _ => Err(Self::replay_err("environment event has the wrong shape")),
+            };
+        }
+        Ok(std::env::var(name).ok())
+    }
+
+    /// M5g item c: one HTTP request. Recording stores the response (or the
+    /// failure); replay returns the recorded response without touching the
+    /// network, unless the body was too large to store.
+    fn trace_net(&mut self, req: &net::Request) -> R<net::Response> {
+        let method = net_method_name(&req.method).to_string();
+        let url = net_request_url(req);
+        if self.trace.is_recording() {
+            return match net::request(req) {
+                Ok(resp) => {
+                    let len = resp.body.len() as u64;
+                    let sha256 = sha256_hex(&resp.body);
+                    let body = Some(resp.body.clone());
+                    self.trace.push(TraceEvent::Net {
+                        method,
+                        url,
+                        status: resp.status,
+                        body,
+                        len,
+                        sha256,
+                        headers: resp.headers.clone(),
+                    });
+                    Ok(resp)
+                }
+                Err(e) => {
+                    self.trace.push(TraceEvent::NetFail {
+                        method,
+                        url,
+                        kind: e.kind.to_string(),
+                        message: e.message.clone(),
+                    });
+                    Err(TErr::Signal)
+                }
+            };
+        }
+        if self.trace.is_replay() {
+            let event = self.trace.next_any().map_err(Self::replay_err)?;
+            return match event {
+                TraceEvent::Net {
+                    method: m,
+                    url: u,
+                    status,
+                    body,
+                    len,
+                    sha256,
+                    headers,
+                } => {
+                    if m != method || u != url {
+                        return Err(Self::replay_err(format!(
+                            "expected {method} {url} but the trace has {m} {u}"
+                        )));
+                    }
+                    match body {
+                        Some(body) => Ok(net::Response {
+                            status,
+                            headers,
+                            body,
+                        }),
+                        None => {
+                            // Too large to store: re-issue and verify, but
+                            // return the recorded headers so the program sees
+                            // the same response shape.
+                            let mut resp =
+                                net::request(req).map_err(|_| TErr::Signal)?;
+                            if resp.status != status
+                                || resp.body.len() as u64 != len
+                                || sha256_hex(&resp.body) != sha256
+                            {
+                                return Err(Self::replay_err(format!(
+                                    "{url} returned different content"
+                                )));
+                            }
+                            resp.headers = headers;
+                            Ok(resp)
+                        }
+                    }
+                }
+                TraceEvent::NetFail {
+                    method: m,
+                    url: u,
+                    kind: _,
+                    message: _,
+                } => {
+                    if m != method || u != url {
+                        return Err(Self::replay_err(format!(
+                            "expected {method} {url} but the trace has {m} {u}"
+                        )));
+                    }
+                    Err(TErr::Signal)
+                }
+                _ => Err(Self::replay_err("expected a network event")),
+            };
+        }
+        net::request(req).map_err(|_| TErr::Signal)
+    }
+
     /// M4-7 (S54): one 64-bit draw from the program's generator. The
     /// state is created on first use: a run without Use seed seeds it
     /// from the operating system's entropy, a test run starts at 42.
-    fn rng_next(&mut self) -> u64 {
+    /// M5g item c: a recording stores each draw; a replay returns the
+    /// recorded draw instead.
+    fn rng_next(&mut self) -> R<u64> {
+        if self.trace.is_recording() {
+            let v = self.rng_next_raw();
+            self.trace.push(TraceEvent::Random(v));
+            return Ok(v);
+        }
+        if self.trace.is_replay() {
+            return match self.trace_next(TraceKind::Random)? {
+                TraceEvent::Random(v) => Ok(v),
+                _ => Err(Self::replay_err("random event has the wrong shape")),
+            };
+        }
+        Ok(self.rng_next_raw())
+    }
+
+    fn rng_next_raw(&mut self) -> u64 {
         if self.rng.is_none() {
-            self.rng = Some(crate::time4::xoshiro_seed(crate::time4::os_seed()));
+            // M5g item b: a deterministic run seeds from its seed; a normal
+            // run uses the operating system's entropy.
+            let seed = if self.clock.is_virtual() {
+                self.seed
+            } else {
+                crate::time4::os_seed()
+            };
+            self.rng = Some(crate::time4::xoshiro_seed(seed));
         }
         crate::time4::xoshiro_next(self.rng.as_mut().unwrap())
     }
@@ -5175,6 +7504,111 @@ impl<'p> Interp<'p> {
             }
             // ---- M4-8 (Appendix K 7.10/7.11): environment, input -------
             // Same frame-size rule as the M4-7 arms above.
+            E::Vector(items) => {
+                let mut vals = Vec::with_capacity(items.len());
+                for item in items {
+                    let v = self.eval_expr(item, frame, out)?;
+                    vals.push(Value::Dec(as_f64(&v)));
+                }
+                Ok(Value::List(vals))
+            }
+            E::Dot(a, b) => {
+                let va = self.eval_expr(a, frame, out)?;
+                let vb = self.eval_expr(b, frame, out)?;
+                let (Value::List(x), Value::List(y)) = (&va, &vb) else {
+                    return Err(fatal("T0605", "Vectors must be lists.", "Use vectors."));
+                };
+                if x.len() != y.len() {
+                    return Err(fatal(
+                        "T0605",
+                        "Vectors must be the same length.",
+                        "Use equal lengths.",
+                    ));
+                }
+                let mut sum = 0.0;
+                for (p, q) in x.iter().zip(y.iter()) {
+                    sum += as_f64(p) * as_f64(q);
+                }
+                Ok(Value::Dec(sum))
+            }
+            E::Norm(a) => {
+                let va = self.eval_expr(a, frame, out)?;
+                let Value::List(x) = &va else {
+                    return Err(fatal("T0605", "Vectors must be lists.", "Use vectors."));
+                };
+                let sum: f64 = x.iter().map(|v| as_f64(v) * as_f64(v)).sum();
+                Ok(Value::Dec(sum.sqrt()))
+            }
+#[cfg(feature = "crypto")]
+            E::Encrypt(value, key) => {
+                let val = self.eval_expr(value, frame, out)?;
+                let kv = self.eval_expr(key, frame, out)?;
+                let key = crate::crypto::key_from_value(&kv).map_err(|_| {
+                    fatal(
+                        "T0301",
+                        "A value of one kind is used where another is needed.",
+                        "Use random key or key from password.",
+                    )
+                })?;
+                crate::crypto::encrypt(&val, &key).map_err(|_| TErr::Signal)
+            }
+#[cfg(feature = "crypto")]
+            E::Decrypt(value, key) => {
+                let val = self.eval_expr(value, frame, out)?;
+                let kv = self.eval_expr(key, frame, out)?;
+                let key = crate::crypto::key_from_value(&kv).map_err(|_| {
+                    fatal(
+                        "T0301",
+                        "A value of one kind is used where another is needed.",
+                        "Use random key or key from password.",
+                    )
+                })?;
+                crate::crypto::decrypt(&val, &key).map_err(|_| TErr::Signal)
+            }
+#[cfg(feature = "crypto")]
+            E::RandomKey => {
+                let key = crate::crypto::random_key();
+                let bytes = match key {
+                    crate::crypto::Key::Random(k) => k,
+                    crate::crypto::Key::Password(_) => [0u8; 32],
+                };
+                Ok(Value::Secret(Box::new(crate::sem::SecretInner(
+                    Value::List(bytes.iter().map(|b| Value::Whole(*b as i64)).collect()),
+                ))))
+            }
+#[cfg(feature = "crypto")]
+            E::KeyFrom(password) => {
+                let v = self.eval_expr(password, frame, out)?;
+                let text = match v {
+                    Value::Text(t) => t,
+                    Value::Secret(inner) => match &inner.0 {
+                        Value::Text(t) => t.clone(),
+                        _ => {
+                            return Err(fatal(
+                                "T0301",
+                                "A value of one kind is used where another is needed.",
+                                "Use text.",
+                            ))
+                        }
+                    },
+                    _ => {
+                        return Err(fatal(
+                            "T0301",
+                            "A value of one kind is used where another is needed.",
+                            "Use text.",
+                        ))
+                    }
+                };
+                Ok(Value::Secret(Box::new(crate::sem::SecretInner(
+                    Value::Text(text),
+                ))))
+            }
+            #[cfg(not(feature = "crypto"))]
+            E::Encrypt(..) | E::Decrypt(..) | E::RandomKey | E::KeyFrom(_) => Err(fatal(
+                "T0113",
+                "Encryption is not available in this build.",
+                "Build with the crypto feature.",
+            )),
             E::Environment { .. } | E::ReadInput => {
                 return self.eval_m48(&e.e, frame, out);
             }
@@ -5188,14 +7622,21 @@ impl<'p> Interp<'p> {
     fn eval_m48(&mut self, e: &sem::E, frame: &mut Frame, out: &mut String) -> R<Value> {
         match e {
             sem::E::Environment { name } => {
+                self.sandbox.check_env(name).map_err(|_| {
+                    fatal(
+                        "T0622",
+                        "Sandbox refused.",
+                        "Add the permission or remove the sentence.",
+                    )
+                })?;
                 // M4-G24/S80: the variable named by the words in upper
                 // case joined by _ (Lykaon_MODE); the value is maybe text
                 // (missing when the variable is not set). The permission
                 // Allows environment is not gated yet (logged: the
                 // permission system lands with its milestone).
-                match std::env::var(name) {
-                    Ok(v) => Ok(Value::Maybe(Some(Box::new(Value::Text(v))))),
-                    Err(_) => Ok(Value::Maybe(None)),
+                match self.trace_env(name)? {
+                    Some(v) => Ok(Value::Maybe(Some(Box::new(Value::Text(v))))),
+                    None => Ok(Value::Maybe(None)),
                 }
             }
             sem::E::ReadInput => {
@@ -5222,16 +7663,30 @@ impl<'p> Interp<'p> {
                 Ok(Value::Date(*y, *m, *d))
             }
             E::Today => {
-                // M4-G54: today is the date in the local zone.
-                let (y, m, d) = crate::time4::today_ymd();
+                // M4-G54: today is the date in the local zone; a
+                // deterministic run reads it from the virtual clock (UTC).
+                let (y, m, d) = if self.clock.is_virtual() {
+                    let days = (self.clock_ms() / 86_400_000) as i64;
+                    crate::time4::civil_from_days(days)
+                } else {
+                    crate::time4::today_ymd()
+                };
+                let (y, m, d) = self.trace_today(y, m, d)?;
                 Ok(Value::Date(y, m, d))
             }
             E::Now => {
-                // M4-G55: now is the instant in the local zone.
-                Ok(Value::Moment {
-                    nanos: crate::time4::now_nanos(),
-                    zone: crate::time4::local_zone_name(),
-                })
+                // M4-G55: now is the instant in the local zone; a
+                // deterministic run uses the virtual clock in UTC.
+                let (nanos, zone) = if self.clock.is_virtual() {
+                    (self.clock_ms() as i128 * 1_000_000, "UTC".to_string())
+                } else {
+                    (
+                        crate::time4::now_nanos(),
+                        crate::time4::local_zone_name(),
+                    )
+                };
+                let (nanos, zone) = self.trace_clock(nanos, &zone)?;
+                Ok(Value::Moment { nanos, zone })
             }
             E::MomentAt { date, h, m } => {
                 // M4-G55: moment of D at H and M is H:M:00 on date D in
@@ -5375,14 +7830,14 @@ impl<'p> Interp<'p> {
                 let count = (hi as i128 - lo as i128 + 1) as u128;
                 // two 64-bit draws over a 128-bit modulo keep the bias
                 // far below anything observable
-                let hi64 = self.rng_next() as u128;
-                let lo64 = self.rng_next() as u128;
+                let hi64 = self.rng_next()? as u128;
+                let lo64 = self.rng_next()? as u128;
                 let pick = ((hi64 << 64) | lo64) % count;
                 Ok(Value::Whole(lo + pick as i64))
             }
             E::RandomDec => {
                 // M4-S54: a decimal in [0, 1), 53 random bits (logged).
-                let bits = self.rng_next() >> 11;
+                let bits = self.rng_next()? >> 11;
                 Ok(Value::Dec(bits as f64 * (1.0f64 / 9_007_199_254_740_992.0)))
             }
             E::RandomItem { list } => {
@@ -5396,7 +7851,7 @@ impl<'p> Interp<'p> {
                 if items.is_empty() {
                     return Err(TErr::Signal);
                 }
-                let i = (self.rng_next() % items.len() as u64) as usize;
+                let i = (self.rng_next()? % items.len() as u64) as usize;
                 Ok(items[i].clone())
             }
             E::Shuffled { list } => {
@@ -5407,7 +7862,7 @@ impl<'p> Interp<'p> {
                     _ => return Err(TErr::Signal),
                 };
                 for i in (1..items.len()).rev() {
-                    let j = (self.rng_next() % (i as u64 + 1)) as usize;
+                    let j = (self.rng_next()? % (i as u64 + 1)) as usize;
                     items.swap(i, j);
                 }
                 Ok(Value::List(items))
@@ -5578,7 +8033,7 @@ impl<'p> Interp<'p> {
                 "Match the inputs of the function.",
             ));
         }
-        // Calls nested too deep ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ T0607.
+        // Calls nested too deep ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ T0607.
         self.depth += 1;
         if self.depth > 240 {
             self.depth -= 1;
@@ -6307,6 +8762,12 @@ impl<'p> Interp<'p> {
             Value::Missing => "missing".to_string(),
             // M4-S73: a connection prints as the kind's word.
             Value::Conn(_) => "connection".to_string(),
+            // M5-S9: a table prints as its header and aligned rows.
+            Value::Table(t) => crate::data::print_table(t),
+            // M5-S29: a model prints as the word model.
+            Value::Model(_) => "model".to_string(),
+            // M5-S33: a database prints as the word database.
+            Value::Database(_) => "database".to_string(),
             Value::List(items) => {
                 let empty = SayMods::default();
                 let parts: Vec<String> = items.iter().map(|t| self.show_value(t, &empty)).collect();
@@ -6410,6 +8871,40 @@ impl<'p> Interp<'p> {
 }
 
 fn bin_op(op: Op, a: &Value, b: &Value) -> R<Value> {
+    // M5-S31: vectors are lists of numbers: plus/minus are elementwise and
+    // times by a number scales every element.
+    if let (Value::List(x), Value::List(y)) = (a, b) {
+        if x.len() != y.len() {
+            return Err(fatal(
+                "T0605",
+                "Vectors must be the same length.",
+                "Use equal lengths.",
+            ));
+        }
+        let mut out = Vec::with_capacity(x.len());
+        for (p, q) in x.iter().zip(y.iter()) {
+            out.push(bin_op(op, p, q)?);
+        }
+        return Ok(Value::List(out));
+    }
+    if let (Value::List(x), _) = (a, b) {
+        if matches!(op, Op::Time) {
+            let mut out = Vec::with_capacity(x.len());
+            for p in x {
+                out.push(bin_op(op, p, b)?);
+            }
+            return Ok(Value::List(out));
+        }
+    }
+    if let (_, Value::List(y)) = (a, b) {
+        if matches!(op, Op::Time) {
+            let mut out = Vec::with_capacity(y.len());
+            for q in y {
+                out.push(bin_op(op, a, q)?);
+            }
+            return Ok(Value::List(out));
+        }
+    }
     if let (Value::Whole(x), Value::Whole(y)) = (a, b) {
         return match op {
             Op::Plus => x
@@ -7195,6 +9690,12 @@ fn kind_word_of(v: &Value) -> String {
         Value::Secret(_) => "secret".to_string(),
         // M4-S73: one live connection
         Value::Conn(_) => "connection".to_string(),
+        // M5 (Appendix L 7.1): a loaded table
+        Value::Table(_) => "table".to_string(),
+        // M5 (Appendix L 7.3): a trained model
+        Value::Model(_) => "model".to_string(),
+        // M5 (Appendix L 7.4): an open database
+        Value::Database(_) => "database".to_string(),
     }
 }
 
@@ -7445,4 +9946,468 @@ fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result
         }
     }
     Ok(())
+}
+
+
+// ---- M5-S40/S41: assistant helpers ----
+
+fn json_string(s: &str) -> String {
+    let mut out = String::from("\"");
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+fn parse_http_address(s: &str) -> Option<crate::net::Address> {
+    let (secure, rest) = if let Some(r) = s.strip_prefix("https://") {
+        (true, r)
+    } else if let Some(r) = s.strip_prefix("http://") {
+        (false, r)
+    } else {
+        return None;
+    };
+    let (hostport, path) = match rest.find('/') {
+        Some(i) => (&rest[..i], rest[i..].to_string()),
+        None => (rest, "/".to_string()),
+    };
+    let (host, port) = match hostport.rsplit_once(':') {
+        Some((h, p)) if !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()) => {
+            (h.to_string(), p.parse().ok()?)
+        }
+        _ => (
+            hostport.to_string(),
+            if secure { 443 } else { 80 },
+        ),
+    };
+    Some(crate::net::Address {
+        secure,
+        host,
+        port,
+        path,
+    })
+}
+
+fn fval_get<'a>(v: &'a crate::formats::FVal, key: &str) -> Option<&'a crate::formats::FVal> {
+    match v {
+        crate::formats::FVal::Obj(items) => {
+            items.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+        }
+        _ => None,
+    }
+}
+
+fn fval_first(v: &crate::formats::FVal) -> Option<&crate::formats::FVal> {
+    match v {
+        crate::formats::FVal::Arr(items) => items.first(),
+        _ => None,
+    }
+}
+
+fn fval_text(v: &crate::formats::FVal) -> Option<String> {
+    match v {
+        crate::formats::FVal::Str(s) => Some(s.clone()),
+        _ => None,
+    }
+}
+
+
+/// M5-S43: the sandbox from settings.lykaon. `lykaon run safely` sets
+/// LYKAON_SAFE=1; a normal run leaves the sandbox inactive.
+fn make_sandbox(source_dir: &str) -> crate::sandbox::Sandbox {
+    let mut s = crate::sandbox::Sandbox::from_settings(std::path::Path::new(source_dir));
+    if std::env::var("LYKAON_SAFE").as_deref() == Ok("1") {
+        s.activate();
+    }
+    s
+}
+
+// ---- M5g item d: snapshots at top-level sentence boundaries ----
+
+/// M5g item d: one restorable scope.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SnapshotScope {
+    pub vars: Vec<(String, Value)>,
+    pub order: Vec<String>,
+    pub workers: Option<usize>,
+}
+
+/// M5g item d: a restorable checkpoint. It is taken between top-level
+/// sentences, so there is no Rust call stack to serialize.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Snapshot {
+    pub next_statement: usize,
+    pub scopes: Vec<SnapshotScope>,
+    pub counters: Vec<(i64, i64)>,
+    pub last_result: Option<Value>,
+    pub last_shown: String,
+    pub where_item: Option<Value>,
+    pub input: String,
+    pub in_pos: usize,
+    pub output: String,
+    pub rng: Option<[u64; 4]>,
+    pub seed: u64,
+    /// Some for a virtual clock (milliseconds); None for the real clock.
+    pub clock_ms: Option<u64>,
+    pub fuel_used: u64,
+    pub plots: usize,
+    pub temp_serial: u64,
+}
+
+fn snapshot_interp<'p>(
+    prog: &'p sem::Program,
+    stdin_text: &str,
+    budget: u64,
+    bindings: &[(String, Value)],
+    interactive: bool,
+    trace: TraceMode,
+    deterministic: bool,
+    seed: u64,
+) -> Interp<'p> {
+    let clock = if deterministic {
+        Clock::Virtual {
+            now_ms: DETERMINISTIC_BASE_MS,
+        }
+    } else {
+        Clock::Real
+    };
+    // The same constructor as the ordinary run.
+    Interp {
+        prog,
+        input: stdin_text.to_string(),
+        in_pos: 0,
+        budget,
+        metered: budget > 0,
+        fuel_used: 0,
+        trace,
+        clock,
+        depth: 0,
+        pretend: HashMap::new(),
+        failed_checks: Vec::new(),
+        in_must_fail: 0,
+        in_generator: false,
+        pending_hands: Vec::new(),
+        plots: 0,
+        seed: if deterministic { seed } else { 42 },
+        tx_depth: 0,
+        limit_time: None,
+        limit_start: None,
+        limit_memory: None,
+        out_limit: std::env::var("LYKAON_OUTPUT_LIMIT")
+            .ok()
+            .and_then(|v| v.trim().parse::<usize>().ok())
+            .filter(|n| *n > 0),
+        sandbox: make_sandbox(&prog.source_dir),
+        timer_firing: 0,
+        temp_serial: 0,
+        rng: None,
+        bindings: bindings.to_vec(),
+        interactive,
+        signal_handlers: Vec::new(),
+        log_level: sem::LogLevel::Info,
+        err_ranges: Vec::new(),
+        handler_ctx: None,
+        sessions: HashMap::new(),
+        prover: prover_hook(),
+        prover_always: always_hook(),
+        proven: RefCell::new(HashMap::new()),
+        proven_sites: RefCell::new(HashMap::new()),
+        pool: Pool::default(),
+        live: Vec::new(),
+        next_conn: 0,
+        active_conn: None,
+        park_conn: false,
+        end_session: false,
+    }
+}
+
+fn snapshot_frame(s: &Snapshot) -> Frame {
+    let scopes = s
+        .scopes
+        .iter()
+        .map(|sc| ScopeFrame {
+            vars: sc.vars.iter().cloned().collect(),
+            order: sc.order.clone(),
+            workers: sc.workers,
+            temps: Vec::new(),
+        })
+        .collect();
+    Frame {
+        scopes,
+        counters: s.counters.clone(),
+        last_result: s.last_result.clone(),
+        last_shown: s.last_shown.clone(),
+        where_item: s.where_item.clone(),
+        tasks: HashMap::new(),
+        timers: Vec::new(),
+        watchers: Vec::new(),
+    }
+}
+
+fn snapshot_from(it: &Interp, frame: &Frame, next: usize, out: String) -> Snapshot {
+    let scopes = frame
+        .scopes
+        .iter()
+        .map(|sc| {
+            // `Ask` and `Set` can add a name through assign(), which does
+            // not touch order; snapshot every variable, in order first.
+            let mut order = sc.order.clone();
+            let mut extra: Vec<String> = sc
+                .vars
+                .keys()
+                .filter(|n| !order.iter().any(|x| x == *n))
+                .cloned()
+                .collect();
+            extra.sort();
+            order.extend(extra);
+            let vars = order
+                .iter()
+                .filter_map(|n| sc.vars.get(n).map(|v| (n.clone(), v.clone())))
+                .collect();
+            SnapshotScope {
+                vars,
+                order,
+                workers: sc.workers,
+            }
+        })
+        .collect();
+    Snapshot {
+        next_statement: next,
+        scopes,
+        counters: frame.counters.clone(),
+        last_result: frame.last_result.clone(),
+        last_shown: frame.last_shown.clone(),
+        where_item: frame.where_item.clone(),
+        input: it.input.clone(),
+        in_pos: it.in_pos,
+        output: out,
+        rng: it.rng,
+        seed: it.seed,
+        clock_ms: match it.clock {
+            Clock::Virtual { now_ms } => Some(now_ms),
+            Clock::Real => None,
+        },
+        fuel_used: it.fuel_used,
+        plots: it.plots,
+        temp_serial: it.temp_serial,
+    }
+}
+
+fn snapshot_refuse(what: &str) -> TErr {
+    TErr::Fatal(format!("Error: Snapshot does not support {what}."))
+}
+
+fn snapshot_run_error(out: String, e: TErr) -> RunError {
+    match e {
+        TErr::Exit(code) => RunError {
+            reason: ExitReason::Exit,
+            message: String::new(),
+            code: code as i32,
+            out,
+        },
+        TErr::Fatal(m) => RunError {
+            reason: classify_failure(&m),
+            message: m,
+            code: 1,
+            out,
+        },
+        TErr::Signal => RunError {
+            reason: ExitReason::Signal,
+            message: "Error: The program can fail here, and no fallback was written.".to_string(),
+            code: 1,
+            out: String::new(),
+        },
+        TErr::Yield(_) => RunError {
+            reason: ExitReason::Failure,
+            message: "Error: Hand back runs outside a generator.".to_string(),
+            code: 1,
+            out: String::new(),
+        },
+    }
+}
+
+/// Execute top-level statements [start, start+limit) (limit 0 = to the end).
+/// Returns the index after the last executed statement.
+fn exec_top_slice(
+    it: &mut Interp,
+    prog: &sem::Program,
+    start: usize,
+    limit: Option<usize>,
+    frame: &mut Frame,
+    out: &mut String,
+) -> Result<usize, TErr> {
+    if start > prog.body.len() {
+        return Err(TErr::Fatal("Error: Snapshot statement index is out of range.".to_string()));
+    }
+    let end = match limit {
+        None => prog.body.len(),
+        Some(n) => (start + n).min(prog.body.len()),
+    };
+    if start < end {
+        it.exec_stmts(&prog.body[start..end], frame, out)?;
+    }
+    Ok(end)
+}
+
+fn finish_snapshot_run(
+    it: &mut Interp,
+    frame: &mut Frame,
+    out: &mut String,
+    result: Result<usize, TErr>,
+) -> Result<(String, i32), RunError> {
+    let idx = match result {
+        Ok(idx) => idx,
+        Err(e) => return Err(snapshot_run_error(out.clone(), e)),
+    };
+    let _ = idx;
+    if it.trace.is_off() {
+        // The run body fires pending Afters and runs cleanups at the end.
+        let _ = it.fire_pending_afters(frame, out);
+    }
+    if let Some(scope) = frame.pop() {
+        it.run_cleanups(scope, out);
+    }
+    Ok((out.clone(), 0))
+}
+
+/// M5g item d: run the first `stop_after` top-level sentences and return a
+/// restorable snapshot plus the output produced so far.
+#[allow(clippy::too_many_arguments)]
+pub fn run_checkpoint(
+    prog: &sem::Program,
+    stdin_text: &str,
+    budget: u64,
+    bindings: &[(String, Value)],
+    interactive: bool,
+    deterministic: bool,
+    seed: u64,
+    stop_after: usize,
+) -> Result<(Snapshot, String, i32), RunError> {
+    let mut it = snapshot_interp(prog, stdin_text, budget, bindings, interactive, TraceMode::Off, deterministic, seed);
+    let mut frame = Frame {
+        scopes: vec![ScopeFrame::default()],
+        counters: Vec::new(),
+        last_result: None,
+        last_shown: String::new(),
+        where_item: None,
+        tasks: HashMap::new(),
+        timers: Vec::new(),
+        watchers: Vec::new(),
+    };
+    for (n, v) in it.bindings.clone() {
+        frame.define(&n, v);
+    }
+    let mut out = String::new();
+    if !frame.timers.is_empty() || !frame.watchers.is_empty() {
+        return Err(snapshot_run_error(out, snapshot_refuse("pending timers or watchers")));
+    }
+    let result = exec_top_slice(&mut it, prog, 0, Some(stop_after), &mut frame, &mut out);
+    let next = match result {
+        Ok(next) => next,
+        Err(e) => return Err(snapshot_run_error(out, e)),
+    };
+    if !frame.timers.is_empty()
+        || !frame.watchers.is_empty()
+        || !frame.tasks.is_empty()
+        || !it.sessions.is_empty()
+        || !crate::db::names().is_empty()
+        || frame.scopes.iter().any(|sc| !sc.temps.is_empty())
+    {
+        return Err(snapshot_run_error(
+            out,
+            snapshot_refuse("open timers, watchers, tasks, sessions, databases or temporary files"),
+        ));
+    }
+    let snap = snapshot_from(&it, &frame, next, out.clone());
+    Ok((snap, out, 0))
+}
+
+/// M5g item d: restore a snapshot and run the remaining top-level sentences.
+pub fn run_resume(
+    prog: &sem::Program,
+    budget: u64,
+    snapshot: &Snapshot,
+) -> Result<(String, i32), RunError> {
+    if snapshot.next_statement > prog.body.len() {
+        return Err(snapshot_run_error(
+            String::new(),
+            TErr::Fatal("Error: Snapshot statement index is out of range.".to_string()),
+        ));
+    }
+    let mut it = snapshot_interp(
+        prog,
+        &snapshot.input,
+        budget,
+        &[],
+        true,
+        TraceMode::Off,
+        snapshot.clock_ms.is_some(),
+        snapshot.seed,
+    );
+    it.input = snapshot.input.clone();
+    it.in_pos = snapshot.in_pos;
+    it.rng = snapshot.rng;
+    it.fuel_used = snapshot.fuel_used;
+    it.plots = snapshot.plots;
+    it.temp_serial = snapshot.temp_serial;
+    it.clock = match snapshot.clock_ms {
+        Some(now_ms) => Clock::Virtual { now_ms },
+        None => Clock::Real,
+    };
+    let mut frame = snapshot_frame(snapshot);
+    let mut out = snapshot.output.clone();
+    let result = exec_top_slice(
+        &mut it,
+        prog,
+        snapshot.next_statement,
+        None,
+        &mut frame,
+        &mut out,
+    );
+    finish_snapshot_run(&mut it, &mut frame, &mut out, result)
+}
+
+/// M5g item d4: execute `stop_after` top-level sentences and return the
+/// output (used by `--stop-after`, with or without a replay trace).
+pub fn run_until(
+    prog: &sem::Program,
+    stdin_text: &str,
+    budget: u64,
+    bindings: &[(String, Value)],
+    interactive: bool,
+    trace: TraceMode,
+    deterministic: bool,
+    seed: u64,
+    stop_after: usize,
+) -> Result<(String, i32), RunError> {
+    let mut it = snapshot_interp(prog, stdin_text, budget, bindings, interactive, trace, deterministic, seed);
+    let mut frame = Frame {
+        scopes: vec![ScopeFrame::default()],
+        counters: Vec::new(),
+        last_result: None,
+        last_shown: String::new(),
+        where_item: None,
+        tasks: HashMap::new(),
+        timers: Vec::new(),
+        watchers: Vec::new(),
+    };
+    for (n, v) in it.bindings.clone() {
+        frame.define(&n, v);
+    }
+    let mut out = String::new();
+    let limit = if stop_after == 0 { None } else { Some(stop_after) };
+    let result = exec_top_slice(&mut it, prog, 0, limit, &mut frame, &mut out);
+    match result {
+        Ok(_) => Ok((out, 0)),
+        Err(e) => Err(snapshot_run_error(out, e)),
+    }
 }

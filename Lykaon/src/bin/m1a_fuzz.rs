@@ -1,7 +1,7 @@
 //! M1a fuzz: feed pseudo-random (and structured) sources into check_source
 //! and format_source for a fixed duration. The program must never panic.
 //! Run: cargo run --release --bin m1a_fuzz -- 600
-use lykaon::{check_source, format_source};
+use lykaon::{check_source, try_format_source};
 
 use std::time::{Duration, Instant};
 
@@ -162,9 +162,11 @@ fn main() {
         let src_copy = src.clone();
         let a = std::panic::catch_unwind(move || check_source(&src_copy, "input.lykaon"));
         let scr = src.clone();
-        let b = std::panic::catch_unwind(move || format_source(&scr));
-        // Feeding the formatter's own output back must also be safe.
-        if let Ok(formatted) = &b {
+        let b = std::panic::catch_unwind(move || try_format_source(&scr, "input.lykaon"));
+        // Feeding the formatter's own output back must also be safe. An
+        // invalid source is a normal Err, not a panic; only format a file the
+        // formatter accepted.
+        if let Ok(Ok(formatted)) = &b {
             let formatted = formatted.clone();
             let c = std::panic::catch_unwind(move || check_source(&formatted, "input.lykaon"));
             if c.is_err() {

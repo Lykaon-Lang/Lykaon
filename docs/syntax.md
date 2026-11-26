@@ -56,8 +56,8 @@ Kinds are written the way you say them:
 | `maybe number` | a value or `missing` |
 | `list of number`, `map of text to number`, `set of text`, `pair of number and text` | collections |
 | `channel of whole number` | a channel |
-| `guarded`, `atomic number`, `counter` | shared values (M4) |
-| `date`, `moment`, `duration`, `secret` | time/secret values (M4) |
+| `guarded`, `atomic number`, `counter` | shared values |
+| `date`, `moment`, `duration`, `secret` | time/secret values |
 
 `Ask` reads one line from the keyboard into a name; `missing` and `fallback` handle absence:
 
@@ -223,4 +223,4 @@ then open `http://localhost:8080` in a browser. Responses can also be
 
 - [`standard-library.md`](standard-library.md) — every built-in word, grouped by task
 - [`cli.md`](cli.md) — run, repl, build, test, packages, benchmarks
-- [`Lykaon_Language_Reference.md`](Lykaon_Language_Reference.md) — the complete reference for v0.1
+- [`Lykaon_Language_Reference.md`](Lykaon_Language_Reference.md) — the complete reference for v0.2

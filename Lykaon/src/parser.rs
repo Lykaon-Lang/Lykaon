@@ -1,4 +1,4 @@
-//! Parser for M1a sentences: recursive descent over the pattern table (Appendix B, p.201).
+﻿//! Parser for M1a sentences: recursive descent over the pattern table (Appendix B, p.201).
 
 use crate::diagnostics::Diagnostic;
 use crate::lexer::{Lexer, Token, hard_words};
@@ -579,7 +579,11 @@ pub fn parse_sentence(
             let words: Vec<&str> = text.split_whitespace().collect();
             if words.len() > 2
                 && words[1].eq_ignore_ascii_case("these")
-                && words[2].eq_ignore_ascii_case("together")
+                && ((words.len() > 2 && words[2].eq_ignore_ascii_case("together"))
+                    || (words.len() > 4
+                        && words[2].eq_ignore_ascii_case("all")
+                        && words[3].eq_ignore_ascii_case("or")
+                        && words[4].eq_ignore_ascii_case("none")))
             {
                 diags.extend(parse_block_fn(
                     _all,
@@ -617,6 +621,21 @@ pub fn parse_sentence(
         // only when no as-format follows - `Save x is ...` is a name
         // clash the layer below reports.
         "save" => {}
+        // M5 (Appendix L 5.1): Load NAME / Load NAME from ... is checked in
+        // the semantic layer (the table name and the file's columns).
+        "load" => {}
+        // M5 (Appendix L 7.2): Plot columns are checked in the semantic
+        // layer (the chart is a file write).
+        "plot" => {}
+        // M5 (Appendix L 7.3): Predict columns are checked in the semantic
+        // layer (the model trains at run time).
+        "predict" => {}
+        // M5 (Appendix L 7.4): database sentences are checked in the
+        // semantic layer (the driver state lives in the runtime).
+        "open" => {}
+        // M5 (Appendix L 7.6): Limit memory/time is checked in the
+        // semantic layer.
+        "limit" => {}
         // M4-8 (Appendix K 7.10/7.11): the system sentences (Run/Exit, the
         // T0171 path rule and the 0..255 code range) and the tool
         // declarations (Takes/Option, placement and kinds) are checked in
@@ -1204,8 +1223,34 @@ fn parse_repeat(
                 ));
             }
             ts.pos += 1;
-            ts.consume_word("times");
+            if !ts.consume_word("times") {
+                diags.push(diag(
+                    "T0113",
+                    "A sentence cannot be read.",
+                    file,
+                    s.line,
+                    text,
+                    ts.pos,
+                    (ts.pos + 1).min(text.len()),
+                    "Repeat needs times after the count.",
+                    "Write Repeat 3 times.",
+                ));
+                return diags;
+            }
             if ts.pos < ts.toks.len() && matches!(ts.toks[ts.pos], Token::Period | Token::Eof) {
+                if s.children.is_empty() {
+                    diags.push(diag(
+                        "T0128",
+                        "Missing block.",
+                        file,
+                        s.line,
+                        text,
+                        ts.pos,
+                        (ts.pos + 1).min(text.len()),
+                        "A sentence that needs a block has none.",
+                        "Indent the sentences to repeat.",
+                    ));
+                }
                 diags.extend(parse_block_fn(all, &s.children, names, file, true, in_fn));
             } else {
                 let rest = ts.rest_without_period();
@@ -1225,6 +1270,34 @@ fn parse_repeat(
                 diags.extend(parse_block_fn(all, &s.children, names, file, true, in_fn));
             }
         }
+        Token::Word { lower, .. } if lower == "minus" => {
+            // `Repeat minus 3 times.` is the book's negative count (T0122).
+            diags.push(diag(
+                "T0122",
+                "Bad repeat count.",
+                file,
+                s.line,
+                text,
+                ts.pos,
+                ts.pos + 5,
+                "Repeat has a negative or decimal count.",
+                "Use a whole number of 0 or more.",
+            ));
+        }
+        Token::Word { lower, .. } if number_words().contains(&lower.as_str()) => {
+            // A number word is an error where a count is expected (Ch.6).
+            diags.push(diag(
+                "T0006",
+                "Number spelled as letters.",
+                file,
+                s.line,
+                text,
+                ts.pos,
+                ts.pos + 1,
+                "A number is written as a word where a number is expected.",
+                "Write the number with digits. To make the word a text value, write as text.",
+            ));
+        }
         Token::Decimal { .. } | Token::Negative { .. } => {
             diags.push(diag(
                 "T0122",
@@ -1238,7 +1311,21 @@ fn parse_repeat(
                 "Use a whole number of 0 or more.",
             ));
         }
-        _ => {}
+        _ => {
+            // `Repeat <name> times.` and every other shape are not in the
+            // grammar (G42/G43): the count must be a NUMBER literal.
+            diags.push(diag(
+                "T0113",
+                "A sentence cannot be read.",
+                file,
+                s.line,
+                text,
+                ts.pos,
+                (ts.pos + 1).min(text.len()),
+                "Repeat needs a count written with digits, or while, or forever.",
+                "Write Repeat 3 times., Repeat while <question>., or Repeat forever.",
+            ));
+        }
     }
     diags
 }
@@ -1358,7 +1445,7 @@ fn parse_to(
             ts.pos += 1;
         }
         Some("can") | Some("as") | None => {
-            // inputs allowed to be absent only with `as` (M2+) — still fine to parse
+            // inputs allowed to be absent only with `as` (M2+) â€” still fine to parse
             while ts.peek_word() == Some("as") {
                 ts.pos += 1;
                 let _ = ts.consume();
@@ -2407,7 +2494,7 @@ fn parse_comparison(
         ));
         return;
     }
-    // `coll has x` (Ch.12) — no "is" word
+    // `coll has x` (Ch.12) â€” no "is" word
     if ts.peek_word() == Some("has") {
         ts.pos += 1;
         parse_operand(ts, text, file, line, names, diags);

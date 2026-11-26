@@ -452,6 +452,51 @@ fn json_write(vv: &Value, pretty: bool, depth: usize, out: &mut String) -> Resul
             out.push('}');
             Ok(())
         }
+        Value::Table(t) => {
+            // M5 / Element seam (SCREENS_ELEMENT_INTEGRATION 4.3): a table
+            // crosses as an array of objects keyed by column name; a blank
+            // cell is null. No Lykaon-only value crosses.
+            out.push('[');
+            for (ri, row) in t.rows.iter().enumerate() {
+                if ri > 0 {
+                    out.push(',');
+                    if pretty {
+                        out.push(' ');
+                    }
+                }
+                if pretty {
+                    out.push('\n');
+                    for _ in 0..(depth + 1) * 2 {
+                        out.push(' ');
+                    }
+                }
+                out.push('{');
+                for (ci, col) in t.columns.iter().enumerate() {
+                    if ci > 0 {
+                        out.push(',');
+                        if pretty {
+                            out.push(' ');
+                        }
+                    }
+                    json_string_write(&col.name, out);
+                    out.push(':');
+                    if pretty {
+                        out.push(' ');
+                    }
+                    let cell = row.get(ci).unwrap_or(&Value::Missing);
+                    json_write(cell, pretty, depth + 2, out)?;
+                }
+                out.push('}');
+            }
+            if pretty && !t.rows.is_empty() {
+                out.push('\n');
+                for _ in 0..depth * 2 {
+                    out.push(' ');
+                }
+            }
+            out.push(']');
+            Ok(())
+        }
         Value::Record(_tname, parts) => {
             // records are written with parts in declaration order (S46)
             out.push('{');
@@ -2179,6 +2224,11 @@ fn csv_cell(cell: &str, pk: &Kind) -> Result<Value, ()> {
 /// the header row from the parts' names, then a row per record; a cell
 /// holds RFC 4180 quotes only when it needs them.
 pub fn csv_encode(v: &Value) -> Result<String, ()> {
+    // M5-S10: a loaded table saves as its own CSV (the M4 list-of-records
+    // shape below stays for the M4 save sentences).
+    if let Value::Table(t) = v {
+        return Ok(crate::data::table_to_csv(t));
+    }
     let items = match v {
         Value::List(items) => items,
         _ => return Err(()),

@@ -1,10 +1,10 @@
-//! liblykaon_rt (M3): the runtime library linked into `lykaon build` programs.
+﻿//! liblykaon_rt (M3): the runtime library linked into `lykaon build` programs.
 //!
 //! * The embedded evaluator path (codegen::LowerKind::Embedded): the object's
 //!   `lykaon_main` calls `lykaon_rt_main(src, len, mode)` with the program source
 //!   embedded as a data symbol. This compiles the source with the same front
-//!   end the developer used and runs it with the evaluator of lykaon-core —
-//!   the interpreter that defines what every program means — so native
+//!   end the developer used and runs it with the evaluator of lykaon-core â€”
+//!   the interpreter that defines what every program means â€” so native
 //!   output is byte-exact with `lykaon run` by construction.
 //! * The Full path's helpers: buffered output (printed once at program end
 //!   by `lykaon_rt_flush`, so an aborting run prints only the fatal line, like
@@ -16,6 +16,10 @@
 //! Exit semantics copied from the CLI: a fatal interpreter error prints its
 //! one message line (with a newline) and exits 1, discarding buffered
 //! output; success prints the whole buffer and exits 0.
+
+#[global_allocator]
+static GLOBAL_ALLOC: lykaon_core::alloc::CountingAllocator =
+    lykaon_core::alloc::CountingAllocator;
 
 use std::io::Write;
 use std::sync::Mutex;
@@ -85,6 +89,59 @@ fn pause_if_owns_console() {
 }
 
 // ---------------------------------------------------------------- says
+
+// M5g item a: native fuel metering. The code generator emits one
+// `lykaon_rt_tick()` before every sentence when the runner asked for a
+/// budget; 0 (the default) means unlimited, so a normal build never calls
+/// this and pays nothing.
+static FUEL_BUDGET: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static FUEL_USED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static FUEL_READY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// True when LYKAON_FUEL was set to a positive budget. Kept separate from
+/// the remaining count, because 0 remaining means "stop", not "unlimited".
+static FUEL_LIMITED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn fuel_init() {
+    use std::sync::atomic::Ordering;
+    if !FUEL_READY.swap(true, Ordering::SeqCst) {
+        let n = std::env::var("LYKAON_FUEL")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(0);
+        if n > 0 {
+            FUEL_BUDGET.store(n, Ordering::SeqCst);
+            FUEL_LIMITED.store(true, Ordering::SeqCst);
+        }
+    }
+}
+
+/// M5g item a: charge one sentence. Stops the process with the same words
+/// as the interpreter when the budget runs out.
+#[unsafe(no_mangle)]
+pub extern "C" fn lykaon_rt_tick() {
+    use std::sync::atomic::Ordering;
+    fuel_init();
+    if !FUEL_LIMITED.load(Ordering::Relaxed) {
+        return;
+    }
+    FUEL_USED.fetch_add(1, Ordering::Relaxed);
+    let mut cur = FUEL_BUDGET.load(Ordering::Relaxed);
+    loop {
+        if cur == 0 {
+            eprintln!("Error: The program ran for too long.");
+            std::process::exit(1);
+        }
+        match FUEL_BUDGET.compare_exchange_weak(
+            cur,
+            cur - 1,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        ) {
+            Ok(_) => return,
+            Err(seen) => cur = seen,
+        }
+    }
+}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn lykaon_rt_say_whole(x: i64, without: i64) {
@@ -247,9 +304,25 @@ pub unsafe extern "C" fn lykaon_rt_main(src: *const u8, len: i64, mode: i64) -> 
     // (the embedded source), which outlives the call.
     let bytes = unsafe { std::slice::from_raw_parts(src, len.max(0) as usize) };
     let source = match std::str::from_utf8(bytes) {
-        Ok(s) => s,
+        Ok(s) => s.to_string(),
         Err(_) => fail("internal: the embedded source is not valid text"),
     };
+    // The evaluator is recursive and the value tree is large (M5 added the
+    // table/model/database values). A double-clicked exe gets the default
+    // 1 MiB main-thread stack, which deep programs can exhaust; run the
+    // evaluator on a dedicated large-stack thread. All runtime state is
+    // behind globals/mutexes, so this is safe and invisible to the program.
+    let for_thread = source.clone();
+    let worker = std::thread::Builder::new()
+        .stack_size(64 * 1024 * 1024)
+        .spawn(move || run_embedded(&for_thread, mode));
+    match worker {
+        Ok(handle) => handle.join().unwrap_or(1),
+        Err(_) => run_embedded(&source, mode),
+    }
+}
+
+fn run_embedded(source: &str, mode: i64) -> i64 {
     let prog = match lykaon::compile_tree(source, "program.lykaon") {
         Ok(p) => p,
         Err(diags) => {
@@ -320,8 +393,20 @@ fn run_prog(prog: &lykaon::sem::Program) -> i64 {
             2
         }
         lykaon::args::ToolArgs::Bindings(bindings) => {
-            let (result, ranges) =
-                lykaon::interp::run_budgeted_streams(prog, &stdin_text, 0, &bindings, interactive);
+            // M5g item a: native runs honour LYKAON_FUEL (set by
+            // `lykaon run --fuel N` and by the native runner); 0 = unlimited,
+                // the old behaviour.
+            let budget = std::env::var("LYKAON_FUEL")
+                .ok()
+                .and_then(|v| v.parse::<u64>().ok())
+                .unwrap_or(0);
+            let (result, ranges, fuel_used) = lykaon::interp::run_budgeted_streams_metered(
+                prog,
+                &stdin_text,
+                budget,
+                &bindings,
+                interactive,
+            );
             let (merged, code) = match result {
                 Ok(out) => (out, 0),
                 Err(e) => {
@@ -338,6 +423,11 @@ fn run_prog(prog: &lykaon::sem::Program) -> i64 {
             print!("{stdout_text}");
             eprint!("{stderr_text}");
             let _ = std::io::stdout().flush();
+            // M5g item a: the runner and the tests read the used budget from
+            // stderr; off by default so a normal program prints nothing new.
+            if std::env::var_os("LYKAON_FUEL_REPORT").is_some() {
+                eprintln!("fuel_used {fuel_used}");
+            }
             code as i64
         }
     }
@@ -586,6 +676,10 @@ pub unsafe extern "C" fn main(argc: i32, argv: *const *const u8, _envp: *const *
         fn lykaon_main() -> i32;
     }
     let code = unsafe { lykaon_main() };
+    let used = std::sync::atomic::AtomicU64::load(&FUEL_USED, std::sync::atomic::Ordering::Relaxed);
+    if used > 0 && std::env::var_os("LYKAON_FUEL_REPORT").is_some() {
+        eprintln!("fuel_used {used}");
+    }
     pause_if_owns_console();
     code
 }

@@ -68,7 +68,7 @@ fn collect_block(all: &[Sentence], indices: &[usize], names: &mut Vec<(String, S
                         .position(|w| w.eq_ignore_ascii_case("is"))
                         .unwrap_or(1);
                     // the articles the/a/an are removed from code before
-                    // Tern reads it (ch.4): `The words is ...` defines
+                    // Lykaon reads it (ch.4): `The words is ...` defines
                     // `words`
                     let start =
                         words

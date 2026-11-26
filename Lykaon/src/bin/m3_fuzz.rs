@@ -2,7 +2,7 @@
 //! format_source, run_source_budgeted and test_source.
 //! The program must never panic (the step budget stops infinite loops instead
 //! of hanging). Run: cargo run --release --bin m3_fuzz -- 600
-use lykaon::{check_source, format_source, run_source_budgeted, test_source};
+use lykaon::{check_source, try_format_source, run_source_budgeted, test_source};
 
 use std::time::{Duration, Instant};
 
@@ -287,8 +287,8 @@ fn main() {
         let src_copy = src.clone();
         let a = std::panic::catch_unwind(move || check_source(&src_copy, "input.lykaon"));
         let scr = src.clone();
-        let b = std::panic::catch_unwind(move || format_source(&scr));
-        if let Ok(formatted) = &b {
+        let b = std::panic::catch_unwind(move || try_format_source(&scr, "input.lykaon"));
+        if let Ok(Ok(formatted)) = &b {
             let formatted = formatted.clone();
             let c = std::panic::catch_unwind(move || check_source(&formatted, "input.lykaon"));
             if c.is_err() {

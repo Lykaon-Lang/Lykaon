@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_give_back_postfix/input.lykaon, line 3: Give back first 2 of numbers sorted.
+                                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the first 2 of numbers, sorted, or the first 2 of numbers sorted.
+Fix: Split it into two sentences.
+

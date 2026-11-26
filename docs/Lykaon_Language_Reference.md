@@ -12,9 +12,8 @@ Say Hello World.
 Hello World
 ```
 
-This reference covers **M1–M4**: the language core, data and ownership, the
-native compiler, and servers/concurrency. M5 (data tables, AI, databases, web)
-is in progress.
+This reference covers the language core, data and ownership, the native
+compiler, servers/concurrency, and the data/AI/database/web layer.
 
 ---
 
@@ -369,7 +368,7 @@ Common codes:
 | T0205 | A name is not defined |
 | T0301 | A value of one kind is used where another is needed |
 | T0406 | A fixed name was changed |
-| T0509 | A sentence belongs to a later milestone |
+| T0509 | A sentence belongs to a later version |
 | T0611 / T0612 | Memory / time limit reached |
 | T0622 | Sandbox refused |
 
@@ -377,16 +376,96 @@ The compiler reports one main error per mistake, with the Where line marked.
 
 ---
 
-## 15. What works today
+## 15. Data, AI, databases and tools
 
-- M1–M4 are complete: syntax, interpreter, data and ownership, native
-  compilation, servers, concurrency, files, formats and networking.
-- M5 is in progress: data tables, SVG charts, classical ML, SQLite/PostgreSQL,
-  encryption, limits, a native permission sandbox, `lykaon lsp`, `lykaon doc`,
-  `lykaon profile`, `lykaon outline`, `lykaon check --json`,
-  `lykaon test --json`, `lykaon docs --compact`, `lykaon explain`,
-  `lykaon run --trace-json`, `lykaon migrate`.
-- The WebAssembly target and WASI sandbox are not finished yet.
+### Data tables
+
+```lykaon
+Load sales.
+Say rows.
+Say columns.
+Say average price.
+Say total price by region.
+Say top 5 rows by price.
+For each row in sales.
+    Say price.
+Save sales as csv to file sales-out.
+```
+
+`Load` reads CSV from the `data` folder (or the file's folder). Kinds are
+inferred from the values.
+
+### Charts
+
+```lykaon
+Plot price against size.
+Plot price against size as dots to file chart.
+Plot region against price as bars to file chart.
+Plot price against size as line to file chart with extension png.
+```
+
+The default is an 800×480 SVG in `output/plot-N.svg`; `with extension png`
+writes a deterministic PNG.
+
+### Models
+
+```lykaon
+Predict churned from age and plan.
+Say accuracy.
+Say error.
+Say what matters most.
+Say prediction for age 40 and plan basic.
+Save model as churn.
+Load model churn.
+```
+
+### Databases
+
+```lykaon
+Open database shop using sqlite file shopdata.
+Open database pg using postgres at localhost on port 5432 path shop.
+Load stock from database shop.
+Add a stockitem with name apples and count 5 to table stock of shop.
+Remove rows where name is apples from table stock of shop.
+Set count to 6 in rows of stock of shop where name is pears.
+Do these all or none.
+    Add a stockitem with name plums and count 2 to table stock of shop.
+```
+
+`lykaon migrate` applies SQL files in `migrations/` and records them in
+`lykaon_migrations`.
+
+### Encryption, limits and sandbox
+
+```lykaon
+Key is random key.
+Secret is encrypted 42 with key.
+Say decrypted secret with key.
+Limit memory 64 megabytes.
+Limit time 10 seconds.
+```
+
+`lykaon run safely` reads `Allows files ... and network ... and environment
+... and processes.` from `settings.lykaon` and enforces it.
+
+### Tools
+
+`lykaon lsp`, `lykaon doc`, `lykaon profile`, `lykaon outline`,
+`lykaon check --json`, `lykaon test --json`, `lykaon docs --compact`,
+`lykaon explain`, `lykaon run --trace-json`, `lykaon migrate`.
+
+### Status and limits
+
+- The language core, data and ownership, native compilation, servers,
+  concurrency, files, formats and networking are implemented.
+- Data tables, SVG + PNG charts, classical ML, SQLite/PostgreSQL (MD5 auth;
+  real-server Add/Remove/Set/Load/transactions), encryption, limits, the
+  native permission sandbox, `lykaon lsp`, `lykaon doc`, `lykaon profile`,
+  `lykaon outline`, JSON output modes and `lykaon migrate` are implemented.
+- **WebAssembly**: the browser playground runs the interpreter compiled to
+  wasm32; native Lykaon-to-wasm output and the WASI sandbox are deferred.
+- **PostgreSQL SCRAM-SHA-256** is not implemented yet; MD5 auth works.
+- **Windows AppContainer** and **wasm32-wasi** isolation are deferred.
 
 Lykaon is **source-available, not open source**: free for personal use and for
 organizations under USD 1,000,000 annual revenue. Programs you write in Lykaon

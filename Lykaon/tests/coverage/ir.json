@@ -1,0 +1,425 @@
+{
+ "kind": "ir",
+ "items": [
+  {
+   "id": "const",
+   "operands": "kind, value",
+   "meaning": "makes a constant value",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "local",
+   "operands": "kind",
+   "meaning": "declares a local value",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "load",
+   "operands": "local",
+   "meaning": "reads a local value",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "store",
+   "operands": "local, value",
+   "meaning": "writes a local value",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "move",
+   "operands": "from, to",
+   "meaning": "moves a value to a new owner; the old local is dead",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "copy",
+   "operands": "from, to",
+   "meaning": "makes a deep copy",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "borrow",
+   "operands": "local",
+   "meaning": "takes a shared borrow for reading",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "borrow_mut",
+   "operands": "local",
+   "meaning": "takes the one unique borrow for changing",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "end_borrow",
+   "operands": "borrow",
+   "meaning": "ends a borrow at its last use",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "drop",
+   "operands": "local",
+   "meaning": "frees a value and runs its clean-up",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "share",
+   "operands": "value",
+   "meaning": "makes a counted shared value",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "weak_share",
+   "operands": "shared",
+   "meaning": "makes a link that does not keep a value alive",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "box",
+   "operands": "value",
+   "meaning": "puts a value on the heap",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "add",
+   "operands": "left, right",
+   "meaning": "adds two numbers",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "sub",
+   "operands": "left, right",
+   "meaning": "subtracts",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "mul",
+   "operands": "left, right",
+   "meaning": "multiplies",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "div_decimal",
+   "operands": "left, right",
+   "meaning": "divides and gives a decimal",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "div_whole",
+   "operands": "left, right",
+   "meaning": "divides and gives a whole number",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "rem",
+   "operands": "left, right",
+   "meaning": "remainder",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "power",
+   "operands": "base, exponent",
+   "meaning": "raises to a power",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "neg",
+   "operands": "value",
+   "meaning": "changes the sign",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "round_away",
+   "operands": "value",
+   "meaning": "rounds half away from zero",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "round_even",
+   "operands": "value",
+   "meaning": "rounds halves to the nearest even number",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "check_overflow",
+   "operands": "operation",
+   "meaning": "stops the program if a whole number goes past its size",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "checked_add",
+   "operands": "left, right",
+   "meaning": "adds and gives a result instead of stopping",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "wrapping_add",
+   "operands": "left, right",
+   "meaning": "adds and wraps around",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "saturating_add",
+   "operands": "left, right",
+   "meaning": "adds and stops at the limit",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "bit_and",
+   "operands": "left, right",
+   "meaning": "bit and",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "bit_or",
+   "operands": "left, right",
+   "meaning": "bit or",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "bit_xor",
+   "operands": "left, right",
+   "meaning": "bit xor",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "bit_not",
+   "operands": "value",
+   "meaning": "bit not",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "shift_left",
+   "operands": "value, count",
+   "meaning": "shifts bits left",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "shift_right",
+   "operands": "value, count",
+   "meaning": "shifts bits right",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "eq",
+   "operands": "left, right",
+   "meaning": "equal",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "ne",
+   "operands": "left, right",
+   "meaning": "not equal",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "lt",
+   "operands": "left, right",
+   "meaning": "less than",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "le",
+   "operands": "left, right",
+   "meaning": "at most",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "gt",
+   "operands": "left, right",
+   "meaning": "more than",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "ge",
+   "operands": "left, right",
+   "meaning": "at least",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "close_to",
+   "operands": "left, right",
+   "meaning": "equal within one part in a billion of the larger value, or within one trillionth",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "is_missing",
+   "operands": "value",
+   "meaning": "tests for missing",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "convert",
+   "operands": "value, kind",
+   "meaning": "converts one kind to another",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "jump",
+   "operands": "block",
+   "meaning": "goes to another block",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "branch",
+   "operands": "condition, then, otherwise",
+   "meaning": "goes to one of two blocks",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "switch",
+   "operands": "value, cases",
+   "meaning": "goes to the block of the matching shape",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "call",
+   "operands": "function, inputs",
+   "meaning": "calls a function",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "call_indirect",
+   "operands": "function value, inputs",
+   "meaning": "calls a function value or a closure",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "return",
+   "operands": "value",
+   "meaning": "ends a function with a value",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "panic",
+   "operands": "message",
+   "meaning": "stops the program with a plain trace and exit code 1",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "check_bounds",
+   "operands": "index, length",
+   "meaning": "stops the program if an index is outside a list",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "list_new",
+   "operands": "kind",
+   "meaning": "makes an empty list",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "list_push",
+   "operands": "list, value",
+   "meaning": "adds an item to a list",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "list_get",
+   "operands": "list, index",
+   "meaning": "reads an item",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "map_put",
+   "operands": "map, key, value",
+   "meaning": "adds or replaces an entry",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "map_get",
+   "operands": "map, key",
+   "meaning": "reads an entry as a maybe value",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "spawn",
+   "operands": "task block",
+   "meaning": "starts a task",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "wait",
+   "operands": "task",
+   "meaning": "waits for a task and gives its result",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "send",
+   "operands": "channel, value",
+   "meaning": "puts a value in a channel",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "receive",
+   "operands": "channel",
+   "meaning": "takes a value out of a channel",
+   "milestone": "M1a",
+   "status": "covered"
+  },
+  {
+   "id": "atomic_add",
+   "operands": "atomic, value",
+   "meaning": "adds in one machine step",
+   "milestone": "M1a",
+   "status": "covered"
+  }
+ ]
+}

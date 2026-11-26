@@ -1,4 +1,4 @@
-# The Lykaon standard library (v0.1)
+# The Lykaon standard library (v0.2)
 
 Everything in this list is **built in** — there is nothing to import for it. File
 modules loaded with `Use` add your own names on top. Words are grouped by task.
@@ -188,7 +188,7 @@ Run them with `lykaon-cli test file.lykaon` (see [`cli.md`](cli.md)).
 
 ## Tasks and concurrency
 
-Start a task, wait for its result (from `tests/m4.rs`):
+Start a task, wait for its result (from the test suite):
 
 ```lykaon
 Start task looker.

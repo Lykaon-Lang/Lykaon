@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_first_of_postfix/input.lykaon, line 2: Say first of numbers sorted.
+                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the first of numbers, sorted, or the first of numbers sorted.
+Fix: Split it into two sentences.
+

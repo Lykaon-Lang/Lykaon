@@ -1,0 +1,2622 @@
+{
+ "kind": "semantic",
+ "items": [
+  {
+   "id": "S1",
+   "milestone": "M1a",
+   "text": "A name is fixed unless it is defined with Changeable. A name of kind guarded, atomic or counter is fixed and can still be changed with Set or Add.",
+   "status": "covered"
+  },
+  {
+   "id": "S2",
+   "milestone": "M1a",
+   "text": "The kind of a name is fixed by its first definition and never changes.",
+   "status": "covered"
+  },
+  {
+   "id": "S3",
+   "milestone": "M1a",
+   "text": "A name is defined once in the block where it lives. A second definition of a name that is already visible, in the same block or an outer one, is an error. Blocks that do not contain each other may use the same name.",
+   "status": "covered"
+  },
+  {
+   "id": "S4",
+   "milestone": "M1a",
+   "text": "Names are not case-sensitive. Two names that differ only in case are an error.",
+   "status": "covered"
+  },
+  {
+   "id": "S5",
+   "milestone": "M1a",
+   "text": "A plural is a different name from its singular.",
+   "status": "covered"
+  },
+  {
+   "id": "S6",
+   "milestone": "M1a",
+   "text": "When a sentence uses a name, the longest defined name wins. Two different names of the same length are an error.",
+   "status": "covered"
+  },
+  {
+   "id": "S7",
+   "milestone": "M1a",
+   "text": "A hard word can never be part of a name.",
+   "status": "covered"
+  },
+  {
+   "id": "S8",
+   "milestone": "M1a",
+   "text": "The words the, a and an are removed from code, except A and An at the start of a sentence, which are declaration words. They are kept in raw text and printed text.",
+   "status": "covered"
+  },
+  {
+   "id": "S9",
+   "milestone": "M1a",
+   "text": "Say prints a value when the whole line is one value. Otherwise the line is text, and each word equal to a defined name is replaced by its value. literally prints the word.",
+   "status": "covered"
+  },
+  {
+   "id": "S10",
+   "milestone": "M1a",
+   "text": "Sentences run from top to bottom. A function, record, enum or interface may be used above its definition. Every other name must be defined above its first use.",
+   "status": "covered"
+  },
+  {
+   "id": "S11",
+   "milestone": "M1a",
+   "text": "Inside one sentence, operands are read from left to right.",
+   "status": "covered"
+  },
+  {
+   "id": "S12",
+   "milestone": "M1a",
+   "text": "A sentence holds one operation.",
+   "status": "covered"
+  },
+  {
+   "id": "S13",
+   "milestone": "M1a",
+   "text": "A number without a point is a whole number. A number with a point is a decimal.",
+   "status": "covered"
+  },
+  {
+   "id": "S14",
+   "milestone": "M1a",
+   "text": "A whole number and a decimal in one operation is an error.",
+   "status": "covered"
+  },
+  {
+   "id": "S15",
+   "milestone": "M1a",
+   "text": "A conversion between kinds is always written with as.",
+   "status": "covered"
+  },
+  {
+   "id": "S16",
+   "milestone": "M1a",
+   "text": "divided by gives a decimal. whole divided by gives a whole number, moving toward zero.",
+   "status": "covered"
+  },
+  {
+   "id": "S17",
+   "milestone": "M1a",
+   "text": "Rounding goes half away from zero unless rounded to even is written.",
+   "status": "covered"
+  },
+  {
+   "id": "S18",
+   "milestone": "M1a",
+   "text": "Whole-number overflow stops the program in every build.",
+   "status": "covered"
+  },
+  {
+   "id": "S19",
+   "milestone": "M1a",
+   "text": "Whole division by zero stops the program.",
+   "status": "covered"
+  },
+  {
+   "id": "S20",
+   "milestone": "M1a",
+   "text": "Decimals follow IEEE rules, with infinity, minus infinity and not a number.",
+   "status": "covered"
+  },
+  {
+   "id": "S21",
+   "milestone": "M1a",
+   "text": "Lists and text positions count from 1.",
+   "status": "covered"
+  },
+  {
+   "id": "S22",
+   "milestone": "M1a",
+   "text": "item N of list out of range stops the program. safe item gives a maybe value.",
+   "status": "covered"
+  },
+  {
+   "id": "S23",
+   "milestone": "M1a",
+   "text": "Maps and sets keep insertion order. A key that is not in a map gives missing.",
+   "status": "covered"
+  },
+  {
+   "id": "S24",
+   "milestone": "M1a",
+   "text": "Text compares case-sensitively, by Unicode code point.",
+   "status": "covered"
+  },
+  {
+   "id": "S25",
+   "milestone": "M1a",
+   "text": "Two lists are equal when they have the same items in the same order.",
+   "status": "covered"
+  },
+  {
+   "id": "S26",
+   "milestone": "M1a",
+   "text": "Sorting goes smallest first. descending reverses it.",
+   "status": "covered"
+  },
+  {
+   "id": "S27",
+   "milestone": "M1a",
+   "text": "A maybe value must be checked or given a fallback before use.",
+   "status": "covered"
+  },
+  {
+   "id": "S28",
+   "milestone": "M1a",
+   "text": "A can fail operation must be handled with Try or a default.",
+   "status": "covered"
+  },
+  {
+   "id": "S29",
+   "milestone": "M1a",
+   "text": "A bug stops the program: drops run, a plain trace prints, and the exit code is 1.",
+   "status": "covered"
+  },
+  {
+   "id": "S30",
+   "milestone": "M1a",
+   "text": "it stands for the result of the sentence just before, and for nothing farther back. Inside a where question, a Spread block and a Try block, it is the item or the result that opens the block. Tern: Programming in Plain English  -  Language version 0.1 336",
+   "status": "covered"
+  },
+  {
+   "id": "S31",
+   "milestone": "M1a",
+   "text": "that appears only in If that fails, Check that and Anything that can.",
+   "status": "covered"
+  },
+  {
+   "id": "S32",
+   "milestone": "M1a",
+   "text": "A Look at must cover every shape of the enum.",
+   "status": "covered"
+  },
+  {
+   "id": "S33",
+   "milestone": "M1a",
+   "text": "Every value has exactly one owner.",
+   "status": "covered"
+  },
+  {
+   "id": "S34",
+   "milestone": "M1a",
+   "text": "give moves a value, and the old name is dead.",
+   "status": "covered"
+  },
+  {
+   "id": "S35",
+   "milestone": "M1a",
+   "text": "Inputs are lent for reading by default.",
+   "status": "covered"
+  },
+  {
+   "id": "S36",
+   "milestone": "M1a",
+   "text": "A value has many shared borrows or one unique borrow, never both.",
+   "status": "covered"
+  },
+  {
+   "id": "S37",
+   "milestone": "M1a",
+   "text": "A borrow ends at its last use.",
+   "status": "covered"
+  },
+  {
+   "id": "S38",
+   "milestone": "M1a",
+   "text": "Records, lists, maps and enums own their parts and cannot hold a borrow.",
+   "status": "covered"
+  },
+  {
+   "id": "S39",
+   "milestone": "M1a",
+   "text": "A function gives back owned values only.",
+   "status": "covered"
+  },
+  {
+   "id": "S40",
+   "milestone": "M1a",
+   "text": "A temporary value lives to the end of its sentence.",
+   "status": "covered"
+  },
+  {
+   "id": "S41",
+   "milestone": "M1a",
+   "text": "Values are freed in reverse order of definition.",
+   "status": "covered"
+  },
+  {
+   "id": "S42",
+   "milestone": "M1a",
+   "text": "copy of makes a deep copy.",
+   "status": "covered"
+  },
+  {
+   "id": "S43",
+   "milestone": "M1a",
+   "text": "A share value is immutable. Changing it needs guarded.",
+   "status": "covered"
+  },
+  {
+   "id": "S44",
+   "milestone": "M1a",
+   "text": "A cycle of shared values leaks memory and never corrupts it.",
+   "status": "covered"
+  },
+  {
+   "id": "S45",
+   "milestone": "M1a",
+   "text": "A value that crosses tasks is given, shared and immutable, guarded or atomic.",
+   "status": "covered"
+  },
+  {
+   "id": "S46",
+   "milestone": "M1a",
+   "text": "Tasks started in a Do these together. block all end before the block ends.",
+   "status": "covered"
+  },
+  {
+   "id": "S47",
+   "milestone": "M1a",
+   "text": "Cancellation is cooperative, and the block ends with the first failure.",
+   "status": "covered"
+  },
+  {
+   "id": "S48",
+   "milestone": "M1a",
+   "text": "A guarded value is never held across Wait for.",
+   "status": "covered"
+  },
+  {
+   "id": "S49",
+   "milestone": "M1a",
+   "text": "Sending on a closed channel fails. Receiving from a closed empty channel gives missing.",
+   "status": "covered"
+  },
+  {
+   "id": "S50",
+   "milestone": "M1a",
+   "text": "Modules start once, in order of dependency, before the program body. A cycle is an error.",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S1",
+   "milestone": "M2",
+   "text": "Storing a copy kind into a record, list, map or set copies it. The old name stays usable. M2-S2. Storing a move kind moves it. The old name is dead (T0401). M2-",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S2",
+   "milestone": "M2",
+   "text": "Storing a move kind moves it. The old name is dead (T0401). M2-S3. A share handle is a move kind. A second handle is made with copy of, which increments the cou",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S3",
+   "milestone": "M2",
+   "text": "A share handle is a move kind. A second handle is made with copy of, which increments the count. M2-S4. A record is a copy kind only when it is declared with th",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S4",
+   "milestone": "M2",
+   "text": "A record is a copy kind only when it is declared with the interface can copy by hand (M3). Until M3, all Tern: Programming in Plain English - Language version 0",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S5",
+   "milestone": "M2",
+   "text": "A record is made with every part given, once each. A missing part is T0313. An unknown part is T0314. The order of parts in the sentence does not matter. M2-S6.",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S6",
+   "milestone": "M2",
+   "text": "Set age of maya to 32. needs maya to be Changeable. Nested: Set street of home of maya to Oak. needs the outermost name to be Changeable. M2-S7. copy of is deep",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S7",
+   "milestone": "M2",
+   "text": "copy of is deep for every kind. M2-S8. Look at x. evaluates x once. Each When names a variant and gives a fresh name to each of its parts, in the order they wer",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S8",
+   "milestone": "M2",
+   "text": "Look at x. evaluates x once. Each When names a variant and gives a fresh name to each of its parts, in the order they were declared. M2-S9. A When for a variant",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S9",
+   "milestone": "M2",
+   "text": "A When for a variant with no parts takes no names. A When with the wrong number of names is T0322. M2-S10. Look at covers every variant. A missing variant is T0",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S10",
+   "milestone": "M2",
+   "text": "Look at covers every variant. A missing variant is T0320. A repeated variant is T0321. 7.3 Equality and order Kind Equal when Ordered whole, decimal, exact deci",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S11",
+   "milestone": "M2",
+   "text": "sorted, biggest of and smallest of need an ordered kind. Other kinds are T0305. M2-S12. Maps and sets keep insertion order. A Put under an existing key keeps th",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S12",
+   "milestone": "M2",
+   "text": "Maps and sets keep insertion order. A Put under an existing key keeps the key's place and replaces the value. Removing and adding again puts the key last. Tern:",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S13",
+   "milestone": "M2",
+   "text": "A maybe T must be checked, given a fallback, or tested with is there before use (T0310). Inside the block of If x is there, x has kind T. M2-S14. missing has th",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S14",
+   "milestone": "M2",
+   "text": "missing has the kind of whatever maybe it fills. A bare missing needs as maybe T (T0303). M2-S15. A sentence marked can fail, used outside Try, If that fails us",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S15",
+   "milestone": "M2",
+   "text": "A sentence marked can fail, used outside Try, If that fails use, or a can fail function that says Pass failure up., is T0311. M2-S16. Try runs the sentence. On",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S16",
+   "milestone": "M2",
+   "text": "Try runs the sentence. On success the first block runs and it is the result. On failure the second block runs. Cleanup of everything made in the first block run",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S17",
+   "milestone": "M2",
+   "text": "Try. with nothing after it: the first block runs; on the first failure of any can fail sentence in it, the rest of the block is skipped, cleanup runs, and the I",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S18",
+   "milestone": "M2",
+   "text": "If that fails with KIND. matches that kind. If that fails. matches all kinds. The kinds are not found, no permission, bad format, timed out, other. A failure of",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S19",
+   "milestone": "M2",
+   "text": "If that fails use V. replaces the result with V. V must have the kind of the result (T0312). It may follow a definition or Ask. It is T0152 after a sentence wit",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S20",
+   "milestone": "M2",
+   "text": "Fail with TEXT makes a failure of kind other with that message. It is allowed only in a can fail function (T0332). M2-S21. Pass failure up. is allowed only insi",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S21",
+   "milestone": "M2",
+   "text": "Pass failure up. is allowed only inside a can fail function (T0117). It returns the current failure to the caller. It is allowed only inside the block of an If",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S22",
+   "milestone": "M2",
+   "text": "Stop the program with TEXT. is a bug-stop: drops run for the task, the plain trace prints (section 11), exit code 1. M2-S23. Whole-number overflow, whole divisi",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S23",
+   "milestone": "M2",
+   "text": "Whole-number overflow, whole division by zero, item N of list out of range, a failed Check, and an impossible Look at are bugs and stop the program (T0603, T060",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S24",
+   "milestone": "M2",
+   "text": "x checked plus y gives result whole number. wrapping plus wraps. saturating plus stops at the limit. The same forms exist for minus and times. M2-S25. A cleanup",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S25",
+   "milestone": "M2",
+   "text": "A cleanup block (can clean up, M3) cannot fail. Explicit Close x. can fail and is handled as any can fail sentence. M2-S26. Ask x as number. fails with bad form",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S26",
+   "milestone": "M2",
+   "text": "Ask x as number. fails with bad format if the reply is not a number, and with other (no person here) if no person is there. M2-S27. text as number fails with ba",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S27",
+   "milestone": "M2",
+   "text": "text as number fails with bad format if the text is not a number. It is can fail. 7.5 The word give Position Meaning Rule after a function head: To f x give EXP",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S28",
+   "milestone": "M2",
+   "text": "The four positions never overlap, because each follows a different earlier word. 7.6 Modules M2-S29. A file is a module named after the file, without .tern. A f",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S29",
+   "milestone": "M2",
+   "text": "A file is a module named after the file, without .tern. A folder is a group; Use sales from reports. uses sales.tern in folder reports. M2-S30. Use name. search",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S30",
+   "milestone": "M2",
+   "text": "Use name. searches (1) the folder of the file with the sentence, (2) source, (3) dependencies (empty before M3), (4) std. First step with a match wins. Two matc",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S31",
+   "milestone": "M2",
+   "text": "A module that is not Shared from cannot be reached. Using a name that the module did not share is T0208. Share of a name that does not exist is T0207. M2-S32. M",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S32",
+   "milestone": "M2",
+   "text": "Modules start once, in dependency order, before the program body. A cycle is T0210. M2-S33. In settings.tern, every top-level definition is shared (M2-D13). M2-",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S33",
+   "milestone": "M2",
+   "text": "In settings.tern, every top-level definition is shared (M2-D13). M2-S34. Paths in Use are relative to the file with the sentence. Tern: Programming in Plain Eng",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S34",
+   "milestone": "M2",
+   "text": "Paths in Use are relative to the file with the sentence. Tern: Programming in Plain English - Language version 0.1 239 7.7 Ownership and borrowing M2-S35. Every",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S35",
+   "milestone": "M2",
+   "text": "Every value has one owner. The rules of Reference 3, rules 33 to 45, apply. M2-S36. Inputs are lent for reading by default. lend to change is a unique borrow. M",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S36",
+   "milestone": "M2",
+   "text": "Inputs are lent for reading by default. lend to change is a unique borrow. M2-S37. A borrow ends at its last use (non-lexical). M2-S38. A For each x in list loo",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S37",
+   "milestone": "M2",
+   "text": "A borrow ends at its last use (non-lexical). M2-S38. A For each x in list loop holds a shared borrow of list for the whole loop. Changing the list inside is T04",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S38",
+   "milestone": "M2",
+   "text": "A For each x in list loop holds a shared borrow of list for the whole loop. Changing the list inside is T0402. M2-S39. A record, list, map, set, queue or enum c",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S39",
+   "milestone": "M2",
+   "text": "A record, list, map, set, queue or enum cannot hold a borrow (T0408). A function cannot give back a borrow (T0409). M2-S40. A temporary value lives to the end o",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S40",
+   "milestone": "M2",
+   "text": "A temporary value lives to the end of its sentence. It cannot be lent past it (T0405). M2-S41. Values are dropped in reverse order of definition. Record parts a",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S41",
+   "milestone": "M2",
+   "text": "Values are dropped in reverse order of definition. Record parts are dropped in declaration order. List items are dropped first to last. M2-S42. Close x. drops x",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S42",
+   "milestone": "M2",
+   "text": "Close x. drops x early. Using x afterwards is T0401. M2-S43. Set of a name that is not Changeable is T0406. Passing a fixed name to a lend to change input is T0",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S43",
+   "milestone": "M2",
+   "text": "Set of a name that is not Changeable is T0406. Passing a fixed name to a lend to change input is T0407. M2-S44. share is immutable (T0412). weak share links do",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S44",
+   "milestone": "M2",
+   "text": "share is immutable (T0412). weak share links do not keep a value alive. Reading a dead weak link gives missing. M2-S45. A function that reads a name from outsid",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S45",
+   "milestone": "M2",
+   "text": "A function that reads a name from outside sees fixed names and constants only. It never sees a Changeable name (T0204). 7.8 Text M2-S46. Text is immutable. Ever",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S46",
+   "milestone": "M2",
+   "text": "Text is immutable. Every operation makes new text. M2-S47. how many in text, backwards, position and slicing use extended grapheme clusters. Positions count fro",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S47",
+   "milestone": "M2",
+   "text": "how many in text, backwards, position and slicing use extended grapheme clusters. Positions count from 1. M2-S48. upper and lower use full Unicode case mapping.",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S48",
+   "milestone": "M2",
+   "text": "upper and lower use full Unicode case mapping. They are locale-independent. M2-S49. split text at SEP with nothing splits into clusters. A separator that is not",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S49",
+   "milestone": "M2",
+   "text": "split text at SEP with nothing splits into clusters. A separator that is not found gives a list of one item. An empty text gives a list of one empty item. M2-S5",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S50",
+   "milestone": "M2",
+   "text": "Pattern words compile to a finite-state matcher with no backtracking. Matching is leftmost-longest, case-sensitive, over clusters. digits matches the Unicode de",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S51",
+   "milestone": "M2",
+   "text": "replace P with y in text replaces every non-overlapping match, left to right. 7.9 Tests M2-S52. Test NAME. opens a block. Everything after Test on the line is i",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S52",
+   "milestone": "M2",
+   "text": "Test NAME. opens a block. Everything after Test on the line is its name. A test passes if its block ends with no failed check and no bug. M2-S53. Check that con",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S53",
+   "milestone": "M2",
+   "text": "Check that cond. fails the test if cond is no. The failure names the condition and, for a comparison, both values. M2-S54. Check that this fails. opens a block.",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S54",
+   "milestone": "M2",
+   "text": "Check that this fails. opens a block. It passes when a sentence inside the block fails (a can fail failure or a bug). If nothing fails, the check fails. M2-S55.",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S55",
+   "milestone": "M2",
+   "text": "Check for any KIND name. runs its block 100 times with values of KIND made by a generator with seed 42. It stops at the first failure, shrinks the input by halv",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S56",
+   "milestone": "M2",
+   "text": "Pretend f gives V. replaces the function or built-in f with a constant V for the rest of the enclosing test block. f must be a function, or now, today, random n",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S57",
+   "milestone": "M2",
+   "text": "Example TEXT. is allowed only inside About (T0154). Its block runs as a test named after the thing the About documents and the example text. M2-S58. Tests and e",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S58",
+   "milestone": "M2",
+   "text": "Tests and examples are removed from release builds. M2-S59. Tests are found in tests/ and in any source file. tern test runs all of them, in file order and then",
+   "status": "covered"
+  },
+  {
+   "id": "M2-S59",
+   "milestone": "M2",
+   "text": "Tests are found in tests/ and in any source file. tern test runs all of them, in file order and then source order. 8. Marks: which rows can fail can fail rows i",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S1",
+   "milestone": "M3",
+   "text": "A name appears once. Name, Version and Edition appear at most once. A missing Name is T0513. M3-S2. A version is three whole numbers joined by point. Needs NAME",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S2",
+   "milestone": "M3",
+   "text": "A version is three whole numbers joined by point. Needs NAME version 1. means major 1. Needs NAME version 1 point 2. means at least 1.2 and below 2. M3-S3. In M",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S3",
+   "milestone": "M3",
+   "text": "In M3, only Needs ... from folder is accepted. Needs NAME version ... without a place is for packages in the registry and is T0509 until a registry exists. M3-S",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S4",
+   "milestone": "M3",
+   "text": "The folder named by Needs holds a package.tern. The package name there must equal NAME, or T0515. M3-S5. A dependency's modules are found at step 3 of the modul",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S5",
+   "milestone": "M3",
+   "text": "A dependency's modules are found at step 3 of the module search (M2-S30). M3-S6. A dependency gets only the permissions the root package grants it. A dependency",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S6",
+   "milestone": "M3",
+   "text": "A dependency gets only the permissions the root package grants it. A dependency that uses a sentence needing a permission the root did not allow is T0506. M3-S7",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S7",
+   "milestone": "M3",
+   "text": "Cycles among packages are T0510. Two dependencies of the same name with different folders are T0504. Tern: Programming in Plain English - Language version 0.1 2",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S8",
+   "milestone": "M3",
+   "text": "An input with no kind is generic. A call instantiates the function with the kinds of its operands. The same function with the same kinds is built once. M3-S9. A",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S9",
+   "milestone": "M3",
+   "text": "A function that is shared, is an interface function, or calls itself must state the kinds of its inputs (T0330). A function that calls itself must state its res",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S10",
+   "milestone": "M3",
+   "text": "n as number means any number kind. It is checked per instance as anything that can add and compare. M3-S11. anything that can VERB demands that the argument kin",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S11",
+   "milestone": "M3",
+   "text": "anything that can VERB demands that the argument kind has VERB implemented. A kind without it is T0324, naming the call. M3-S12. biggest of and smallest of and",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S12",
+   "milestone": "M3",
+   "text": "biggest of and smallest of and sorted need can compare. All built-in ordered kinds have it (M2-S11). M3-S13. An error inside a generic body names the call that",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S13",
+   "milestone": "M3",
+   "text": "An error inside a generic body names the call that made the instance, and shows the kinds. M3-S14. Recursion between instances is allowed. Infinite instantiatio",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S14",
+   "milestone": "M3",
+   "text": "Recursion between instances is allowed. Infinite instantiation (a generic that calls itself with a growing kind) is T0517 after depth 64. 7.2 Interfaces M3-S15.",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S15",
+   "milestone": "M3",
+   "text": "Anything that can speak must have speak. creates an interface named speak that needs one function speak whose first input is the kind itself. M3-S16. A dog can",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S16",
+   "milestone": "M3",
+   "text": "A dog can speak. followed by a block of function definitions keeps the promise. Every promised function must be defined, with the right input kinds (T0325). The",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S17",
+   "milestone": "M3",
+   "text": "A default (By default speak says nothing.) is used for any kind that says can speak with an empty block. A default with no interface is T0159. M3-S18. Dispatch",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S18",
+   "milestone": "M3",
+   "text": "Dispatch is static by default. A value of kind any speaker is a pair {data pointer, table pointer}. A kind is converted to any speaker with as any speaker. Only",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S19",
+   "milestone": "M3",
+   "text": "An any speaker value owns its data. It is a move kind. M3-S20. There is no inheritance. A kind never takes the parts of another. Tern: Programming in Plain Engl",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S20",
+   "milestone": "M3",
+   "text": "There is no inheritance. A kind never takes the parts of another. Tern: Programming in Plain English - Language version 0.1 252 7.3 Functions as values and clos",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S21",
+   "milestone": "M3",
+   "text": "A function name used where a function is expected (Apply, Combine, an input of kind function from A to B) is a function value. Elsewhere the name is a call. M3-",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S22",
+   "milestone": "M3",
+   "text": "Apply f to each of list makes a new list. It calls f on each item in order. If f has more than one input, it is T0316. M3-S23. Combine list with f calls f on th",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S23",
+   "milestone": "M3",
+   "text": "Combine list with f calls f on the first two items, then on the result and the next item, to the end. An empty list is a failure of kind other (nothing to combi",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S24",
+   "milestone": "M3",
+   "text": "list where cond keeps the items for which cond is yes. In cond, it is the item (Reference 3 rule 30). M3-S25. A local function is a closure (M3-D2). A closure t",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S25",
+   "milestone": "M3",
+   "text": "A local function is a closure (M3-D2). A closure that holds a borrow cannot outlive the borrowed name (T0430). A closure holding a unique borrow cannot be copie",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S26",
+   "milestone": "M3",
+   "text": "The kind of a function value is function from A to B. A closure and a function have the same kind. 7.4 Custom meanings Provided names inside the blocks: Block N",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S27",
+   "milestone": "M3",
+   "text": "can add gives plus for the kind. can compare gives is less than, is more than, is at least, is at most, is between, sorted, biggest of, smallest of. is still me",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S28",
+   "milestone": "M3",
+   "text": "Custom meanings exist only for kinds you declare. plus on whole numbers cannot be redefined. M3-S29. can clean up runs when a value is dropped, in the drop orde",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S29",
+   "milestone": "M3",
+   "text": "can clean up runs when a value is dropped, in the drop order of M2-S41. An error inside it is logged and never replaces an earlier failure. 7.5 Generators and l",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S30",
+   "milestone": "M3",
+   "text": "A function that contains Hand back is a generator. It cannot contain Give back, and it cannot be can fail. M3-S31. A generator call gives a lazy sequence. It ru",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S31",
+   "milestone": "M3",
+   "text": "A generator call gives a lazy sequence. It runs only as far as items are asked for. It is a move kind. M3-S32. first N of SEQ takes at most N items. For each x",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S32",
+   "milestone": "M3",
+   "text": "first N of SEQ takes at most N items. For each x in SEQ loops until the generator ends or Stop.. M3-S33. The generator is compiled as a state machine; locals li",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S33",
+   "milestone": "M3",
+   "text": "The generator is compiled as a state machine; locals live in a heap frame owned by the sequence. M3-S34. first N fibonacci is the built-in sequence that starts",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S34",
+   "milestone": "M3",
+   "text": "first N fibonacci is the built-in sequence that starts 0, 1, 1, 2. primes starts 2, 3, 5. Both are lazy. 7.6 Contracts and tags M3-S35. Requires and Ensures sta",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S35",
+   "milestone": "M3",
+   "text": "Requires and Ensures stand first in a block function (T0160 otherwise). A one-line function cannot have them (T0161). M3-S36. result is provided in Ensures as t",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S36",
+   "milestone": "M3",
+   "text": "result is provided in Ensures as the value the function gives. A failed contract stops the program with T0602 and names the contract. M3-S37. Contracts are chec",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S37",
+   "milestone": "M3",
+   "text": "Contracts are checked in debug builds. In fast and small they are removed unless the sentence says checked. M3-S38. Always cond. under a record is checked after",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S38",
+   "milestone": "M3",
+   "text": "Always cond. under a record is checked after every Set of a part and after making a value. A failure is T0608. M3-S39. Tagged NAME. labels the next definition.",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S39",
+   "milestone": "M3",
+   "text": "Tagged NAME. labels the next definition. test marks a function the test tool runs, deprecated makes uses print a warning, slow tells tern bench to skip it. Othe",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S40",
+   "milestone": "M3",
+   "text": "The same source, compiler version, tern.lock, target and --locked give a byte-identical program (S8). The compiler writes no timestamps, remaps source paths to",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S41",
+   "milestone": "M3",
+   "text": "tern build debug keeps overflow, bounds and contract checks and writes debug information (DWARF) mapping machine code to sentences. M3-S42. tern build fast runs",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S42",
+   "milestone": "M3",
+   "text": "tern build fast runs the optimizer. Overflow and bounds checks stay unless proven safe (section 8). M3-S43. tern build small is fast with inlining limited and c",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S43",
+   "milestone": "M3",
+   "text": "tern build small is fast with inlining limited and code merging on. M3-S44. A build prints one summary line to standard output, built NAME in MODE, with no timi",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S44",
+   "milestone": "M3",
+   "text": "A build prints one summary line to standard output, built NAME in MODE, with no timing. A failed build prints errors only. 8. Optimizer contract Pass Rule Const",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S45",
+   "milestone": "M3",
+   "text": "Every pass keeps the source sentence span of the instruction it changes, so traces still name the original sentence. M3-S46. No pass changes observable behaviou",
+   "status": "covered"
+  },
+  {
+   "id": "M3-S46",
+   "milestone": "M3",
+   "text": "No pass changes observable behaviour. The differential test is the proof. 9. Backend contract Item Contract Target Linux x86-64 ELF, System V ABI for exported f",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S1",
+   "milestone": "M4",
+   "text": "Start task NAME. starts the block as a task and goes on. The task runs on the worker pool. NAME stands for the task in the enclosing block (M4-D2). M4-S2. A tas",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S2",
+   "milestone": "M4",
+   "text": "A task block sees the same names as a local function (M3-D2) with one change: it may capture a name only if the name is fixed (shared borrow), given (give moves",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S3",
+   "milestone": "M4",
+   "text": "A task gives a value with Give back EXPR. as its last sentence. A task with no Give back gives nothing. M4-S4. Wait for NAME. pauses until the task ends. On suc",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S4",
+   "milestone": "M4",
+   "text": "Wait for NAME. pauses until the task ends. On success it is the result and the result is taken (M4-D14). If the task stopped with a bug, Wait for is a failure o",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S5",
+   "milestone": "M4",
+   "text": "Do these together. runs its block and then waits for every task started inside it (at any depth that is not inside another Do these together). Cancellation: whe",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S6",
+   "milestone": "M4",
+   "text": "A task must end before the block that started it ends, unless the task was started outside any Do these together. A task started in a plain block that ends firs",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S7",
+   "milestone": "M4",
+   "text": "Stop task NAME. sends the cancel request. It does not wait. M4-S8. A cancel request is seen at the next pause-list sentence, which then ends the task with a fai",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S8",
+   "milestone": "M4",
+   "text": "A cancel request is seen at the next pause-list sentence, which then ends the task with a failure of kind other and the message cancelled. M4-S9. Sleep for N se",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S9",
+   "milestone": "M4",
+   "text": "Sleep for N seconds. pauses. It is cancellable. M4-S10. If the main task ends while other tasks run, they are cancelled and waited for, then the program exits.",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S10",
+   "milestone": "M4",
+   "text": "If the main task ends while other tasks run, they are cancelled and waited for, then the program exits. Tern: Programming in Plain English - Language version 0.",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S11",
+   "milestone": "M4",
+   "text": "A channel is channel of T. It holds at most 64 items unless holding N is written (N from 1 to 1,000,000). Send pauses when it is full. Receive from pauses when",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S12",
+   "milestone": "M4",
+   "text": "Values sent are moved (move kinds) or copied (copy kinds). M4-S13. Receive from NAME gives maybe T: missing when the channel is closed and empty (S6). it is tha",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S13",
+   "milestone": "M4",
+   "text": "Receive from NAME gives maybe T: missing when the channel is closed and empty (S6). it is that value. M4-S14. A channel closes when every sender is dropped. A S",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S14",
+   "milestone": "M4",
+   "text": "A channel closes when every sender is dropped. A Send on a closed channel is a bug and stops the program (T0609). M4-S15. A channel value has two ends, a sender",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S15",
+   "milestone": "M4",
+   "text": "A channel value has two ends, a sender and a receiver. Both ends are in the one name. Both can be used in many tasks; many senders and many receivers are allowe",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S16",
+   "milestone": "M4",
+   "text": "Tally is guarded 0. makes a guarded value. Each sentence that reads or sets it takes the lock for that sentence and lets it go. A sequence that must be one step",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S17",
+   "milestone": "M4",
+   "text": "A guarded value cannot be held across a pause-list sentence. The compiler checks that no sentence holding a lock pauses (T0460). M4-S18. In a debug build a task",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S18",
+   "milestone": "M4",
+   "text": "In a debug build a task that waits for a lock more than 10 seconds triggers a deadlock report naming both owners (T0610). M4-S19. atomic number starts at 0. Add",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S19",
+   "milestone": "M4",
+   "text": "atomic number starts at 0. Add 5 to counter atomically. adds in one machine step with sequentially consistent order. Reading an atomic is also sequentially cons",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S20",
+   "milestone": "M4",
+   "text": "A counter is an atomic whole number. Add 1 to hits. adds. Say hits. prints the value. M4-S21. The ordering guarantees are those of S6: task start and end, send",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S21",
+   "milestone": "M4",
+   "text": "The ordering guarantees are those of S6: task start and end, send then receive, guarded release then acquire, atomics. 7.3 Workers and Spread M4-S22. Use 4 work",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S22",
+   "milestone": "M4",
+   "text": "Use 4 workers. sets the number of workers for Spread sentences that follow in the same block and inner blocks. The default is the number of cores. The number is",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S23",
+   "milestone": "M4",
+   "text": "Spread each of items over workers. runs its block once for each item, using the workers. In the block, it is the item. The block's last sentence is Give back EX",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S24",
+   "milestone": "M4",
+   "text": "A Spread block follows the same capture rules as a task (M4-S2). A failure inside stops the other workers (as M4-S5) and the failure is the failure of the Sprea",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S25",
+   "milestone": "M4",
+   "text": "After 5 seconds. starts a timer task and goes on. The block runs once. It is part of the enclosing scope: the scope ends when the block has run or has been canc",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S26",
+   "milestone": "M4",
+   "text": "Every 5 seconds. runs the block repeatedly (M4-D12). Stop. inside ends it. It is cancelled when the enclosing scope ends. M4-S27. For each x as they arrive from",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S27",
+   "milestone": "M4",
+   "text": "For each x as they arrive from NAME. loops over Receive from NAME until the channel closes. Stop. leaves the loop. M4-S28. A program does not end while an After",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S28",
+   "milestone": "M4",
+   "text": "A program does not end while an After or Every is still pending in its main scope. It ends when the main block ends and tasks have been cancelled (M4-S10). A pr",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S29",
+   "milestone": "M4",
+   "text": "file NAME is relative to the folder of the program (the folder where the project's package.tern is, or the folder of the file for a single-file program). file n",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S30",
+   "milestone": "M4",
+   "text": "A root changes the start: in home folder (the user's home), in current folder (the working directory), in temporary folder, in root folder (/ on Linux), in pare",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S31",
+   "milestone": "M4",
+   "text": "Several in folder steps nest from the file outward: file report in folder output in folder build is build/output/report. M4-S32. with extension json adds .json.",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S32",
+   "milestone": "M4",
+   "text": "with extension json adds .json. M4-S33. File content is UTF-8. A file that is not valid UTF-8 read as text fails with bad format. M4-S34. Write x to file F fail",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S33",
+   "milestone": "M4",
+   "text": "File content is UTF-8. A file that is not valid UTF-8 read as text fails with bad format. M4-S34. Write x to file F fails with kind other (message file already",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S34",
+   "milestone": "M4",
+   "text": "Write x to file F fails with kind other (message file already exists) if the file exists. Append creates the file if needed. Replace creates or overwrites, atom",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S35",
+   "milestone": "M4",
+   "text": "A line is written by Write or Append when x is text: the text and one line feed. When x is a list of text, each item is written as a line. M4-S36. Read file F r",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S36",
+   "milestone": "M4",
+   "text": "Read file F returns the whole text, without changing line endings (Say adds a line feed after a text only when the text does not end with one). For each line in",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S37",
+   "milestone": "M4",
+   "text": "Failures: a missing file or folder is not found; a refused operation is no permission; an invalid format is bad format; a read that runs out of time is timed ou",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S38",
+   "milestone": "M4",
+   "text": "A file value made by Make temporary file NAME. is removed when the block that holds it ends, even after a failure. M4-S39. When file F changes. runs its block o",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S39",
+   "milestone": "M4",
+   "text": "When file F changes. runs its block once per change event (create, write, rename, delete), with changes closer than 100 milliseconds merged. The block is a task",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S40",
+   "milestone": "M4",
+   "text": "A program may touch only what Allows files permits. Without Allows files, every file sentence fails with no permission at run time (T0506 is the build-time mess",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S41",
+   "milestone": "M4",
+   "text": "Zip writes deflate ZIP archives of a folder, with entries in sorted order and a fixed time stamp of the first day of 1980, so archives are reproducible. Gzip wr",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S42",
+   "milestone": "M4",
+   "text": "Typed decoding: Read json file F as T. T is a record, enum, list, map of text to something, maybe or a base kind. M4-S43. A record decodes from an object. The k",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S43",
+   "milestone": "M4",
+   "text": "A record decodes from an object. The key of a part is the part's name in lower case with words joined by _ (home address is home_address). A key may also be the",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S44",
+   "milestone": "M4",
+   "text": "A whole number part needs a number with no fraction and in 64-bit range. A decimal part accepts any number. A text part needs a string. A yes-or-no part needs t",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S45",
+   "milestone": "M4",
+   "text": "A list decodes from an array. A map of text to T from an object, keeping the key order of the file. An enum decodes from an object whose key kind is the variant",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S46",
+   "milestone": "M4",
+   "text": "Encoding is the reverse. Records are written with parts in declaration order. Decimals are written with the shortest text that reads back to the same value. Tex",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S47",
+   "milestone": "M4",
+   "text": "TOML: tables are records, arrays are lists, inline tables are maps. YAML: YAML 1.2 core schema; anchors, tags and multi-document files are bad format. XML: an e",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S48",
+   "milestone": "M4",
+   "text": "Decoding never runs code and never reads past a nesting depth of 256 (deeper is bad format). M4-S49. settings.tern is read with the Tern sentences. A program ma",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S49",
+   "milestone": "M4",
+   "text": "settings.tern is read with the Tern sentences. A program may also read TOML, JSON and YAML settings with the sentences above. Tern: Programming in Plain English",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S50",
+   "milestone": "M4",
+   "text": "A date is a calendar day in the proleptic Gregorian calendar. date 2026 and 10 and 31 is 31 October 2026; an impossible date is a bug (T0620). today is the date",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S51",
+   "milestone": "M4",
+   "text": "A moment is an instant with a time zone. now is the instant in the local zone. moment of D at 14 and 30 is 14:30:00 on date D in the local zone. M in zone asia",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S52",
+   "milestone": "M4",
+   "text": "A duration is a signed length with nanosecond precision. n seconds as a value (5 seconds) is a duration. n days after D, before, and between follow calendar rul",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S53",
+   "milestone": "M4",
+   "text": "Printing: a date prints 2026-10-31; a moment prints 2026-10-31T14:30:00+06:00; a duration prints the largest units that fit, joined by and, such as 2 hours and",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S54",
+   "milestone": "M4",
+   "text": "Random numbers come from a generator that is seeded once. Use seed 42. sets the seed for the rest of the program. Tests and Predict use seed 42 unless a program",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S55",
+   "milestone": "M4",
+   "text": "hash of x is the SHA-256 hash of the UTF-8 bytes of text, or of the bytes, written as 64 lower-case hexadecimal digits. M4-S56. A secret has the kind secret T w",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S56",
+   "milestone": "M4",
+   "text": "A secret has the kind secret T where T is text or bytes. It prints as hidden, is never logged (a Log of a secret writes hidden), cannot be compared, cannot be c",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S57",
+   "milestone": "M4",
+   "text": "Encryption and the permission summary arrive in M5. 7.8 Network Client. M4-S58. An address has: an optional scheme (secure = https, the default; plain = http),",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S58",
+   "milestone": "M4",
+   "text": "An address has: an optional scheme (secure = https, the default; plain = http), a host, an optional port, and an optional place. example dot com is example.com.",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S59",
+   "milestone": "M4",
+   "text": "A place is a page name, looked up in the Page sentences of the root package.tern (T0173 if unknown), or path followed by literal segments joined by and. M4-S60.",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S60",
+   "milestone": "M4",
+   "text": "Fetch sends GET. using post|put|delete|patch changes the method. with data x sets the body: text is sent as text/plain; charset=utf-8; bytes as application/octe",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S61",
+   "milestone": "M4",
+   "text": "Defaults: timeout 30 seconds for the whole request; TLS on, with certificates checked against the bundled root store; HTTP/1.1 and HTTP/2 negotiated (ALPN); up",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S62",
+   "milestone": "M4",
+   "text": "Skipping TLS checks is possible only inside Be careful. with the sentence Fetch ... without checking certificates. Outside it is T0521. M4-S63. The permission A",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S63",
+   "milestone": "M4",
+   "text": "The permission Allows network is required; without it every network sentence fails with no permission. Server. M4-S64. Serve on port 8080. listens on all addres",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S64",
+   "milestone": "M4",
+   "text": "Serve on port 8080. listens on all addresses. Serve securely on port 8443 using certificate file C and key file K. serves TLS with rustls. The block holds When",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S65",
+   "milestone": "M4",
+   "text": "Each request runs as its own task. The task sees the same names as a task block (M4-S2). A handler that shares changeable state uses guarded, atomic or counter.",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S66",
+   "milestone": "M4",
+   "text": "When someone gets users page. answers GET /users. A page name is looked up in the Page table. home is a built-in page name for /. An unknown page is T0173. M4-S",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S67",
+   "milestone": "M4",
+   "text": "A Page Tern: Programming in Plain English - Language version 0.1 266 sentence: Page users page is users. means /users. Page user page is users and anything call",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S68",
+   "milestone": "M4",
+   "text": "Inside a handler these names are provided: request (section 6 request_read rows) and session (M4-S72). A handler must reach exactly one Respond with on every pa",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S69",
+   "milestone": "M4",
+   "text": "Respond with TEXT. is status 200, text/plain; charset=utf-8. Respond with json x. is 200, application/json, body json of x. Respond with status 404. has an empt",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S70",
+   "milestone": "M4",
+   "text": "A request is limited to 10 MiB of body and 64 KiB of headers by default; larger gets status 413 and 431. M4-S71. A request that matches no handler gets status 4",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S71",
+   "milestone": "M4",
+   "text": "A request that matches no handler gets status 404 and the body not found. A handler that fails or stops gets status 500 and the body internal error (M4-D15). Th",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S72",
+   "milestone": "M4",
+   "text": "session is a map of text to text kept in server memory under a cookie named tern_session (random 128 bits, HttpOnly, SameSite=Lax, Secure when serving TLS). Ses",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S73",
+   "milestone": "M4",
+   "text": "When someone opens live chat page. accepts a WebSocket on that page. In the block connection is provided. Send x to connection. sends a text frame. Receive from",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S74",
+   "milestone": "M4",
+   "text": "HTTP/1.1 and HTTP/2 are served. Connection: keep-alive is the default. Logging of requests is off unless the program logs. Sockets. M4-S75. Lower-level sockets,",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S75",
+   "milestone": "M4",
+   "text": "Lower-level sockets, UDP and DNS are in net as library functions with the patterns in the net stub: Connect to host dot name on port N. (TCP, gives a connection",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S76",
+   "milestone": "M4",
+   "text": "Run echo with hello. starts the program found on the path (T0171 for a name with a path). Arguments follow with, joined by and; each is one argument; no shell i",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S77",
+   "milestone": "M4",
+   "text": "Exit with N. ends the program. N is 0 to 255. Drops run for the current task first; other tasks are cancelled and waited for, with a limit of 5 seconds; then th",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S78",
+   "milestone": "M4",
+   "text": "Exit codes: 0 success, 1 failure or bug, 2 bad usage. M4-S79. When signal stop arrives. runs for SIGTERM, interrupt for SIGINT, hangup for SIGHUP. The block is",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S79",
+   "milestone": "M4",
+   "text": "When signal stop arrives. runs for SIGTERM, interrupt for SIGINT, hangup for SIGHUP. The block is a task. Without a handler, stop and interrupt end the program",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S80",
+   "milestone": "M4",
+   "text": "Environment tern mode reads the variable named by the words in upper case joined by _ (TERN_MODE). It gives maybe text. It needs Allows environment. 7.11 Comman",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S81",
+   "milestone": "M4",
+   "text": "Takes and Option sentences stand before every other sentence of the program except Note and About (T0174 otherwise). M4-S82. The command line tern run tool.tern",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S82",
+   "milestone": "M4",
+   "text": "The command line tern run tool.tern A B --verbose --level debug gives positional arguments in Takes order, flags by option name with words joined by -, and valu",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S83",
+   "milestone": "M4",
+   "text": "A missing argument, an unknown option or a value of the wrong kind prints the usage text and exits with code 2. The usage text has the line usage: NAME and then",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S84",
+   "milestone": "M4",
+   "text": "help or --help prints the usage text and exits with 0. M4-S85. Read input returns all of standard input as text. For each line in input. streams lines. M4-S86.",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S85",
+   "milestone": "M4",
+   "text": "Read input returns all of standard input as text. For each line in input. streams lines. M4-S86. When no person is at the other end (standard input is not a ter",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S86",
+   "milestone": "M4",
+   "text": "When no person is at the other end (standard input is not a terminal), Ask fails with kind other, message no person here. 7.12 Logging and settings M4-S87. Log",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S87",
+   "milestone": "M4",
+   "text": "Log info server started. writes info server started and a line feed to standard error (M4-D11). The text is raw text; names in it are replaced as in Say. M4-S88",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S88",
+   "milestone": "M4",
+   "text": "The level order is debug, info, warning, error. The default level is info: debug lines are not written. Use log level debug. changes it. M4-S89. A secret in a l",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S89",
+   "milestone": "M4",
+   "text": "A secret in a log line is written as hidden. M4-S90. A counter is read with Say hits. and shown by the std helper Log info hits.. M4-S91. settings.tern is a mod",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S90",
+   "milestone": "M4",
+   "text": "A counter is read with Say hits. and shown by the std helper Log info hits.. M4-S91. settings.tern is a module with every definition shared (M2-S33). It is read",
+   "status": "covered"
+  },
+  {
+   "id": "M4-S91",
+   "milestone": "M4",
+   "text": "settings.tern is a module with every definition shared (M2-S33). It is read at start-up before the program body. Tern: Programming in Plain English - Language v",
+   "status": "covered"
+  },
+  {
+   "id": "M5-S1",
+   "milestone": "M5",
+   "text": "Load NAME. reads a CSV file (RFC 4180, UTF-8, comma separator, the first row is the header). It makes the table NAME. The header names must be unique after trim",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S2",
+   "milestone": "M5",
+   "text": "Column kinds are inferred from the cells, ignoring blanks. All cells whole numbers: whole number. All cells numbers, at least one with a point: decimal. Cells t",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S3",
+   "milestone": "M5",
+   "text": "Statistics. average is the mean of the non-missing cells. median is the middle value, or the mean of the two middle values when the count is even. total is the",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S4",
+   "milestone": "M5",
+   "text": "Printing a data item. Say rows. prints rows N. A statistic prints its words and the value, such as average price 111.88, total price 895. A value that is missin",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S5",
+   "milestone": "M5",
+   "text": "Say rows and average price. prints one line for each item, in order, with the labels. M5-S6. Grouping. Say top N regions by total price. groups the rows by the",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S6",
+   "milestone": "M5",
+   "text": "Grouping. Say top N regions by total price. groups the rows by the grouping column, computes the statistic for each group, sorts the groups from highest to lowe",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S7",
+   "milestone": "M5",
+   "text": "Say average price by region. shows every group in order of first appearance, with the same two columns. M5-S8. Rows. Say rows where COND sorted by COL. filters,",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S8",
+   "milestone": "M5",
+   "text": "Rows. Say rows where COND sorted by COL. filters, then sorts ascending (stable). descending reverses. first N rows takes the first N of the result. With no wher",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S9",
+   "milestone": "M5",
+   "text": "Table printing. A header row of the column names, then one row per table row. Every column is left-aligned. A column is as wide as its longest cell (header incl",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S10",
+   "milestone": "M5",
+   "text": "A table is a move kind. For each row in NAME. lends it. Save NAME as csv to file F. writes the CSV: header row, cells as printed except decimals written with th",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S11",
+   "milestone": "M5",
+   "text": "Streaming: For each row in file sales of M4 streams. Load reads the whole file. A file larger than available memory must be streamed; Load of a file above 1 GiB",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S12",
+   "milestone": "M5",
+   "text": "Rows keep the file order. Nothing sorts a table in place. Tern: Programming in Plain English - Language version 0.1 278 7.2 Charts M5-S13. Plot price against si",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S13",
+   "milestone": "M5",
+   "text": "Plot price against size. puts price on the vertical axis and size on the horizontal axis. The first column is the vertical axis. This is the reading of the word",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S14",
+   "milestone": "M5",
+   "text": "Kinds: dots is a scatter plot; it is the default when both columns are numbers. bars draws, for a text horizontal column and a number vertical column, one bar f",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S15",
+   "milestone": "M5",
+   "text": "Output is an SVG file, 800 by 480 units, with axes, tick marks at 5 to 10 round values, the column names as axis labels, and no title. Dots have radius 3. The c",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S16",
+   "milestone": "M5",
+   "text": "to file NAME writes NAME.svg; with with extension png in the file reference a PNG of the same size is written. With no file given, the file is plot-N.svg in the",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S17",
+   "milestone": "M5",
+   "text": "In a notebook or a screen (Show chart, M6) the same chart is shown instead of written. M5-S18. A column that is not numeric where numbers are needed is T0184. 7",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S18",
+   "milestone": "M5",
+   "text": "A column that is not numeric where numbers are needed is T0184. 7.3 Models M5-S19. Predict TARGET from the rest. uses every other column as input. from a and b",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S19",
+   "milestone": "M5",
+   "text": "Predict TARGET from the rest. uses every other column as input. from a and b uses those only. using NAME picks the model; the default is random forest for every",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S20",
+   "milestone": "M5",
+   "text": "Cleaning (documented defaults): (1) rows whose target is missing are dropped; (2) a missing number is filled with the median of its column (computed on the trai",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S21",
+   "milestone": "M5",
+   "text": "Say what cleaning did. prints one line for each step that changed something, in the order above, with exactly these words: dropped N rows with a missing TARGET,",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S22",
+   "milestone": "M5",
+   "text": "Split: the rows are shuffled with seed 42 (or the program's seed, Use seed N.), the first 80 percent (rounded down) are for training, the rest for testing. At l",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S23",
+   "milestone": "M5",
+   "text": "Task: a target of kind text or yes or no is a classification. A target of number kind is a regression. M5-S24. Models.  random forest: 100 trees; bootstrap sam",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S24",
+   "milestone": "M5",
+   "text": "Models.  random forest: 100 trees; bootstrap samples; at each split the square root (classification) or one third (regression) of the inputs, at least 1; split",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S25",
+   "milestone": "M5",
+   "text": "All random choices use the one generator of M4-S54, seeded as in M5-S22, so the same data and seed give the same model on one platform. Across platforms the las",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S26",
+   "milestone": "M5",
+   "text": "Items. Say accuracy. Tern: Programming in Plain English - Language version 0.1 279 is allowed for a classification: the fraction of test rows predicted right, p",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S27",
+   "milestone": "M5",
+   "text": "Say what matters most. is permutation importance on the test rows: for each input column, shuffle its values 5 times (seed as above), measure the drop in accura",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S28",
+   "milestone": "M5",
+   "text": "Say prediction for size 40 and price 100. gives the model's answer for one row. The inputs are written as column names and values. A missing input is filled as",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S29",
+   "milestone": "M5",
+   "text": "After Predict, it is the model, and the model is named model. Save model as churn. writes churn.model in the output folder (a bundled format: the kind of model,",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S30",
+   "milestone": "M5",
+   "text": "A model is a move kind. M5-S31. Vectors. vector of 1 and 2 and 3 is a list of decimals. plus, minus between vectors of equal length, times by a number, dot of a",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S31",
+   "milestone": "M5",
+   "text": "Vectors. vector of 1 and 2 and 3 is a list of decimals. plus, minus between vectors of equal length, times by a number, dot of a and b, norm of a. Unequal lengt",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S32",
+   "milestone": "M5",
+   "text": "Open database shop using sqlite file shopdata. opens (and creates, if needed) a SQLite file. using postgres at ADDRESS connects with the address words of M4-S58",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S33",
+   "milestone": "M5",
+   "text": "Load stock from database shop. loads table stock as a table value, with kinds from the column types (integer, real, text, boolean). M5-S34. A table loaded from",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S34",
+   "milestone": "M5",
+   "text": "A table loaded from a database is lazy: rows where, sorted by, first N rows, top N ... by and the statistics are sent to the database as one query when the sent",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S35",
+   "milestone": "M5",
+   "text": "Add item to table stock of shop. inserts one record whose parts match the columns by name. A missing part is T0313. M5-S36. Remove rows where name is apples fro",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S36",
+   "milestone": "M5",
+   "text": "Remove rows where name is apples from table stock of shop. deletes. Set count to 5 in rows of stock of shop where name is apples. updates. M5-S37. Do these all",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S37",
+   "milestone": "M5",
+   "text": "Do these all or none. opens a transaction on the databases used in its block. At the end of the block the transaction commits. A failure or a bug in the block r",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S38",
+   "milestone": "M5",
+   "text": "Migrations. tern migrate runs the files in the folder migrations in order of file name, each once, against the database named by Database is NAME. in settings.t",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S39",
+   "milestone": "M5",
+   "text": "The database drivers are SQLite (bundled) and PostgreSQL (the wire protocol written in Rust). 7.5 The assistant M5-S40. settings.tern holds three sentences: Ass",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S40",
+   "milestone": "M5",
+   "text": "settings.tern holds three sentences: Assistant address is ADDRESS. (the address words of M4-S58), Assistant model is NAME. and Assistant key comes from environm",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S41",
+   "milestone": "M5",
+   "text": "Ask assistant about TEXT. sends one request to the address in the common chat JSON format: a list of one message with the role user and the text, and the model",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S42",
+   "milestone": "M5",
+   "text": "The sentence needs Allows network to host ... for the host. Not in version 1: streaming, tools, images, conversation history. Tern: Programming in Plain English",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S43",
+   "milestone": "M5",
+   "text": "tern run safely builds the program for wasm32-wasi and runs it in the bundled runtime with only these capabilities: the folders named by Allows files in folder",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S44",
+   "milestone": "M5",
+   "text": "Path normalization: .. that would leave an allowed folder is refused; symbolic links are resolved before the check (S7). M5-S45. Limit memory 512 megabytes. sto",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S45",
+   "milestone": "M5",
+   "text": "Limit memory 512 megabytes. stops the program when it would use more (T0611). Limit time 30 seconds. stops it after that much run time (T0612). Both are enforce",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S46",
+   "milestone": "M5",
+   "text": "Not protected: side channels. M5-S47. A dependency receives only the permissions the root package grants it (S7). M5-S48. tern add prints the permission summary",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S47",
+   "milestone": "M5",
+   "text": "A dependency receives only the permissions the root package grants it (S7). M5-S48. tern add prints the permission summary before it finishes: for each permissi",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S48",
+   "milestone": "M5",
+   "text": "tern add prints the permission summary before it finishes: for each permission the new package asks for, one line with the words it uses, such as files in folde",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S49",
+   "milestone": "M5",
+   "text": "encrypted x with key uses XChaCha20-Poly1305 with a random 24-byte nonce placed before the ciphertext. decrypted reverses it and fails with bad format if the ch",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S50",
+   "milestone": "M5",
+   "text": "tern build for web builds a program that has no screens (screens come in M6) into NAME.wasm, a small generated loader NAME.mjs, and index.html that loads it. Th",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S51",
+   "milestone": "M5",
+   "text": "Available in the browser: all of M1 to M3, collections, text, formats, time, random, hash, Load and the other sentences on the data folder (its files are embedd",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S52",
+   "milestone": "M5",
+   "text": "Not available in the browser (T0185 at build time): Run, Serve, sockets, Environment, files outside the embedded folder, Allows processes, tern run safely keywo",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S53",
+   "milestone": "M5",
+   "text": "wasm32-wasi is used by tern run safely and by tern build for wasi, which writes NAME.wasm for any WASI runtime. M5-S54. WebAssembly output must equal native out",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M5-S54",
+   "milestone": "M5",
+   "text": "WebAssembly output must equal native output for all tests tagged portable; the differential test covers it. 9. Tools 9.1 tern lsp Language Server Protocol 3.17",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S1",
+   "milestone": "M6",
+   "text": "A program with at least one Screen block is a UI program. It runs until the last window closes or Exit is used. M6-S2. A screen is a tree of widgets. The root o",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S2",
+   "milestone": "M6",
+   "text": "A screen is a tree of widgets. The root of a screen is an implicit column. A layout block is a node that holds children. A Show sentence makes one leaf widget.",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S3",
+   "milestone": "M6",
+   "text": "Screens are shown one at a time. The entry screen is home (M6-D8). Go to screen NAME. pushes the screen on a stack and shows it. Go back. pops. Go back at the f",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S4",
+   "milestone": "M6",
+   "text": "Names unknown at the time of the Go to screen are T0708. Two screens of one name are T0709. M6-S5. Event blocks run on the UI thread, one at a time, in the orde",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S5",
+   "milestone": "M6",
+   "text": "Event blocks run on the UI thread, one at a time, in the order the events happen (M6-D10). M6-S6. When button Save is pressed. runs when the button with the tex",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S6",
+   "milestone": "M6",
+   "text": "When button Save is pressed. runs when the button with the text Save is pressed. Two buttons with the same text on one screen are T0714. M6-S7. When field name",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S7",
+   "milestone": "M6",
+   "text": "When field name changes. runs after the user edits the field and after name has been set to the new value. It does not run when the program itself sets name. M6",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S8",
+   "milestone": "M6",
+   "text": "When screen opens. runs once each time the screen is shown. M6-S9. When channel NAME receives. runs for each value that arrives on the channel. The value is it",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S9",
+   "milestone": "M6",
+   "text": "When channel NAME receives. runs for each value that arrives on the channel. The value is it in the block. The block runs on the UI thread. It is the way a task",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S10",
+   "milestone": "M6",
+   "text": "State is any name defined with Changeable outside all screens and event blocks, or inside a screen outside its event blocks. Its kind is whole number, decimal,",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S11",
+   "milestone": "M6",
+   "text": "A Show sentence depends on every state name it reads: the names in its text, the field's own name, the list or table it shows, the columns of a chart's table. T",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S12",
+   "milestone": "M6",
+   "text": "State may be changed only from event blocks, from When screen opens, and from When channel ... receives. A task changing it is T0715 (tasks may use channels). M",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S13",
+   "milestone": "M6",
+   "text": "When an event block ends, every Show sentence that depends on a name the block changed is evaluated again and its widget is updated. Evaluating again never chan",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S14",
+   "milestone": "M6",
+   "text": "Show field name. is two-way. The widget's value is name. When the user edits it, name is set to the parsed value (text as it is; a whole number field accepts di",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S15",
+   "milestone": "M6",
+   "text": "Show list of items. shows one row for each item, printed as Say would. It is a vertical list that scrolls. Adding or removing items in an event block updates th",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S16",
+   "milestone": "M6",
+   "text": "Show table sales. shows the table as in M5-S9, in a grid with a header row, scrolling both ways. Show chart price against size. draws the chart of M5-S15 into t",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S17",
+   "milestone": "M6",
+   "text": "Show text hello name. and Show title ... use TEXT_WITH_NAMES: defined names are replaced by their values, and the widget updates with the state. M6-S18. Show pi",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S18",
+   "milestone": "M6",
+   "text": "Show picture logo. shows the image file logo in the data folder, trying .png, .jpg, .svg in that order. A missing file is T0713 at build time. Pictures are scal",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S19",
+   "milestone": "M6",
+   "text": "Units are logical pixels: 1 px is 1/96 inch on web and desktop at 100 percent scale. M6-S20. column: children one below another. row: children side by side; a r",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S20",
+   "milestone": "M6",
+   "text": "column: children one below another. row: children side by side; a row that does not fit wraps its children onto a new line. grid of N: N equal columns; rows as",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S21",
+   "milestone": "M6",
+   "text": "The gap between children is the Space: small 4, medium 8, big 16. The default is medium. The padding of the screen is 16. M6-S22. Widths: a column and a card us",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S22",
+   "milestone": "M6",
+   "text": "Widths: a column and a card use the full width of their parent; a button is as wide as its text plus 24; a field is the full width of its parent, up to 480; tex",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S23",
+   "milestone": "M6",
+   "text": "On small screens. applies when the window is narrower than 600 logical pixels. On big screens. applies at 600 or more. The sentences inside replace the screen's",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S24",
+   "milestone": "M6",
+   "text": "Sizes of text: small 12, medium 16, big 24 logical pixels. A title is big and bold by default. A button's Size sets its text size and its vertical padding (smal",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S25",
+   "milestone": "M6",
+   "text": "Shapes: round has a corner radius of 12; square has 0. The default is round for buttons and cards and square for fields in material. M6-S26. Colours (the same o",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S26",
+   "milestone": "M6",
+   "text": "Colours (the same on every theme): red #d32f2f, orange #f57c00, yellow #fbc02d, green #388e3c, blue #1976d2, purple #7b1fa2, pink #c2185b, brown #5d4037, black",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S27",
+   "milestone": "M6",
+   "text": "Color is the text colour. Background is the fill. Size, Shape and Space are as above. Space in a Style block sets the gap inside a layout widget and the padding",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S28",
+   "milestone": "M6",
+   "text": "Cascade. A property of Style every KIND. applies to all widgets of that kind. A property of Style button TEXT. or field NAME and so on applies to that one widge",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S29",
+   "milestone": "M6",
+   "text": "Themes. Use theme material. makes these defaults: background white, text black, main colour #6750a4, buttons filled with the main colour and white text, round b",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S30",
+   "milestone": "M6",
+   "text": "Theme brand. starts from plain and sets only the lines it has: Main color (button fill), Text color, Background color, Size, Shape, Space. Use theme brand. make",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S31",
+   "milestone": "M6",
+   "text": "A theme name that does not exist is T0711. 7.5 Accessibility M6-S32. Every widget gives the platform an accessible role and name: a title is a heading; a button",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S32",
+   "milestone": "M6",
+   "text": "Every widget gives the platform an accessible role and name: a title is a heading; a button is named by its text; a field is named by its state name (the words",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S33",
+   "milestone": "M6",
+   "text": "A Show picture with no Describe picture for it gives the warning T0701 (M6 is the first milestone that has it). The compiler gives the picture the name picture",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S34",
+   "milestone": "M6",
+   "text": "Focus order is the tree order. Every button and field can be reached and used with the keyboard: Tab and Shift+Tab move, Space or Enter presses. M6-S35. Text co",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S35",
+   "milestone": "M6",
+   "text": "Text contrast is not checked by the compiler. Tern: Programming in Plain English - Language version 0.1 291 7.6 Output per target M6-S36. tern build for web wri",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S36",
+   "milestone": "M6",
+   "text": "tern build for web writes the folder build/web with NAME.wasm, a generated loader NAME.mjs, index.html, and style.css, and the picture files. The HTML has one c",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S37",
+   "milestone": "M6",
+   "text": "tern build for desktop writes the program for the host system. for windows, for macos, for linux choose one. A desktop program is one executable; with installer",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S38",
+   "milestone": "M6",
+   "text": "The tree and the events are identical on both targets. The tern run --screen-dump flag (section 11) prints the tree and exits, so tests can check it. 8. Widget",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S39",
+   "milestone": "M6",
+   "text": "Use C library math. reads the stub math.stub.tern, then links the library math. The library is searched in the project's libs folder, then in the system's libra",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S40",
+   "milestone": "M6",
+   "text": "Each C function line makes a Tern function with the Tern name given after as. Call it like any function. Calls to a function not declared safe are allowed only",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S41",
+   "milestone": "M6",
+   "text": "Kind mapping: whole number is int64_t; decimal double; yes or no uint8_t (0 or 1); letter uint32_t; text and bytes are a pointer and a length, passed as two arg",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S42",
+   "milestone": "M6",
+   "text": "A text or bytes result is returned as tern_text { const uint8_t *ptr; size_t len; }. Tern copies it at once. The C side must keep the memory valid until the cal",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S43",
+   "milestone": "M6",
+   "text": "can fail: the C function returns int (0 success). Its result, if any, is the last argument, a pointer to the result kind. A nonzero code is a failure of kind ot",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S44",
+   "milestone": "M6",
+   "text": "Callbacks, variadic functions, function pointers and C unions are not supported (T0189 at the stub). M6-S45. A C library is trusted code. The permission summary",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S45",
+   "milestone": "M6",
+   "text": "A C library is trusted code. The permission summary says C library NAME. tern run safely refuses programs that use C libraries (T0622). 9.2 Offering Tern functi",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S46",
+   "milestone": "M6",
+   "text": "Share for C. before a function marks it exported. It is exported with the C symbol of its name, words joined by _, with the kinds of M6-S41 (T0191 if a kind is",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S47",
+   "milestone": "M6",
+   "text": "A shared function that can fail is exported as in M6-S43. M6-S48. tern build for library writes NAME.nest (the Tern library, used by other Tern programs) and, w",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S48",
+   "milestone": "M6",
+   "text": "tern build for library writes NAME.nest (the Tern library, used by other Tern programs) and, when there are Share for C. functions, libNAME.a, libNAME.so (or th",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S49",
+   "milestone": "M6",
+   "text": "tern build for python writes a Python extension module NAME (the stable interface, abi3, for Python 3.9 and later) and a type file NAME.pyi. Mapping: whole numb",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S50",
+   "milestone": "M6",
+   "text": "tern build for web (for a program with no screens, or with) also writes NAME.d.ts for the shared functions, with the mapping: whole number to bigint, decimal to",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S51",
+   "milestone": "M6",
+   "text": "The layout of a record marked as C does is the C layout of the fields in order, with padding as C does. With packed there is no padding; with aligned to N the a",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S52",
+   "milestone": "M6",
+   "text": "Load plugin NAME. loads the dynamic library NAME from the folder plugins of the project at run time. It is can fail: not found if it is missing, bad format if i",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S53",
+   "milestone": "M6",
+   "text": "The functions of a plugin are declared by its stub NAME.stub.tern, as for a C library, and are used as functions after the load. Calling one before the load is",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S54",
+   "milestone": "M6",
+   "text": "A program that has Load plugin is built dynamic (M6-D6). A plugin runs with the program's rights. M6-S55. tern run safely refuses plugins (T0622). Tern: Program",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S55",
+   "milestone": "M6",
+   "text": "tern run safely refuses plugins (T0622). Tern: Programming in Plain English - Language version 0.1 293 10. Platforms Platform Compiler Programs Linker Notes Lin",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S56",
+   "milestone": "M6",
+   "text": "Cross-compiling between the three desktop systems is built in: the runtime libraries for every target are inside the tern binary, so tern build for windows on L",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S57",
+   "milestone": "M6",
+   "text": "Every golden test of M1 to M5 is run on each platform. Output must equal the Linux x86-64 output, except tests tagged linux-only (file permission and signal tes",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M6-S58",
+   "milestone": "M6",
+   "text": "Installers (M6-D12): tern build for windows installer writes NAME.msi (install folder Program Files, a start menu entry, uninstall); for macos installer writes",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S1",
+   "milestone": "M7",
+   "text": "tern build for android writes build/android/NAME.apk for debugging and NAME.aab for release. Minimum Android level 26. Architectures arm64-v8a and x86_64. The a",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S2",
+   "milestone": "M7",
+   "text": "tern build for ios runs only on macOS with Xcode's command-line tools (T0528 elsewhere). It writes build/ios/NAME.app for the iOS Simulator. If settings.tern ha",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S3",
+   "milestone": "M7",
+   "text": "The widget mapping on mobile: title TextView / UILabel; text the same; button Button / UIButton; field EditText / UITextField (a checkbox is CheckBox / UISwitch",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S4",
+   "milestone": "M7",
+   "text": "Units are dp (Android) or points (iOS) (M7-D7). The root column adds the safe area insets (notches, bars) to its padding. M7-S5. Go back. at the first screen cl",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S5",
+   "milestone": "M7",
+   "text": "Go back. at the first screen closes the app. The system back gesture or button does Go back.. M7-S6. When app pauses. runs when the app goes to the background;",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S6",
+   "milestone": "M7",
+   "text": "When app pauses. runs when the app goes to the background; When app resumes. when it comes back. State is kept. The system may end a paused app; then state is l",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S7",
+   "milestone": "M7",
+   "text": "On small screens. applies below 600 dp or points of width, so phones in portrait use it and tablets mostly do not. Rotating re-evaluates it. M7-S8. Permissions:",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S8",
+   "milestone": "M7",
+   "text": "Permissions: Allows network becomes the Android permission INTERNET. Allows files is M7-D8. Allows processes and Allows environment are T0185 on mobile. Other p",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S9",
+   "milestone": "M7",
+   "text": "Not available on mobile (T0185): Run, Serve, sockets that listen, tern run safely keywords, plugins that are not part of the app. Tasks, channels, timers, Fetch",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S10",
+   "milestone": "M7",
+   "text": "The mobile build is static (no system libraries beyond the platform's). Tern: Programming in Plain English - Language version 0.1 301 7.2 Games M7-S11. A screen",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S11",
+   "milestone": "M7",
+   "text": "A screen that has an Every frame. block is a game screen. Every frame. stands directly under the screen block and at most once (T0716 otherwise). M7-S12. The bl",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S12",
+   "milestone": "M7",
+   "text": "The block runs once for each display frame, in the order of the sentences, on the UI thread. The rate follows the display, at most 60 times a second. After a bl",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S13",
+   "milestone": "M7",
+   "text": "elapsed is provided in the block: the whole number of milliseconds since the previous frame's start. On the first frame it is 0. It is never more than 100 (a lo",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S14",
+   "milestone": "M7",
+   "text": "When key space is pressed. and released run when the key goes down and up. Key names are the words of section 3. An unknown key name is T0717. Key repeat from t",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S15",
+   "milestone": "M7",
+   "text": "When pointer is pressed., released and moves run for the mouse (primary button) and for the first touch. pointer x and pointer y are whole numbers in the logica",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S16",
+   "milestone": "M7",
+   "text": "Show game area of 800 and 600. makes a fixed canvas of that size in logical pixels. It is scaled to fit the window, keeping its shape, and centred. A game area",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S17",
+   "milestone": "M7",
+   "text": "In a game area, Show picture ship. places the picture at the top left (0 and 0). Move picture ship to x and y. moves its top left to those positions (whole numb",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S18",
+   "milestone": "M7",
+   "text": "picture A touches picture B is yes when the visible rectangles of the two pictures, as scaled and moved, overlap by at least one pixel. Hidden pictures never to",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S19",
+   "milestone": "M7",
+   "text": "Pictures that are not in the game area (pictures in the screen layout) cannot be moved (T0720). M7-S20. Sound. Files in data: NAME.wav (PCM, 16 bit, 44100 or 48",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S20",
+   "milestone": "M7",
+   "text": "Sound. Files in data: NAME.wav (PCM, 16 bit, 44100 or 48000 Hz) or NAME.ogg (Vorbis). Play sound jump. starts it. At most 16 sounds play at once; a seventeenth",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S21",
+   "milestone": "M7",
+   "text": "A game program is deterministic in its logic: the same sequence of events and frames gives the same state. Drawing details and timing may differ by platform. M7",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S22",
+   "milestone": "M7",
+   "text": "Use seed 42. and the generator of M4-S54 are used for chance in games. 7.3 Embedded devices (the core profile) M7-S23. tern build for device cortex m4 writes bu",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S23",
+   "milestone": "M7",
+   "text": "tern build for device cortex m4 writes build/device/NAME.elf, NAME.bin and NAME.hex. Targets: cortex m0 (also M0+), cortex m3, cortex m4, cortex m7, cortex m33,",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S24",
+   "milestone": "M7",
+   "text": "A device file devices/NAME.device.tern describes the chip. For the generic cores above, Tern has a built-in file with Core, Float, and Atomics. The user adds or",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S25",
+   "milestone": "M7",
+   "text": "The program is the core subset: Allowed Not allowed (T0801 to T0812) whole number, decimal, yes or no, letter, array of N T, bytes, bits, maybe, result (kind on",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S26",
+   "milestone": "M7",
+   "text": "Fail with TEXT. in core keeps the failure's kind and drops the text. A bug (overflow, bounds) calls the panic hook: the default spins forever with interrupts di",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S27",
+   "milestone": "M7",
+   "text": "Registers. Inside Be careful., Led is register at 1073741824 as whole number. names the address 1073741824 as a volatile 32-bit location holding a whole number",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S28",
+   "milestone": "M7",
+   "text": "Intrinsics: Wait for interrupt. (stop the core until an interrupt), Enable interrupts., Disable interrupts., Delay for N cycles. (a counted loop that the optimi",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S29",
+   "milestone": "M7",
+   "text": "Interrupts. When interrupt timer arrives. is a handler for the interrupt named timer in the device file (T0808 if unknown). It runs with its own stack frame and",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S30",
+   "milestone": "M7",
+   "text": "Memory. The linker places code in flash and data in RAM using the device file. The build proves a bound on the stack depth (no recursion, no unbounded calls) an",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S31",
+   "milestone": "M7",
+   "text": "A core build without an allocator has no heap. With Use allocator fixed with 4096 bytes. a pool of that size is reserved in RAM, and list, box, text values and",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S32",
+   "milestone": "M7",
+   "text": "Atomics need the device file to say Atomics are present. Otherwise they are T0807. Floating point: Float is software. allows decimal (slow, and the build warns",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S33",
+   "milestone": "M7",
+   "text": "The generic cores come with a minimal start-up (vector table, stack set, RAM initialized, then source/start.tern) written by the compiler. A user does not write",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S34",
+   "milestone": "M7",
+   "text": "Flashing and debugging probes are outside Tern. Tern: Programming in Plain English - Language version 0.1 303 7.4 GPU M7-S35. To double n on the graphics card g",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S35",
+   "milestone": "M7",
+   "text": "To double n on the graphics card give n times 2. defines a kernel: a function that runs once for each element. Its inputs and result are decimal or yes or no (T",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S36",
+   "milestone": "M7",
+   "text": "Apply double to each of values using the graphics card. runs the kernel on the graphics card for a vector (or a list of decimals, copied to a vector). The resul",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S37",
+   "milestone": "M7",
+   "text": "On the graphics card. opens a block of Apply, Combine, definitions and Set sentences. All Apply and Combine in it run on the card; values stay on the card betwe",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S38",
+   "milestone": "M7",
+   "text": "Predict ... using neural network using the graphics card. trains the neural network on the card. Other models are T0194. The shuffle, the split and the seeds ar",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S39",
+   "milestone": "M7",
+   "text": "Kernels compute with 32-bit decimals (M7-D9). Inputs are narrowed and results widened. The language rule against quiet conversion holds because the sentence nam",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S40",
+   "milestone": "M7",
+   "text": "The backend chooses a device in the order: a discrete GPU, an integrated GPU, a software adapter. If none exists, the program runs on the CPU with 32-bit arithm",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S41",
+   "milestone": "M7",
+   "text": "Data is copied to the card at the start of each Apply or block and back at the end. A vector larger than the card's buffer limit is split into parts; a single e",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S42",
+   "milestone": "M7",
+   "text": "GPU work does not pause the program; the sentence returns when the result is back. It is on the pause list of M4-D1. 7.5 Allocator hooks M7-S43. The allocator o",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S43",
+   "milestone": "M7",
+   "text": "The allocator of a program is chosen with Use allocator system. (the default: the operating system's allocator, not on a device), arena (a bump allocator that f",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S44",
+   "milestone": "M7",
+   "text": "Use allocator stands at the top of the program or of start.tern, once (T0812 for an unknown name). M7-S45. The interface can manage memory has four functions. T",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S45",
+   "milestone": "M7",
+   "text": "The interface can manage memory has four functions. Their kinds, in words, with manager the first input (the kind itself): Function Inputs Gives Called allocate",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S46",
+   "milestone": "M7",
+   "text": "The functions of a user allocator run in Be careful. (they handle raw addresses) and cannot themselves allocate (a heap kind inside them is T0811). M7-S47. A mi",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S47",
+   "milestone": "M7",
+   "text": "A missing result from allocate or resize is out of memory, a bug that stops the program (T0603-style trace, code T0623). M7-S48. Limit memory counts the bytes h",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S48",
+   "milestone": "M7",
+   "text": "Limit memory counts the bytes held through allocate. 7.6 LLVM M7-S49. The LLVM backend (crate tern-codegen-llvm, through inkwell, LLVM 18 or later) takes the sa",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S49",
+   "milestone": "M7",
+   "text": "The LLVM backend (crate tern-codegen-llvm, through inkwell, LLVM 18 or later) takes the same MIR as Cranelift. It is selected for device builds and by --backend",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S50",
+   "milestone": "M7",
+   "text": "Differential tests: LLVM output equals the interpreter's for every golden test that a given target can run. M7-S51. LLVM is linked statically into the tern bina",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "M7-S51",
+   "milestone": "M7",
+   "text": "LLVM is linked statically into the tern binary or shipped as a library next to it; the size is reported at each release (M3-D10). Tern: Programming in Plain Eng",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  }
+ ]
+}

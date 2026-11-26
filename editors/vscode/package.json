@@ -3,7 +3,7 @@
   "displayName": "Lykaon",
   "description": "Lykaon language support: syntax highlighting, LSP diagnostics, completion, formatting, run and test.",
   "icon": "icons/lykaon.png",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "Lykaon-Lang",
   "license": "SEE LICENSE IN LICENSE.md",
   "repository": {

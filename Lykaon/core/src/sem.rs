@@ -50,6 +50,14 @@ pub enum Kind {
     /// cut). It prints as hidden, is never logged, cannot be compared,
     /// cannot be converted, and is zeroed when dropped.
     Secret(Box<Kind>),
+    /// M5 (Appendix L 7.1): a loaded data table. Column kinds are inferred
+    /// when the CSV is loaded; rows keep file order.
+    Table,
+    /// M5 (Appendix L 7.3): a trained model. The fitted numbers are in
+    /// `core::model`; the model is a move kind (M5-S30).
+    Model,
+    /// M5 (Appendix L 7.4): an open database connection.
+    Database,
     Missing,
     Unknown,
 }
@@ -148,6 +156,16 @@ pub enum Value {
     /// server-side handle; the socket itself lives in the server's
     /// connection table. Copies share nothing (the id is the value).
     Conn(u64),
+    /// M5 (Appendix L 7.1): a loaded data table. Shared through an `Rc`
+    /// because the language treats a table as a move kind (M5-S10) and
+    /// data sentences read it repeatedly; `load` makes one, and the value
+    /// is never mutated in place.
+    Table(std::rc::Rc<crate::data::Table>),
+    /// M5 (Appendix L 7.3): a trained model, shared like a table.
+    Model(std::rc::Rc<crate::model::Model>),
+    /// M5 (Appendix L 7.4): an open database, named by its connection
+    /// (the driver state lives in `core::db`).
+    Database(String),
 }
 
 /// M4-7 (S56): the contents of a secret (text in this cut). It is
@@ -611,6 +629,20 @@ pub enum E {
     },
     /// Read input (M4-G27): all of standard input as text (M4-S85).
     ReadInput,
+    /// M5-S31: vector of 1 and 2 and 3 - a list of decimals.
+    Vector(Vec<Expr>),
+    /// M5-S31: dot of a and b.
+    Dot(Box<Expr>, Box<Expr>),
+    /// M5-S31: norm of a.
+    Norm(Box<Expr>),
+    /// M5-S49: encrypted X with key.
+    Encrypt(Box<Expr>, Box<Expr>),
+    /// M5-S49: decrypted X with key.
+    Decrypt(Box<Expr>, Box<Expr>),
+    /// M5-S49: random key (32 random bytes, kept as a secret).
+    RandomKey,
+    /// M5-S49: key from password.
+    KeyFrom(Box<Expr>),
     CollEmpty {
         kind: Kind,
         size: Option<usize>,
@@ -1168,6 +1200,167 @@ pub enum Stmt {
     Careful {
         body: Vec<Stmt>,
     },
+
+    // ---- M5 (Appendix L 7.1): tables and data sentences ----
+    /// Load NAME [from file F | from NAME | from database NAME].
+    /// The parser resolves the columns when it can read the file; the
+    /// runtime loads the rows. A load failure is not found or bad format.
+    LoadTable {
+        name: String,
+        origin: TableOrigin,
+    },
+    /// Say rows / Say average price / Say rows and average price.
+    /// The table is resolved at compile time (M5-D13).
+    SayData {
+        table: String,
+        items: Vec<DataItem>,
+    },
+    /// Say top N groups by STAT COLUMN / Say STAT COLUMN by GROUP.
+    SayGroup {
+        table: String,
+        /// Some(true) = top, Some(false) = bottom, None = every group.
+        highest: Option<bool>,
+        count: Option<usize>,
+        group_column: String,
+        stat: crate::data::StatWord,
+        column: String,
+    },
+    /// Say rows [where COND] [sorted by COL [descending]] [first N rows].
+    SayRows {
+        table: String,
+        first: Option<usize>,
+        cond: Option<Expr>,
+        sorted_by: Option<String>,
+        descending: bool,
+    },
+    /// For each row in NAME. + block: borrow one row as `row`, a record
+    /// whose parts are the columns (M5-G11, M5-D12).
+    ForEachRow {
+        table: String,
+        var: String,
+        body: Vec<Stmt>,
+    },
+    /// Plot VERTICAL against HORIZONTAL [as dots|bars|line] [to file F]
+    /// (M5-G12). The first column is the vertical axis (M5-S13); the
+    /// chart is written as an SVG file (M5-S15/S16).
+    Plot {
+        table: String,
+        vertical: String,
+        horizontal: String,
+        kind: Option<crate::chart::PlotKind>,
+        file: Option<FileRef>,
+    },
+
+    // ---- M5 (Appendix L 7.3): models ----
+    /// Predict TARGET from the rest [using MODEL] [of TABLE].
+    Predict {
+        table: String,
+        target: String,
+        inputs: Option<Vec<String>>,
+        kind: crate::model::ModelKind,
+    },
+    /// Say accuracy / error / what matters most / what cleaning did /
+    /// prediction for size 40 and price 100.
+    SayModel {
+        items: Vec<ModelItem>,
+    },
+    /// Save model as NAME. (writes output/NAME.model).
+    SaveModel {
+        name: String,
+    },
+    /// Load model NAME. (reads output/NAME.model into model).
+    LoadModel {
+        name: String,
+    },
+
+    // ---- M5 (Appendix L 7.4): databases ----
+    /// Open database NAME using sqlite file F / postgres at ADDRESS.
+    OpenDatabase {
+        name: String,
+        driver: DbDriver,
+    },
+    /// Load NAME from database DB.
+    LoadDatabase {
+        name: String,
+        db: String,
+    },
+    /// Add RECORD to table T of DB.
+    DbAdd {
+        db: String,
+        table: String,
+        value: Expr,
+    },
+    /// Remove rows where COND from table T of DB.
+    DbRemove {
+        db: String,
+        table: String,
+        cond: Expr,
+    },
+    /// Set COL to VALUE in rows of T of DB where COND.
+    DbSet {
+        db: String,
+        table: String,
+        column: String,
+        value: Expr,
+        cond: Expr,
+    },
+    /// Do these all or none. + block (M5-G30).
+    Transaction {
+        body: Vec<Stmt>,
+    },
+    /// Limit memory N megabytes. / Limit time N seconds. (M5-G33).
+    Limit {
+        kind: LimitKind,
+        amount: u64,
+        unit: String,
+    },
+    /// Ask assistant about TEXT. (M5-G22).
+    AskAssistant {
+        text: String,
+    },
+}
+
+/// Which resource a Limit sentence caps (M5-G33).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LimitKind {
+    Memory,
+    Time,
+}
+
+/// Which database driver an Open sentence names (M5-G25).
+#[derive(Clone, Debug)]
+pub enum DbDriver {
+    Sqlite(FileRef),
+    Postgres(NetAddress),
+}
+
+/// One item of a Say model sentence (M5-G19).
+#[derive(Clone, Debug)]
+pub enum ModelItem {
+    Accuracy,
+    Error,
+    Importance,
+    Cleaning,
+    Prediction(Vec<(String, Expr)>),
+}
+
+/// Where a Load sentence takes its table from (M5-G1/G26).
+#[derive(Clone, Debug)]
+pub enum TableOrigin {
+    /// NAME.csv in the data folder (M5-D2).
+    Data(String),
+    /// An explicit file reference.
+    File(FileRef),
+    /// Load NAME from database DB. (M5-G26; the driver lands later).
+    Database(String),
+}
+
+/// One item of a Say data sentence (M5-G5).
+#[derive(Clone, Debug)]
+pub enum DataItem {
+    Rows,
+    Columns,
+    Stat(crate::data::StatWord, String),
 }
 
 /// A page path segment (M4-G80): a literal lower-case word (several

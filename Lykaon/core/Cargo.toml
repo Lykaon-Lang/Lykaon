@@ -1,12 +1,25 @@
 [package]
 name = "lykaon-core"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+
+[build-dependencies]
+cc = "1"
 
 [dependencies]
 unicode-normalization = "0.1.26"
 unicode-segmentation = "1.13.3"
 flate2 = "1"
+# M5 (Appendix L 7.4): SQLite driver. The amalgamation is vendored in
+# core/vendor and compiled by core/build.rs with the static CRT; optional so
+# the wasm playground builds without it.
+rusqlite = { version = "0.32", default-features = false, optional = true }
+# M5 (Appendix L 7.4): MD5 for the PostgreSQL authentication challenge.
+md5 = "0.7"
+# M5 (Appendix L 7.6): XChaCha20-Poly1305, Argon2id and the OS random bytes.
+chacha20poly1305 = { version = "0.10", optional = true }
+argon2 = { version = "0.5", optional = true }
+getrandom = { version = "0.2", optional = true }
 # M4-7 (Appendix K 7.7): the bundled IANA time-zone database (S51) comes
 # from jiff with tzdb-bundle-always (the same bundled data on Windows and
 # Linux); the civil calendar and the RNG are hand-written.
@@ -16,7 +29,10 @@ jiff = { version = "0.2.42", default-features = false, features = ["std", "tz-sy
 sha2 = "0.10"
 # M4-8 (Appendix K 7.10, S79): the signal flag setters for When signal
 # ... arrives. - Ctrl+C (interrupt) on both platforms, SIGTERM/SIGHUP
-# (stop/hangup) on Unix only (Windows has no such signals).
+# (stop/hangup) on Unix only (Windows has no such signals). Gated off the
+# wasm target: the module's cfg blocks never compile signal-hook there
+# (the M5d-preview playground build).
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 signal-hook = "0.4.6"
 # M4-10 (Appendix K 7.8, S61/S64): TLS for Fetch and Serve - rustls is
 # the TLS library the spec names; webpki-roots carries the bundled root
@@ -30,4 +46,6 @@ webpki-roots = { version = "0.26", optional = true }
 
 [features]
 default = ["tls"]
+sqlite = ["dep:rusqlite"]
+crypto = ["dep:chacha20poly1305", "dep:argon2", "dep:getrandom"]
 tls = ["dep:rustls", "dep:rustls-pemfile", "dep:webpki-roots"]

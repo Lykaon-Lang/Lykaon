@@ -1,6 +1,89 @@
-use lykaon::{NativeFail, check_source, format_source, native_run_tool, packages};
+use lykaon::{NativeFail, try_format_source, native_run_tool, packages};
 use std::io::IsTerminal;
 use std::{env, path::PathBuf, process::ExitCode};
+
+// M5-S45: count allocations in the compiler front too, so lykaon profile
+// memory can report a peak.
+#[global_allocator]
+static GLOBAL_ALLOC: lykaon::alloc::CountingAllocator = lykaon::alloc::CountingAllocator;
+
+
+fn run_big(source: String, file: String, stdin_text: String) -> (String, i32) {
+    std::thread::Builder::new()
+        .stack_size(256 * 1024 * 1024)
+        .spawn(move || lykaon::run_source(&source, &file, &stdin_text))
+        .map_err(|e| e.to_string())
+        .and_then(|h| h.join().map_err(|_| "worker panicked".to_string()))
+        .unwrap_or((String::new(), 1))
+}
+
+fn run_big_metered(
+    source: String,
+    file: String,
+    stdin_text: String,
+    fuel: u64,
+) -> lykaon::RunOutcome {
+    std::thread::Builder::new()
+        .stack_size(256 * 1024 * 1024)
+        .spawn(move || lykaon::run_source_budgeted_metered(&source, &file, &stdin_text, fuel))
+        .map_err(|e| e.to_string())
+        .and_then(|h| h.join().map_err(|_| "worker panicked".to_string()))
+        .unwrap_or_else(|e| lykaon::RunOutcome {
+            output: format!("Error: {e}\n"),
+            exit: 1,
+            reason: lykaon::interp::ExitReason::Failure,
+            fuel_used: 0,
+            peak_alloc_bytes: 0,
+            permissions_used: Vec::new(),
+        })
+}
+
+/// M5g item d4: run N top-level sentences on a large-stack worker.
+fn run_big_until(
+    source: String,
+    file: String,
+    stdin_text: String,
+    mode: lykaon::TraceMode,
+    stop_after: usize,
+) -> (String, i32, Option<String>) {
+    std::thread::Builder::new()
+        .stack_size(256 * 1024 * 1024)
+        .spawn(move || lykaon::snapshot::until(&source, &file, &stdin_text, mode, stop_after))
+        .map_err(|e| e.to_string())
+        .and_then(|h| h.join().map_err(|_| "worker panicked".to_string()))
+        .unwrap_or_else(|e| (String::new(), 1, Some(format!("Error: {e}"))))
+}
+
+/// M5g item c: run on a large-stack worker and bring the trace back.
+fn run_big_traced(
+    source: String,
+    file: String,
+    stdin_text: String,
+    mode: lykaon::TraceMode,
+    deterministic: bool,
+    seed: u64,
+    fuel: u64,
+) -> lykaon::TracedRun {
+    std::thread::Builder::new()
+        .stack_size(256 * 1024 * 1024)
+        .spawn(move || {
+            lykaon::run_source_traced(&source, &file, &stdin_text, fuel, mode, deterministic, seed)
+        })
+        .map_err(|e| e.to_string())
+        .and_then(|h| h.join().map_err(|_| "worker panicked".to_string()))
+        .unwrap_or_else(|e| lykaon::TracedRun {
+            outcome: lykaon::RunOutcome {
+                output: format!("Error: {e}\n"),
+                exit: 1,
+                reason: lykaon::interp::ExitReason::Failure,
+                fuel_used: 0,
+                peak_alloc_bytes: 0,
+                permissions_used: Vec::new(),
+            },
+            events: Vec::new(),
+            replay_left: 0,
+        })
+}
 
 fn main() -> ExitCode {
     // a double click on the exe opens a console that would close before
@@ -16,12 +99,25 @@ fn main() -> ExitCode {
             let _ = std::io::stdin().read_line(&mut line);
         }
     }));
-    let args: Vec<String> = env::args().collect();
+    let mut args: Vec<String> = env::args().collect();
+    // M5-S43: lykaon run safely [file] (or --safely) enables the sandbox.
+    let mut safely = false;
+    if args.get(2).map(|s| s == "safely" || s == "--safely").unwrap_or(false) {
+        safely = true;
+        args.remove(2);
+    }
+    if safely {
+        unsafe { std::env::set_var("LYKAON_SAFE", "1"); }
+    }
     if args.len() < 2 {
         eprintln!("usage: lykaonc-cli <command> [args]");
-        eprintln!("commands: run file.lykaon | check file.lykaon | fmt file.lykaon | test [file]");
-        eprintln!("          build file.lykaon | repl | ui | bench | add <folder-or-url>");
-        eprintln!("          remove <name> | update");
+        eprintln!("  run file.lykaon | check file.lykaon | fmt file.lykaon | test [file]");
+        eprintln!("  run-many file.lykaon [--runs N] [--warmup N] [--threads N]");
+        eprintln!("  build file.lykaon | repl | bench | report");
+        eprintln!("  lsp | debug file.lykaon | doc | outline | explain | fix");
+        eprintln!("  migrate [status] | setup | serve | sbom");
+        eprintln!("  checkpoint file.lykaon | resume file.lykaon");
+        eprintln!("  add <folder-or-url> | remove <name> | update");
         if interactive_console {
             // a double click opens a console: write and test code right
             // here instead of closing
@@ -45,11 +141,463 @@ fn main() -> ExitCode {
                 }
             };
             let (out, ok) = lykaon::check_bytes(&bytes, file);
-            print!("{}", out);
+            let color = args.iter().any(|a| a == "--color");
+            let suggest = args.iter().any(|a| a == "--suggest");
+            if args.iter().any(|a| a == "--json") {
+                let source = String::from_utf8_lossy(&bytes).to_string();
+                let diags = lykaon::check_diagnostics(&source, file);
+                print!("{}", lykaon::diag_json::to_json(&diags));
+            } else if suggest || color {
+                // M5c: verbose text mode shows suggestions, secondary labels
+                // and Note/Help; --color adds ANSI colours.
+                let source = String::from_utf8_lossy(&bytes).to_string();
+                let diags = lykaon::check_diagnostics(&source, file);
+                for d in &diags {
+                    print!("{}", d.render_ex(color, suggest));
+                    if !d.what.is_empty() {
+                        println!();
+                    }
+                }
+            } else {
+                print!("{}", out);
+            }
             if ok {
                 ExitCode::from(0)
             } else {
                 ExitCode::from(1)
+            }
+        }
+        "doc" => {
+            // M5 (Appendix L 9.3): lykaon doc [outdir].
+            let out = args.get(2).cloned().unwrap_or_else(|| "doc".to_string());
+            match lykaon::docgen::generate(std::path::Path::new("."), std::path::Path::new(&out)) {
+                Ok(n) => {
+                    println!("{n} documentation pages in {out}/");
+                    ExitCode::from(0)
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    ExitCode::from(1)
+                }
+            }
+        }
+        "lsp" => {
+            // M5 (Appendix L 9.1): the language server over stdio.
+            lykaon::lsp::run();
+            ExitCode::from(0)
+        }
+        "outline" => {
+            // M5c item 3: lykaon outline [file] [--json].
+            let json = args.iter().any(|a| a == "--json");
+            let file = args.get(2).cloned().unwrap_or_else(|| "main.lykaon".to_string());
+            match lykaon::outline::run(&file, json) {
+                Ok(text) => {
+                    print!("{text}");
+                    ExitCode::from(0)
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    ExitCode::from(1)
+                }
+            }
+        }
+        "docs" => {
+            // M5c item 7: lykaon docs --compact (the cheat sheet).
+            print!("{}", lykaon::m5c::cheat_sheet());
+            ExitCode::from(0)
+        }
+        "grammar" => {
+            // M5c item 4: lykaon grammar [--json|--export]
+            if args.iter().any(|a| a == "--json") {
+                print!("{}", lykaon::grammar::export_json());
+            } else {
+                print!("{}", lykaon::grammar::export_ebnf());
+            }
+            ExitCode::from(0)
+        }
+        "explain" => {
+            // M5c item 5: lykaon explain <code>.
+            let code = args.get(2).cloned().unwrap_or_default();
+            println!("{}", lykaon::m5c::explain(&code));
+            ExitCode::from(0)
+        }
+        "profile" => {
+            // M5 (Appendix L 9.5): lykaon profile [memory] [file]
+            let memory = args.iter().any(|a| a == "memory");
+            let file = args
+                .iter()
+                .skip(2)
+                .find(|a| !a.starts_with("--") && a.as_str() != "memory")
+                .cloned()
+                .unwrap_or_else(|| "main.lykaon".to_string());
+            match lykaon::profile::run(&file, memory) {
+                Ok(text) => {
+                    print!("{text}");
+                    ExitCode::from(0)
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    ExitCode::from(1)
+                }
+            }
+        }
+        "fix" => {
+            // M5c item 6: apply unambiguous suggestions (did-you-mean).
+            let apply = args.iter().any(|a| a == "--apply");
+            let file = args
+                .iter()
+                .skip(2)
+                .find(|a| !a.starts_with("--"))
+                .cloned()
+                .unwrap_or_else(|| "main.lykaon".to_string());
+            match lykaon::fix::run(&file, apply) {
+                Ok(text) => { print!("{text}"); ExitCode::from(0) }
+                Err(e) => { eprintln!("Error: {e}"); ExitCode::from(1) }
+            }
+        }
+        "debug" => {
+            // Step 9: lykaon debug [--dap] <file>
+            let file = args
+                .iter()
+                .skip(2)
+                .find(|a| !a.starts_with("--"))
+                .cloned()
+                .unwrap_or_else(|| "main.lykaon".to_string());
+            let source = match std::fs::read_to_string(&file) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: cannot read {file}: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            // DAP over stdio (the editor drives it).
+            lykaon::dap::serve(source, file);
+            ExitCode::from(0)
+        }
+        "layout" => {
+            // M5b: lykaon layout [file.csv] - choose a data layout and time it.
+            let file = args.iter().skip(2).find(|a| !a.starts_with("--")).cloned();
+            let table = if let Some(f) = file {
+                match std::fs::read_to_string(&f) {
+                    Ok(text) => match lykaon_core::data::load_csv_text(&text) {
+                        Ok(t) => t,
+                        Err(e) => {
+                            eprintln!("Error: cannot load {f}: {}", e.message());
+                            return ExitCode::from(1);
+                        }
+                    },
+                    Err(e) => {
+                        eprintln!("Error: cannot read {f}: {e}");
+                        return ExitCode::from(1);
+                    }
+                }
+            } else {
+                lykaon_core::layout::synthetic(1_000_000)
+            };
+            let report = lykaon_core::layout::choose(&table);
+            println!("{}", report.describe());
+            let col = 0usize;
+            let (row_ms, soa_ms) = lykaon_core::layout::benchmark(&table, col);
+            let speedup = if soa_ms > 0.0 { row_ms / soa_ms } else { 0.0 };
+            println!(
+                "sum column 0: row-major {:.2} ms, SoA+SIMD {:.2} ms ({:.2}x)",
+                row_ms, soa_ms, speedup
+            );
+            let a = lykaon_core::layout::sum_column_rowmajor(&table, col);
+            let b = lykaon_core::layout::sum_column_soa(&table, col);
+            println!(
+                "checksum equal: {} ({:.3})",
+                (a - b).abs() < 1e-6,
+                a
+            );
+            ExitCode::from(0)
+        }
+        "audit" => {
+            // M5f: lykaon audit [file] [--json|--sarif|--emit-tests]
+            let file = args.iter().skip(2).find(|a| !a.starts_with("--")).cloned()
+                .unwrap_or_else(|| "main.lykaon".to_string());
+            let source = match std::fs::read_to_string(&file) {
+                Ok(s) => s,
+                Err(e) => { eprintln!("Error: cannot read {file}: {e}"); return ExitCode::from(1); }
+            };
+            let prog = match lykaon::compile_tree(&source, &file) {
+                Ok(p) => p,
+                Err(diags) => {
+                    eprintln!("{}", diags.iter().map(|d| d.to_string()).collect::<Vec<_>>().join("\n"));
+                    return ExitCode::from(1);
+                }
+            };
+            let mut audit = lykaon::audit::audit(&prog, &source, &file);
+            // M5f item 7 (intent) and item 8 (dependencies).
+            let cwd = std::env::current_dir().unwrap_or_default();
+            audit.findings.extend(lykaon::audit::check_dependencies(&cwd, &file));
+            lykaon::audit::check_intent(&source, &file, &mut audit.findings);
+            // M5f: suppressions (lykaon-audit.toml), baseline, strict.
+            if let Ok(text) = std::fs::read_to_string("lykaon-audit.toml") {
+                audit.suppress(&lykaon::audit::parse_suppressions(&text));
+            }
+            if let Some(base) = args.iter().position(|a| a == "--baseline").and_then(|i| args.get(i + 1)) {
+                let keys: std::collections::HashSet<String> = std::fs::read_to_string(base)
+                    .ok()
+                    .and_then(|t| serde_json::from_str::<Vec<String>>(&t).ok())
+                    .unwrap_or_default()
+                    .into_iter()
+                    .collect();
+                if keys.is_empty() && !std::path::Path::new(base).exists() {
+                    let _ = std::fs::write(base, serde_json::to_string_pretty(&audit.keys()).unwrap_or_else(|_| "[]".into()));
+                    println!("wrote baseline {base}");
+                } else {
+                    audit.only_new(&keys);
+                }
+            }
+            // M5f: agent mode (optional; API key from the environment).
+            if args.iter().any(|a| a == "--agent") {
+                let model = std::env::var("LYKAON_AGENT_MODEL")
+                    .unwrap_or_else(|_| "openai/gpt-4o-mini".to_string());
+                return match lykaon::agent::review(&file, &source, &audit.to_json(), &model) {
+                    Ok(text) => { println!("{text}"); ExitCode::from(0) }
+                    Err(e) => { eprintln!("agent: {e}"); ExitCode::from(1) }
+                };
+            }
+            // M5f: level (quick default, normal, deep). deep adds mutation.
+            let deep = args.iter().any(|a| a == "--mutate")
+                || args
+                    .iter()
+                    .position(|a| a == "--level")
+                    .and_then(|i| args.get(i + 1))
+                    .map(|v| v == "deep")
+                    .unwrap_or(false);
+            // M5f: mutation testing (deep).
+            if deep {
+                let m = lykaon::mutation::run(&source, &file);
+                println!("mutation: {} mutants, {} caught, {} survived", m.total, m.caught, m.survived.len());
+                if !m.has_tests { println!("no Test blocks: mutation testing needs tests"); }
+                for s in &m.survived { println!("  survived: {s}"); }
+                return ExitCode::from(0);
+            }
+            if args.iter().any(|a| a == "--json") {
+                println!("{}", audit.to_json());
+            } else if args.iter().any(|a| a == "--sarif") {
+                println!("{}", audit.to_sarif());
+            } else {
+                print!("{}", audit.render());
+                println!();
+            }
+            if args.iter().any(|a| a == "--emit-tests") {
+                let dir = std::path::Path::new("audit_regression");
+                let _ = std::fs::create_dir_all(dir);
+                for (i, f) in audit.findings.iter().enumerate() {
+                    let p = dir.join(format!("{:02}-{}-{}.lykaon", i, f.rule, f.line));
+                    let _ = std::fs::write(&p, &source);
+                }
+                println!("wrote {} regression program(s) to audit_regression/", audit.findings.len());
+            }
+            if args.iter().any(|a| a == "--strict") && audit.has_high_confidence_error() {
+                eprintln!("strict: high-confidence Error finding(s) present");
+                return ExitCode::from(1);
+            }
+            ExitCode::from(0)
+        }
+        "review" => {
+            // M5f: lykaon review --diff <old> <new>
+            let mut old = None;
+            let mut new = None;
+            let mut i = 2;
+            while i < args.len() {
+                if args[i] == "--diff" {
+                    old = args.get(i + 1).cloned();
+                    new = args.get(i + 2).cloned();
+                    break;
+                }
+                i += 1;
+            }
+            let (Some(old), Some(new)) = (old, new) else {
+                eprintln!("usage: lykaon review --diff <old.lykaon> <new.lykaon>");
+                return ExitCode::from(2);
+            };
+            let read = |f: &str| -> Result<String, ExitCode> {
+                std::fs::read_to_string(f).map_err(|e| { eprintln!("Error: cannot read {f}: {e}"); ExitCode::from(1) })
+            };
+            let (os, ns) = match (read(&old), read(&new)) { (Ok(a), Ok(b)) => (a, b), _ => return ExitCode::from(1) };
+            let op = lykaon::compile_tree(&os, &old).ok();
+            let np = lykaon::compile_tree(&ns, &new).ok();
+            match (op, np) {
+                (Some(op), Some(np)) => {
+                    let mut findings = lykaon::audit::review_diff(&op, &np, &new);
+                    findings.extend(lykaon::audit::diff_behavior(&os, &ns, &op, &np, &new));
+                    for f in &findings {
+                        println!("{}: {} ({})", f.severity.word(), f.rule, f.why);
+                    }
+                    if findings.is_empty() { println!("no interface, permission or behaviour changes"); }
+                }
+                _ => { eprintln!("Error: one of the files does not compile"); return ExitCode::from(1); }
+            }
+            ExitCode::from(0)
+        }
+        "report" => {
+            // M5g item f: lykaon report <file> [--fuel N] [--output <file>]
+            // Resource report v1 as JSON. The report command itself exits 0
+            // when it can produce the document; `exit` in the document is the
+            // program's result.
+            let mut file: Option<String> = None;
+            let mut fuel = 0u64;
+            let mut output: Option<String> = None;
+            let mut input = String::new();
+            let mut i = 2usize;
+            while i < args.len() {
+                match args[i].as_str() {
+                    "--input" => {
+                        input = args.get(i + 1).cloned().unwrap_or_default();
+                        i += 2;
+                    }
+                    "--fuel" => {
+                        if let Some(v) = args.get(i + 1).and_then(|v| v.parse::<u64>().ok()) {
+                            fuel = v;
+                        }
+                        i += 2;
+                    }
+                    "--output" => {
+                        output = args.get(i + 1).cloned();
+                        i += 2;
+                    }
+                    other if other.starts_with("--") => i += 1,
+                    other => {
+                        file = Some(other.to_string());
+                        i += 1;
+                    }
+                }
+            }
+            let file = file.unwrap_or_else(|| "main.lykaon".to_string());
+            let source = match std::fs::read_to_string(&file) {
+                Ok(s) => s,
+                Err(e) => { eprintln!("Error: cannot read {file}: {e}"); return ExitCode::from(1); }
+            };
+            let start = std::time::Instant::now();
+            let outcome = run_big_metered(source, file.clone(), input.clone(), fuel);
+            let ms = start.elapsed().as_millis();
+            let doc = serde_json::json!({
+                "schema": "lykaon-report-v1",
+                "file": file,
+                "exit": outcome.exit,
+                "exit_reason": outcome.reason.as_str(),
+                "fuel": fuel,
+                "fuel_used": outcome.fuel_used,
+                "wall_ms": ms,
+                "output_bytes": outcome.output.len(),
+                "peak_alloc_bytes": outcome.peak_alloc_bytes,
+                "input_bytes": input.len(),
+                "permissions_used": outcome.permissions_used,
+            });
+            let text = serde_json::to_string_pretty(&doc)
+                .unwrap_or_else(|_| "{\"schema\":\"lykaon-report-v1\"}".to_string());
+            match output {
+                Some(path) => match std::fs::write(&path, text + "\n") {
+                    Ok(()) => {
+                        eprintln!("Wrote {path}");
+                        ExitCode::from(0)
+                    }
+                    Err(e) => {
+                        eprintln!("Error: cannot write {path}: {e}");
+                        ExitCode::from(1)
+                    }
+                },
+                None => {
+                    println!("{text}");
+                    ExitCode::from(0)
+                }
+            }
+        }
+        "setup" => {
+            // M5g/IDE: register the .lykaon file type + icon (Windows Explorer).
+            let icon = args
+                .iter()
+                .position(|a| a == "--icon")
+                .and_then(|i| args.get(i + 1))
+                .cloned()
+                .unwrap_or_else(|| {
+                    let mut p = std::env::current_exe().unwrap_or_default();
+                    p.pop();
+                    p.set_file_name("lykaon.ico");
+                    p.to_string_lossy().to_string()
+                });
+            let mut opener = std::env::current_exe().unwrap_or_default();
+            opener.pop();
+            opener.set_file_name(if cfg!(windows) { "lykaon-cli.exe" } else { "lykaon-cli" });
+            let opener = if opener.exists() {
+                opener.to_string_lossy().to_string()
+            } else {
+                std::env::current_exe()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string()
+            };
+            match lykaon::setup::register(&icon, &opener) {
+                Ok(msg) => { println!("{msg}"); ExitCode::from(0) }
+                Err(e) => { eprintln!("Error: {e}"); ExitCode::from(1) }
+            }
+        }
+        "serve" => {
+            // M5g item g: lykaon serve (JSON-RPC over stdio, one object per line).
+            // Sandbox knobs are additive and default to unlimited.
+            let mut fuel = 0u64;
+            let mut max_request_bytes = 1024 * 1024usize;
+            let mut i = 2usize;
+            while i < args.len() {
+                match args[i].as_str() {
+                    "--fuel" => {
+                        if let Some(v) = args.get(i + 1).and_then(|v| v.parse::<u64>().ok()) {
+                            fuel = v;
+                        }
+                        i += 2;
+                    }
+                    "--max-request-bytes" => {
+                        if let Some(v) = args.get(i + 1).and_then(|v| v.parse::<usize>().ok()) {
+                            max_request_bytes = v;
+                        }
+                        i += 2;
+                    }
+                    _ => i += 1,
+                }
+            }
+            lykaon::serve::serve(lykaon::serve::Options { fuel, max_request_bytes });
+            ExitCode::from(0)
+        }
+        "sbom" => {
+            // M5g item h: lykaon sbom (CycloneDX JSON).
+            let doc = lykaon::sbom::sbom();
+            if let Some(p) = args.iter().position(|a| a == "--output") {
+                let Some(path) = args.get(p + 1) else {
+                    eprintln!("usage: lykaon sbom [--output <file>]");
+                    return ExitCode::from(2);
+                };
+                match std::fs::write(path, &doc) {
+                    Ok(()) => {
+                        eprintln!("Wrote {path}");
+                        ExitCode::from(0)
+                    }
+                    Err(e) => {
+                        eprintln!("Error: cannot write {path}: {e}");
+                        ExitCode::from(1)
+                    }
+                }
+            } else {
+                println!("{doc}");
+                ExitCode::from(0)
+            }
+        }
+        "migrate" => {
+            // M5-S38: lykaon migrate [status] - run (or list) the SQL files
+            // in migrations/ against the database named by settings.lykaon.
+            let status = args.get(2).map(|s| s == "status").unwrap_or(false);
+            match lykaon::migrate::run(std::path::Path::new("."), status) {
+                Ok(text) => {
+                    print!("{text}");
+                    ExitCode::from(0)
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    ExitCode::from(1)
+                }
             }
         }
         "fmt" => {
@@ -65,8 +613,141 @@ fn main() -> ExitCode {
                     return ExitCode::from(1);
                 }
             };
-            print!("{}", format_source(&source));
+            match try_format_source(&source, file) {
+                Ok(formatted) => {
+                    print!("{}", formatted);
+                    ExitCode::from(0)
+                }
+                Err(diags) => {
+                    for d in &diags {
+                        eprintln!("{d}");
+                    }
+                    ExitCode::from(1)
+                }
+            }
+        }
+        "lint" => {
+            if args.len() < 3 {
+                eprintln!("usage: lykaon lint <file>");
+                return ExitCode::from(2);
+            }
+            let file = &args[2];
+            let source = match std::fs::read_to_string(file) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: cannot read {file}: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            for d in lykaon::lint::lint_source(&source, file) {
+                println!("{d}");
+            }
             ExitCode::from(0)
+        }
+        "checkpoint" => {
+            // M5g item d: lykaon checkpoint <file> [--after N] [--out <file>]
+            let mut file: Option<String> = None;
+            let mut after = 0usize;
+            let mut out_path: Option<String> = None;
+            let mut i = 2usize;
+            while i < args.len() {
+                match args[i].as_str() {
+                    "--after" => {
+                        after = args.get(i + 1).and_then(|v| v.parse::<usize>().ok()).unwrap_or(0);
+                        i += 2;
+                    }
+                    "--out" => {
+                        out_path = args.get(i + 1).cloned();
+                        i += 2;
+                    }
+                    a if a.starts_with("--") => i += 1,
+                    a => {
+                        file = Some(a.to_string());
+                        i += 1;
+                    }
+                }
+            }
+            let file = file.unwrap_or_else(|| "main.lykaon".to_string());
+            let source = match std::fs::read_to_string(&file) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: cannot read {file}: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            let mut buf = String::new();
+            use std::io::Read;
+            let _ = std::io::stdin().read_to_string(&mut buf);
+            let outcome = lykaon::snapshot::checkpoint(&source, &file, &buf, after);
+            if let Some(e) = &outcome.error {
+                eprintln!("Error: {e}");
+            }
+            print!("{}", outcome.output);
+            let _ = std::io::Write::flush(&mut std::io::stdout());
+            if let Some(snap) = outcome.snapshot {
+                let path = out_path.unwrap_or_else(|| format!("{file}.snap.json"));
+                match lykaon::snapshot::write(std::path::Path::new(&path), &source, &snap) {
+                    Ok(()) => eprintln!("Wrote {path}"),
+                    Err(e) => {
+                        eprintln!("Error: cannot write {path}: {e}");
+                        return ExitCode::from(1);
+                    }
+                }
+            }
+            ExitCode::from(outcome.exit as u8)
+        }
+        "resume" => {
+            // M5g item d: lykaon resume <file> --snapshot <snap> [--input <text>]
+            let mut file: Option<String> = None;
+            let mut snap_path: Option<String> = None;
+            let mut input: Option<String> = None;
+            let mut i = 2usize;
+            while i < args.len() {
+                match args[i].as_str() {
+                    "--snapshot" => {
+                        snap_path = args.get(i + 1).cloned();
+                        i += 2;
+                    }
+                    "--input" => {
+                        input = args.get(i + 1).cloned();
+                        i += 2;
+                    }
+                    a if a.starts_with("--") => i += 1,
+                    a => {
+                        file = Some(a.to_string());
+                        i += 1;
+                    }
+                }
+            }
+            let file = file.unwrap_or_else(|| "main.lykaon".to_string());
+            let snap_path = match snap_path {
+                Some(p) => p,
+                None => {
+                    eprintln!("usage: lykaon resume <file> --snapshot <file> [--input <text>]");
+                    return ExitCode::from(2);
+                }
+            };
+            let source = match std::fs::read_to_string(&file) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: cannot read {file}: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            let snap = match lykaon::snapshot::read(std::path::Path::new(&snap_path), &source) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            let (out, code, err) = lykaon::snapshot::resume(&source, &file, &snap, input.as_deref());
+            print!("{out}");
+            let _ = std::io::Write::flush(&mut std::io::stdout());
+            if let Some(e) = err {
+                eprintln!("Error: {e}");
+            }
+            ExitCode::from(code as u8)
         }
         "run" => {
             // M4-D17 (Appendix K 7.11): from M4 the run tool runs native by
@@ -75,6 +756,30 @@ fn main() -> ExitCode {
             // the file is the program's own command line (M4-S82).
             let mut interpret = false;
             let mut native_mode: Option<&'static str> = None;
+            let mut trace_json = false;
+            // M5g item b: --deterministic (virtual clock, fixed seed) and
+            // --seed N (the seed that mode uses; default 42).
+            let mut deterministic = false;
+            let mut seed = 42u64;
+            // M5g item a: --fuel N (a step budget; stops cleanly when exceeded).
+            let mut fuel: Option<u64> = None;
+            // M5g item d4: --stop-after N stops after N top-level sentences.
+            let mut stop_after = 0usize;
+            // M5g item e: --isolate runs the program in a child under OS
+            // limits (Job Object on Windows, rlimits on Linux). The child
+            // is always the interpreter, so the run path stays observable.
+            let mut isolate = false;
+            let mut limits = lykaon::isolate::Limits::default();
+            let mut child_args: Vec<String> = Vec::new();
+            if let Some(p) = args.iter().position(|a| a == "--stop-after") {
+                stop_after = args.get(p + 1).and_then(|v| v.parse::<usize>().ok()).unwrap_or(0);
+            }
+            if let Some(p) = args.iter().position(|a| a == "--fuel") {
+                fuel = args.get(p + 1).and_then(|v| v.parse::<u64>().ok());
+            }
+            // M5g item c: --record <file> / --replay <file> (stdin).
+            let record: Option<String> = args.iter().position(|a| a == "--record").and_then(|p| args.get(p + 1).cloned());
+            let replay: Option<String> = args.iter().position(|a| a == "--replay").and_then(|p| args.get(p + 1).cloned());
             let mut file: Option<String> = None;
             let mut prog_args: Vec<String> = Vec::new();
             let mut i = 2;
@@ -86,6 +791,76 @@ fn main() -> ExitCode {
                         "--native" => {}
                         "--fast" => native_mode = Some("fast"),
                         "--small" => native_mode = Some("small"),
+                        // M5c: --trace-json runs on the interpreter (the native
+                        // path has no sentence trace) and writes the trace to
+                        // stderr as JSON; stdout stays the program's output.
+                        "--trace-json" => {
+                            trace_json = true;
+                            interpret = true;
+                        }
+                        "--fuel" => {
+                            if let Some(v) = args.get(i + 1).cloned() {
+                                child_args.push("--fuel".to_string());
+                                child_args.push(v);
+                            }
+                            i += 1; // skip the budget value
+                        }
+                        "--deterministic" => deterministic = true,
+                        "--seed" => {
+                            seed = args
+                                .get(i + 1)
+                                .and_then(|v| v.parse::<u64>().ok())
+                                .unwrap_or(42);
+                            if let Some(v) = args.get(i + 1).cloned() {
+                                child_args.push("--seed".to_string());
+                                child_args.push(v);
+                            }
+                            i += 1; // skip the seed value
+                        }
+                        "--record" | "--replay" => {
+                            if let Some(v) = args.get(i + 1).cloned() {
+                                child_args.push(a.to_string());
+                                child_args.push(v);
+                            }
+                            i += 1; // skip the file value
+                        }
+                        "--stop-after" => {
+                            if let Some(v) = args.get(i + 1).cloned() {
+                                child_args.push("--stop-after".to_string());
+                                child_args.push(v);
+                            }
+                            i += 1; // skip the count
+                        }
+                        // M5g item e: isolation flags belong to the parent.
+                        "--isolate" => isolate = true,
+                        "--memory-mb" => {
+                            limits.memory_mb = args
+                                .get(i + 1)
+                                .and_then(|v| v.parse::<u64>().ok())
+                                .unwrap_or(limits.memory_mb);
+                            i += 1;
+                        }
+                        "--cpu-seconds" => {
+                            limits.cpu_seconds = args
+                                .get(i + 1)
+                                .and_then(|v| v.parse::<u64>().ok())
+                                .unwrap_or(limits.cpu_seconds);
+                            i += 1;
+                        }
+                        "--max-output-bytes" => {
+                            limits.max_output_bytes = args
+                                .get(i + 1)
+                                .and_then(|v| v.parse::<u64>().ok())
+                                .unwrap_or(limits.max_output_bytes);
+                            i += 1;
+                        }
+                        "--max-processes" => {
+                            limits.max_processes = args
+                                .get(i + 1)
+                                .and_then(|v| v.parse::<u32>().ok())
+                                .unwrap_or(limits.max_processes);
+                            i += 1;
+                        }
                         _ => file = Some(args[i].clone()),
                     }
                 } else {
@@ -93,12 +868,54 @@ fn main() -> ExitCode {
                 }
                 i += 1;
             }
+            // M5g item b: tell the interpreter (and a native child, which
+            // inherits the environment) to use the virtual clock and seed.
+            if deterministic {
+                unsafe {
+                    std::env::set_var("LYKAON_DETERMINISTIC", "1");
+                    std::env::set_var("LYKAON_SEED", seed.to_string());
+                }
+            }
+            // A lone "--" after the file is the conventional end-of-options
+            // marker (`lykaon run app.lykaon -- arg`); drop it so it is not
+            // passed to the program as an argument.
+            if prog_args.first().map(|s| s == "--").unwrap_or(false) {
+                prog_args.remove(0);
+            }
             let Some(file) = file else {
                 eprintln!(
-                    "usage: lykaon run [--interpret | [--fast | --small]] <file> [arguments]"
+                    "usage: lykaon run [--interpret | [--fast | --small]] [--deterministic] [--seed N] [--fuel N] [--stop-after N] [--isolate [--memory-mb N] [--cpu-seconds N] [--max-output-bytes N] [--max-processes N]] <file> [arguments]"
                 );
                 return ExitCode::from(2);
             };
+            if isolate {
+                // M5g item e: the child is this same executable on the
+                // interpreter path. Isolation flags never reach it (they
+                // belong to the parent), and the output cap is handed over
+                // through LYKAON_OUTPUT_LIMIT.
+                let mut argv = vec!["run".to_string(), "--interpret".to_string()];
+                argv.extend(child_args);
+                argv.push(file);
+                argv.extend(prog_args);
+                return ExitCode::from(lykaon::isolate::run(&argv, &limits).code as u8);
+            }
+            if trace_json {
+                let source = match std::fs::read_to_string(&file) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("Error: cannot read {file}: {e}");
+                        return ExitCode::from(1);
+                    }
+                };
+                let (out, trace, code) = lykaon::run_source_trace(&source, &file, "");
+                print!("{out}");
+                let _ = std::io::Write::flush(&mut std::io::stdout());
+                eprintln!(
+                    "{}",
+                    serde_json::to_string_pretty(&trace).unwrap_or_else(|_| "[]".to_string())
+                );
+                return ExitCode::from(code as u8);
+            }
             let source = match std::fs::read_to_string(&file) {
                 Ok(s) => s,
                 Err(e) => {
@@ -106,13 +923,177 @@ fn main() -> ExitCode {
                     return ExitCode::from(1);
                 }
             };
+            if record.is_some() && stop_after > 0 {
+                eprintln!("Error: --stop-after cannot be used with --record");
+                return ExitCode::from(2);
+            }
+            if let Some(rec) = record {
+                // M5g item c: record the outside-world reads to a v1 trace,
+                // then run normally.
+                if replay.is_some() {
+                    eprintln!("Error: --record and --replay cannot be used together");
+                    return ExitCode::from(2);
+                }
+                let mut buf = String::new();
+                use std::io::Read;
+                let _ = std::io::stdin().read_to_string(&mut buf);
+                let run = run_big_traced(
+                    source.clone(),
+                    file.clone(),
+                    buf,
+                    lykaon::TraceMode::Record(Vec::new()),
+                    deterministic,
+                    seed,
+                    fuel.unwrap_or(0),
+                );
+                if let Err(e) = lykaon::trace::write(
+                    std::path::Path::new(&rec),
+                    &source,
+                    &prog_args,
+                    &run.events,
+                    run.outcome.exit,
+                    &run.outcome.output,
+                ) {
+                    eprintln!("Error: cannot write {rec}: {e}");
+                    return ExitCode::from(1);
+                }
+                print!("{}", run.outcome.output);
+                let _ = std::io::Write::flush(&mut std::io::stdout());
+                return ExitCode::from(run.outcome.exit as u8);
+            }
+            if let Some(rep) = replay {
+                // M5g item c: a v1 trace replays; a plain text file is still
+                // accepted as raw standard input (the old --record shape).
+                let raw = match std::fs::read_to_string(&rep) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("Error: cannot read {rep}: {e}");
+                        return ExitCode::from(1);
+                    }
+                };
+                let (stdin, mode, expected) = if raw.trim_start().starts_with('{') {
+                    match lykaon::trace::parse(&raw) {
+                        Ok(t) => {
+                            let source_hash = lykaon::trace::sha256_hex(source.as_bytes());
+                            if !t.program_sha256.is_empty() && t.program_sha256 != source_hash {
+                                eprintln!(
+                                    "Error: the trace was recorded for a different program (sha256 mismatch)."
+                                );
+                                return ExitCode::from(1);
+                            }
+                            let stdin = lykaon::trace::stdin_of(&t.events);
+                            let events = lykaon::trace::replay_events(t.events);
+                            (
+                                stdin,
+                                lykaon::TraceMode::Replay { events, pos: 0 },
+                                Some((t.exit, t.output_sha256)),
+                            )
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {e}");
+                            return ExitCode::from(1);
+                        }
+                    }
+                } else {
+                    (raw, lykaon::TraceMode::Off, None)
+                };
+                if stop_after > 0 {
+                    let (out, code, err) = run_big_until(
+                        source.clone(),
+                        file.clone(),
+                        stdin,
+                        mode,
+                        stop_after,
+                    );
+                    print!("{out}");
+                    let _ = std::io::Write::flush(&mut std::io::stdout());
+                    if let Some(e) = err {
+                        eprintln!("Error: {e}");
+                    }
+                    return ExitCode::from(code as u8);
+                }
+                let run = run_big_traced(
+                    source.clone(),
+                    file.clone(),
+                    stdin,
+                    mode,
+                    deterministic,
+                    seed,
+                    fuel.unwrap_or(0),
+                );
+                print!("{}", run.outcome.output);
+                let _ = std::io::Write::flush(&mut std::io::stdout());
+                if let Some((exit, hash)) = expected {
+                    let already_diverged = run.outcome.output.contains("Trace replay diverged");
+                    if !already_diverged {
+                        if lykaon::trace::sha256_hex(run.outcome.output.as_bytes()) != hash {
+                            eprintln!(
+                                "Error: Trace replay diverged: the output hash differs from the recording."
+                            );
+                            return ExitCode::from(1);
+                        }
+                        if run.replay_left > 0 {
+                            eprintln!(
+                                "Error: Trace replay diverged: {} recorded read(s) were not used.",
+                                run.replay_left
+                            );
+                            return ExitCode::from(1);
+                        }
+                        if run.outcome.exit != exit {
+                            eprintln!(
+                                "Error: Trace replay diverged: exit {} but the recording had {}.",
+                                run.outcome.exit, exit
+                            );
+                            return ExitCode::from(1);
+                        }
+                    }
+                }
+                return ExitCode::from(run.outcome.exit as u8);
+            }
+            if let Some(f) = fuel.filter(|_| interpret) {
+                // M5g item a: the interpreter budget path (an explicit
+                // --interpret). A native run takes the budget through
+                // native_run_tool and the codegen tick.
+                // run with a fuel budget on a large-stack worker.
+                let src = source.clone();
+                let f2 = file.clone();
+                let h = std::thread::Builder::new()
+                    .stack_size(256 * 1024 * 1024)
+                    .spawn(move || lykaon::run_source_budgeted(&src, &f2, "", f))
+                    .expect("spawn fuel worker");
+                let (out, code) = h.join().unwrap_or((String::new(), 1));
+                print!("{out}");
+                let _ = std::io::Write::flush(&mut std::io::stdout());
+                return ExitCode::from(code as u8);
+            }
+            if stop_after > 0 {
+                let (out, code, err) = run_big_until(
+                    source.clone(),
+                    file.clone(),
+                    String::new(),
+                    lykaon::TraceMode::Off,
+                    stop_after,
+                );
+                print!("{out}");
+                let _ = std::io::Write::flush(&mut std::io::stdout());
+                if let Some(e) = err {
+                    eprintln!("Error: {e}");
+                }
+                return ExitCode::from(code as u8);
+            }
             if !interpret {
                 // Native mode (M4-D17 default): compile, link with
                 // liblykaon_rt, and run the built program with the program's
                 // arguments (M4-S82). A missing native toolchain falls
                 // back to the interpreter with a note (the differential
                 // guarantee makes the two byte-identical).
-                match native_run_tool(&source, &file, native_mode.unwrap_or("debug"), &prog_args) {
+                match native_run_tool(
+                    &source,
+                    &file,
+                    native_mode.unwrap_or("debug"),
+                    &prog_args,
+                    fuel.unwrap_or(0),
+                ) {
                     Ok((code, out, err)) => {
                         print!("{out}");
                         let _ = std::io::Write::flush(&mut std::io::stdout());
@@ -139,11 +1120,44 @@ fn main() -> ExitCode {
             }
         }
         "test" => {
+            // M5-D15: lykaon test coverage [--min N]
+            if args.get(2).map(|s| s == "coverage").unwrap_or(false) {
+                let mut min = None;
+                let mut i = 3usize;
+                while i < args.len() {
+                    if args[i] == "--min" {
+                        if let Some(v) = args.get(i + 1).and_then(|v| v.parse::<f64>().ok()) {
+                            min = Some(v);
+                        }
+                        i += 2;
+                        continue;
+                    }
+                    i += 1;
+                }
+                return match lykaon::test_coverage::run(std::path::Path::new("."), min) {
+                    Ok(text) => { print!("{text}\n"); ExitCode::from(0) }
+                    Err(text) => { eprintln!("{text}"); ExitCode::from(1) }
+                };
+            }
             if args.len() < 3 {
                 eprintln!("usage: lykaon test <file>");
                 return ExitCode::from(2);
             }
             let file = &args[2];
+            // M5c: lykaon test <file> --json (additive; default text is
+            // unchanged).
+            if args.iter().any(|a| a == "--json") {
+                return match lykaon::m5c::test_json(file) {
+                    Ok(json) => {
+                        println!("{json}");
+                        ExitCode::from(0)
+                    }
+                    Err(e) => {
+                        eprintln!("{e}");
+                        ExitCode::from(1)
+                    }
+                };
+            }
             let source = match std::fs::read_to_string(file) {
                 Ok(s) => s,
                 Err(e) => {
@@ -246,6 +1260,21 @@ fn main() -> ExitCode {
             match std::fs::write(&toml, &out) {
                 Ok(()) => {
                     println!("Added dependency {folder}. Run lykaon update to write lykaon.lock.");
+                    // M5 Step 6: show the permissions the new dependency asks
+                    // for, so a person can review them before running it.
+                    if !packages::looks_like_git_url(folder) {
+                        if let Some(summary) =
+                            lykaon::sandbox::Sandbox::summarize_dir(std::path::Path::new(folder))
+                        {
+                            println!("{folder} requests permission for:\n{summary}");
+                        } else {
+                            println!("{folder} requests no special permissions.");
+                        }
+                    } else {
+                        println!(
+                            "Permissions for {folder} will be shown after lykaon update fetches it."
+                        );
+                    }
                     ExitCode::from(0)
                 }
                 Err(e) => {
@@ -432,7 +1461,7 @@ fn main() -> ExitCode {
                     .parent()
                     .unwrap_or(std::path::Path::new(".")),
             );
-            match lykaon::native_object(&source, input_file, mode) {
+            match lykaon::native_object(&source, input_file, mode, false) {
                 Ok((obj_bytes, kind, reports)) => {
                     let stem = std::path::Path::new(input_file)
                         .file_stem()
@@ -473,15 +1502,15 @@ fn main() -> ExitCode {
                     println!("built {stem} in {mode}");
                     match kind {
                         lykaon::codegen::LowerKind::Full => {
-                            println!("{output_file} — machine code (full scalar lowering)")
+                            println!("{output_file} â€” machine code (full scalar lowering)")
                         }
                         lykaon::codegen::LowerKind::Embedded { reason } => {
-                            println!("{output_file} — embedded evaluator: {reason}")
+                            println!("{output_file} â€” embedded evaluator: {reason}")
                         }
                     }
                     for r in &reports {
                         println!(
-                            "  optimizer: {} — {} change{}",
+                            "  optimizer: {} â€” {} change{}",
                             r.name,
                             r.changes,
                             if r.changes == 1 { "" } else { "s" }
@@ -493,6 +1522,83 @@ fn main() -> ExitCode {
                     // diagnostics print to the console like the interpreter's
                     print!("{}", f.message());
                     let _ = std::io::Write::flush(&mut std::io::stdout());
+                    ExitCode::from(1)
+                }
+            }
+        }
+        "run-many" => {
+            // M5g item g: compile once, run N times, report throughput.
+            //   lykaon run-many <file> [--runs N] [--warmup N] [--threads N]
+            //   [--fuel N] [--input TEXT] [--json]
+            let mut file: Option<String> = None;
+            let mut opts = lykaon::run_many::Options::default();
+            let mut json = false;
+            let mut i = 2usize;
+            while i < args.len() {
+                match args[i].as_str() {
+                    "--runs" => {
+                        opts.runs = args
+                            .get(i + 1)
+                            .and_then(|v| v.parse::<usize>().ok())
+                            .unwrap_or(opts.runs);
+                        i += 2;
+                    }
+                    "--warmup" => {
+                        opts.warmup = args
+                            .get(i + 1)
+                            .and_then(|v| v.parse::<usize>().ok())
+                            .unwrap_or(opts.warmup);
+                        i += 2;
+                    }
+                    "--threads" => {
+                        opts.threads = args
+                            .get(i + 1)
+                            .and_then(|v| v.parse::<usize>().ok())
+                            .unwrap_or(opts.threads);
+                        i += 2;
+                    }
+                    "--fuel" => {
+                        opts.fuel = args
+                            .get(i + 1)
+                            .and_then(|v| v.parse::<u64>().ok())
+                            .unwrap_or(opts.fuel);
+                        i += 2;
+                    }
+                    "--input" => {
+                        opts.input = args.get(i + 1).cloned().unwrap_or_default();
+                        i += 2;
+                    }
+                    "--json" => {
+                        json = true;
+                        i += 1;
+                    }
+                    other if other.starts_with("--") => i += 1,
+                    other => {
+                        file = Some(other.to_string());
+                        i += 1;
+                    }
+                }
+            }
+            let file = file.unwrap_or_else(|| "main.lykaon".to_string());
+            let source = match std::fs::read_to_string(&file) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: cannot read {file}: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            match lykaon::run_many::run(&source, &file, &opts) {
+                Ok(summary) => {
+                    if json {
+                        println!("{}", lykaon::run_many::json(&summary));
+                    } else {
+                        print!("{}", lykaon::run_many::report(&summary));
+                    }
+                    let _ = std::io::Write::flush(&mut std::io::stdout());
+                    ExitCode::from(0)
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
                     ExitCode::from(1)
                 }
             }

@@ -1,7 +1,7 @@
-//! Optimizer passes for Lykaon M3 (book section 12 / M3-D5).
+﻿//! Optimizer passes for Lykaon M3 (book section 12 / M3-D5).
 //!
 //! The passes run on the typed tree (`sem::Program`) in place, so both
-//! runners — the interpreter and the native code generator — can take the
+//! runners â€” the interpreter and the native code generator â€” can take the
 //! optimized program and the differential rule (native == interpreter byte
 //! for byte) stays intact by construction:
 //!
@@ -46,7 +46,7 @@ pub fn optimize_tree(prog: &mut Program, mode: &str) -> Vec<PassReport> {
     let mut reports = Vec::new();
     // The contract prover only READS the tree (it decides which Ensures
     // checks are provably always true), so it runs in every mode including
-    // debug — a proven check is skipped at run time in all modes (M3b-1).
+    // debug â€” a proven check is skipped at run time in all modes (M3b-1).
     reports.push(PassReport {
         name: "contract prover",
         changes: crate::prover::checks_removed(prog),
@@ -158,6 +158,8 @@ fn helper_walk_stmt_lists(st: &mut Stmt, cb: &mut dyn FnMut(&mut Vec<Stmt>)) {
         | Stmt::Use { .. }
         | Stmt::Close { .. }
         | Stmt::RemoveFirst { .. }
+        | Stmt::Limit { .. }
+        | Stmt::AskAssistant { .. }
         | Stmt::DefineEnum { .. }
         | Stmt::Define(_)
         | Stmt::Set { .. }
@@ -212,6 +214,23 @@ fn helper_walk_stmt_lists(st: &mut Stmt, cb: &mut dyn FnMut(&mut Vec<Stmt>)) {
         | Stmt::WsSend { .. }
         | Stmt::WsRecv { .. } => {}
         Stmt::Careful { body } => helper_walk_list(body, cb),
+        // M5 (Appendix L 7.1): a row loop walks its body.
+        Stmt::ForEachRow { body, .. } => helper_walk_list(body, cb),
+        Stmt::Transaction { body } => helper_walk_list(body, cb),
+        Stmt::LoadTable { .. }
+        | Stmt::SayData { .. }
+        | Stmt::SayGroup { .. }
+        | Stmt::SayRows { .. }
+        | Stmt::Plot { .. }
+        | Stmt::Predict { .. }
+        | Stmt::SayModel { .. }
+        | Stmt::SaveModel { .. }
+        | Stmt::OpenDatabase { .. }
+        | Stmt::LoadDatabase { .. }
+        | Stmt::DbAdd { .. }
+        | Stmt::DbRemove { .. }
+        | Stmt::DbSet { .. }
+        | Stmt::LoadModel { .. } => {}
         Stmt::WhenSignal { body, .. } | Stmt::ForEachInput { body, .. } => {
             helper_walk_list(body, cb);
         }
@@ -325,6 +344,38 @@ pub(crate) fn map_stmt_exprs(st: &mut Stmt, f: &mut dyn FnMut(&mut Expr)) {
         },
         Stmt::PageDecl { .. } | Stmt::WsRecv { .. } => {}
         Stmt::Careful { body } => go_list(body, f),
+        // M5 (Appendix L 7.1): a row loop walks its body; a rows sentence's
+        // where condition is an expression of the enclosing context.
+        Stmt::ForEachRow { body, .. } => go_list(body, f),
+        Stmt::SayRows { cond: Some(c), .. } => f(c),
+        Stmt::SayModel { items } => {
+            for item in items {
+                if let lykaon_core::sem::ModelItem::Prediction(pairs) = item {
+                    for (_, e) in pairs {
+                        f(e);
+                    }
+                }
+            }
+        }
+        Stmt::DbAdd { value, .. } => f(value),
+        Stmt::DbRemove { cond, .. } => f(cond),
+        Stmt::DbSet { value, cond, .. } => {
+            f(value);
+            f(cond);
+        }
+        Stmt::Transaction { body } => go_list(body, f),
+        Stmt::LoadTable { .. }
+        | Stmt::SayData { .. }
+        | Stmt::SayGroup { .. }
+        | Stmt::SayRows { cond: None, .. }
+        | Stmt::Plot { .. }
+        | Stmt::Predict { .. }
+        | Stmt::SaveModel { .. }
+        | Stmt::OpenDatabase { .. }
+        | Stmt::LoadDatabase { .. }
+        | Stmt::Limit { .. }
+        | Stmt::AskAssistant { .. }
+        | Stmt::LoadModel { .. } => {}
         Stmt::WhenSignal { body, .. } | Stmt::ForEachInput { body, .. } => go_list(body, f),
         // M4 (Appendix K): Send/AtomicAdd carry the value expression
         Stmt::Send { value, .. } | Stmt::AtomicAdd { value, .. } => f(value),
@@ -874,6 +925,8 @@ fn collect_stmt_reads(st: &Stmt, used: &mut HashSet<String>) {
         | Stmt::Use { .. }
         | Stmt::Close { .. }
         | Stmt::RemoveFirst { .. }
+        | Stmt::Limit { .. }
+        | Stmt::AskAssistant { .. }
         | Stmt::DefineEnum { .. } => {}
         Stmt::Define(d) => {
             collect_expr_reads(&d.expr, used);
@@ -918,6 +971,67 @@ fn collect_stmt_reads(st: &Stmt, used: &mut HashSet<String>) {
             collect_expr_reads(list, used);
             collect_stmts_reads(body, used);
         }
+        // M5 (Appendix L 7.1): the row loop's body and a rows sentence's
+        // where condition read names; the table names are values too.
+        Stmt::ForEachRow { table, body, .. } => {
+            used.insert(table.clone());
+            collect_stmts_reads(body, used);
+        }
+        Stmt::SayRows { table, cond, .. } => {
+            used.insert(table.clone());
+            if let Some(c) = cond {
+                collect_expr_reads(c, used);
+            }
+        }
+        Stmt::LoadTable { name, .. } => {
+            used.insert(name.clone());
+        }
+        Stmt::SayData { table, .. }
+        | Stmt::SayGroup { table, .. }
+        | Stmt::Plot { table, .. }
+        | Stmt::Predict { table, .. } => {
+            used.insert(table.clone());
+        }
+        Stmt::DbAdd { db, table, value } => {
+            used.insert(db.clone());
+            used.insert(table.clone());
+            collect_expr_reads(value, used);
+        }
+        Stmt::DbRemove { db, table, cond } => {
+            used.insert(db.clone());
+            used.insert(table.clone());
+            collect_expr_reads(cond, used);
+        }
+        Stmt::DbSet {
+            db,
+            table,
+            value,
+            cond,
+            ..
+        } => {
+            used.insert(db.clone());
+            used.insert(table.clone());
+            collect_expr_reads(value, used);
+            collect_expr_reads(cond, used);
+        }
+        Stmt::Transaction { body } => collect_stmts_reads(body, used),
+        Stmt::OpenDatabase { name, .. } => {
+            used.insert(name.clone());
+        }
+        Stmt::LoadDatabase { name, db } => {
+            used.insert(name.clone());
+            used.insert(db.clone());
+        }
+        Stmt::SayModel { items } => {
+            for item in items {
+                if let lykaon_core::sem::ModelItem::Prediction(pairs) = item {
+                    for (_, e) in pairs {
+                        collect_expr_reads(e, used);
+                    }
+                }
+            }
+        }
+        Stmt::SaveModel { .. } | Stmt::LoadModel { .. } => {}
         Stmt::Evaluate { expr, .. } => collect_expr_reads(expr, used),
         Stmt::Append { value, list } => {
             collect_expr_reads(value, used);
@@ -1609,7 +1723,7 @@ fn count_tail_nested(st: &Stmt, name: &str) -> usize {
 /// Scan for `ItemN`/`SafeItemN` with constant indices where the index is
 /// provably within the list's bounds. The scalar codegen does not lower
 /// list operations in M3 (they run through the evaluator), so this pass
-/// currently finds nothing to eliminate — but the analysis is in place
+/// currently finds nothing to eliminate â€” but the analysis is in place
 /// for when list lowering lands.
 fn eliminate_bounds_checks(prog: &mut Program) -> usize {
     let mut eliminated = 0;
@@ -1652,7 +1766,7 @@ fn eliminate_bounds_in_expr(e: &mut Expr) -> usize {
             // index check at run time: the access becomes the item itself
             // (ch.66: bounds-check elimination). The proof is sound only
             // when every part of the literal is a constant that cannot
-            // fail — evaluating exactly one part must behave like building
+            // fail â€” evaluating exactly one part must behave like building
             // the whole list and indexing it. Lists that are values at run
             // time (a list that lives in a name) stay checked.
             if let Some(item) = prove_literal_index(&e.e) {
@@ -1693,7 +1807,7 @@ fn prove_literal_index(e: &E) -> Option<Expr> {
 }
 
 /// Conservative "cannot fail": constant literals and literal lists/pairs of
-/// those. Arithmetic is excluded even when pure — a whole number run can
+/// those. Arithmetic is excluded even when pure â€” a whole number run can
 /// always overflow, and the checked item would have surfaced that failure
 /// before the index check the pass removes.
 fn expr_cannot_fail(e: &Expr) -> bool {

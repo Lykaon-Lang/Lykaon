@@ -1,0 +1,1728 @@
+{
+ "kind": "diagnostics",
+ "items": [
+  {
+   "id": "T0001",
+   "milestone": "M1a",
+   "name": "Tab in indentation",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0002",
+   "milestone": "M1a",
+   "name": "Odd indentation",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0003",
+   "milestone": "M1a",
+   "name": "Line too long",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0004",
+   "milestone": "M1a",
+   "name": "Nesting too deep",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0005",
+   "milestone": "M1a",
+   "name": "Stray period",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0006",
+   "milestone": "M1a",
+   "name": "Number spelled as letters",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0007",
+   "milestone": "M1a",
+   "name": "Symbol in code",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0008",
+   "milestone": "M1a",
+   "name": "Quote in code",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0009",
+   "milestone": "M1a",
+   "name": "Comma in code",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0010",
+   "milestone": "M1a",
+   "name": "Invalid character",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0011",
+   "milestone": "M1a",
+   "name": "Name starts with a digit",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0012",
+   "milestone": "M1a",
+   "name": "Missing final period",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0013",
+   "milestone": "M1a",
+   "name": "Empty sentence",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0014",
+   "milestone": "M1a",
+   "name": "Block opener without a block",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0015",
+   "milestone": "M1a",
+   "name": "Unexpected indent",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0016",
+   "milestone": "M1a",
+   "name": "Text missing",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0017",
+   "milestone": "M1a",
+   "name": "Nothing to print",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0018",
+   "milestone": "M1a",
+   "name": "File is not UTF-8",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0020",
+   "milestone": "M1a",
+   "name": "Extra blank lines",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0021",
+   "milestone": "M1a",
+   "name": "Trailing spaces",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0022",
+   "milestone": "M1a",
+   "name": "Sentence starts in lower case",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0023",
+   "milestone": "M1a",
+   "name": "Extra spaces",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0024",
+   "milestone": "M1a",
+   "name": "Mixed line endings",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0101",
+   "milestone": "M1a",
+   "name": "Hard word in a name",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0102",
+   "milestone": "M1a",
+   "name": "Blocked future word",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0103",
+   "milestone": "M1a",
+   "name": "Empty name",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0104",
+   "milestone": "M1a",
+   "name": "Article used as a name",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0106",
+   "milestone": "M1a",
+   "name": "Definition without is",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0107",
+   "milestone": "M1a",
+   "name": "Definition without a value",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0108",
+   "milestone": "M1a",
+   "name": "Value expected",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0109",
+   "milestone": "M1a",
+   "name": "Two operations in one sentence",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0110",
+   "milestone": "M1a",
+   "name": "No action word",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0112",
+   "milestone": "M1a",
+   "name": "Otherwise without If",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0113",
+   "milestone": "M1a",
+   "name": "Stop outside a loop",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0114",
+   "milestone": "M1a",
+   "name": "Skip outside a loop",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0115",
+   "milestone": "M1b",
+   "name": "Give back outside a function",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0116",
+   "milestone": "M3",
+   "name": "Hand back outside a function",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0117",
+   "milestone": "M2",
+   "name": "Pass failure up outside can fail",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0118",
+   "milestone": "M2",
+   "name": "Look at without When",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0119",
+   "milestone": "M2",
+   "name": "When in the wrong place",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0120",
+   "milestone": "M1a",
+   "name": "Ambiguous name",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0122",
+   "milestone": "M1a",
+   "name": "Bad repeat count",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0123",
+   "milestone": "M2",
+   "name": "Item 0",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0124",
+   "milestone": "M1a",
+   "name": "Question with nothing to check",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0126",
+   "milestone": "M1b",
+   "name": "Wrong number of inputs",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0128",
+   "milestone": "M1a",
+   "name": "Missing block",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0130",
+   "milestone": "M1a",
+   "name": "Two readings",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0131",
+   "milestone": "M1a",
+   "name": "And mixed with or",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0134",
+   "milestone": "M1a",
+   "name": "Number too large",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0140",
+   "milestone": "M1a",
+   "name": "That in the wrong place",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0141",
+   "milestone": "M1a",
+   "name": "Name in text by accident",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0142",
+   "milestone": "M1a",
+   "name": "Soft word shadowed",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0143",
+   "milestone": "M1b",
+   "name": "Long sentence",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0144",
+   "milestone": "M1b",
+   "name": "Unused name",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0145",
+   "milestone": "M1b",
+   "name": "Empty block",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0146",
+   "milestone": "M1b",
+   "name": "Identical branches",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0147",
+   "milestone": "M1b",
+   "name": "Magic number",
+   "severity": "Warning",
+   "status": "covered"
+  },
+  {
+   "id": "T0150",
+   "milestone": "M1a",
+   "name": "Unknown word",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0151",
+   "milestone": "M2",
+   "name": "Try on a sentence that cannot fail",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0152",
+   "milestone": "M2",
+   "name": "Recovery with no value",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0153",
+   "milestone": "M2",
+   "name": "Pattern word out of place",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0154",
+   "milestone": "M2",
+   "name": "Example outside About",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0155",
+   "milestone": "M2",
+   "name": "Pretend outside a test",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0156",
+   "milestone": "M2",
+   "name": "Check outside a test",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0157",
+   "milestone": "M3",
+   "name": "Function with no input",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0158",
+   "milestone": "M3",
+   "name": "Unknown dynamic kind",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0159",
+   "milestone": "M3",
+   "name": "Default without interface",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0160",
+   "milestone": "M3",
+   "name": "Contract not first",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0161",
+   "milestone": "M3",
+   "name": "Contract in a one-line function",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0162",
+   "milestone": "M3",
+   "name": "Unknown tag",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0163",
+   "milestone": "M3",
+   "name": "Generator mixed with Give back",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0164",
+   "milestone": "M3",
+   "name": "Limit names no interface",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0165",
+   "milestone": "M4",
+   "name": "When someone outside Serve",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0166",
+   "milestone": "M4",
+   "name": "Handler may not respond",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0167",
+   "milestone": "M4",
+   "name": "Handler responds twice",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0168",
+   "milestone": "M4",
+   "name": "Wait for something that is not a task",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0169",
+   "milestone": "M4",
+   "name": "Channel kind mismatch",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0170",
+   "milestone": "M4",
+   "name": "Bad address",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0171",
+   "milestone": "M4",
+   "name": "Bad path word, zone or program",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0172",
+   "milestone": "M4",
+   "name": "Template not found",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0173",
+   "milestone": "M4",
+   "name": "Unknown page",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0174",
+   "milestone": "M4",
+   "name": "Takes or Option not first",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0175",
+   "milestone": "M5",
+   "name": "Unknown column",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0177",
+   "milestone": "M5",
+   "name": "Which table",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0178",
+   "milestone": "M5",
+   "name": "No table loaded",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0179",
+   "milestone": "M5",
+   "name": "Target is not a column",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0180",
+   "milestone": "M5",
+   "name": "Wrong measure for the target",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0181",
+   "milestone": "M5",
+   "name": "Column name has a hard word",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0182",
+   "milestone": "M5",
+   "name": "Duplicate column",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0183",
+   "milestone": "M5",
+   "name": "Unknown model",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0184",
+   "milestone": "M5",
+   "name": "Column not numeric",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0185",
+   "milestone": "M5",
+   "name": "Not available on this target",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0186",
+   "milestone": "M5",
+   "name": "Large table",
+   "severity": "Warning",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0187",
+   "milestone": "M5",
+   "name": "Too few rows",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0188",
+   "milestone": "M5",
+   "name": "Nested transaction",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0189",
+   "milestone": "M6",
+   "name": "C stub not allowed",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0190",
+   "milestone": "M6",
+   "name": "C call outside Be careful",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0191",
+   "milestone": "M6",
+   "name": "Shared function needs kinds",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0192",
+   "milestone": "M6",
+   "name": "Layout phrases clash",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0194",
+   "milestone": "M7",
+   "name": "Kernel feature not allowed",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0195",
+   "milestone": "M7",
+   "name": "No graphics card",
+   "severity": "Warning",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0201",
+   "milestone": "M1b",
+   "name": "Defined twice",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0202",
+   "milestone": "M1b",
+   "name": "Names differ only in case",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0203",
+   "milestone": "M1b",
+   "name": "Name used outside its block",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0204",
+   "milestone": "M1b",
+   "name": "Changeable name seen in a function",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0205",
+   "milestone": "M1b",
+   "name": "Name not defined",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0206",
+   "milestone": "M1a",
+   "name": "Constant is not a literal",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0207",
+   "milestone": "M2",
+   "name": "Share of unknown name",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0208",
+   "milestone": "M2",
+   "name": "Name not shared",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0209",
+   "milestone": "M2",
+   "name": "Module not found",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0210",
+   "milestone": "M2",
+   "name": "Module cycle",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0212",
+   "milestone": "M2",
+   "name": "Two modules match",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0213",
+   "milestone": "M2",
+   "name": "Name shared twice",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0214",
+   "milestone": "M3",
+   "name": "Name captured twice by unique borrow",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0220",
+   "milestone": "M1b",
+   "name": "It too far back",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0221",
+   "milestone": "M1b",
+   "name": "It used for a list",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0222",
+   "milestone": "M1b",
+   "name": "Them used for one value",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0301",
+   "milestone": "M1b",
+   "name": "Quiet conversion",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0302",
+   "milestone": "M1b",
+   "name": "Whole with decimal",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0303",
+   "milestone": "M1b",
+   "name": "Kind cannot be told",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0304",
+   "milestone": "M1b",
+   "name": "Kind changed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0305",
+   "milestone": "M1b",
+   "name": "Wrong kind for the word",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0306",
+   "milestone": "M1b",
+   "name": "Comparing different kinds",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0307",
+   "milestone": "M2",
+   "name": "List items differ in kind",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0308",
+   "milestone": "M2",
+   "name": "Map key kind differs",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0309",
+   "milestone": "M2",
+   "name": "Part kind differs",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0310",
+   "milestone": "M2",
+   "name": "Maybe not checked",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0311",
+   "milestone": "M2",
+   "name": "Failure not handled",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0312",
+   "milestone": "M2",
+   "name": "Fallback of another kind",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0313",
+   "milestone": "M2",
+   "name": "Part missing",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0314",
+   "milestone": "M2",
+   "name": "Unknown part",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0315",
+   "milestone": "M2",
+   "name": "Variant parts differ",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0316",
+   "milestone": "M1b",
+   "name": "Input kind differs",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0317",
+   "milestone": "M1b",
+   "name": "Result kind differs",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0320",
+   "milestone": "M2",
+   "name": "Case not covered",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0321",
+   "milestone": "M2",
+   "name": "Duplicate When",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0322",
+   "milestone": "M2",
+   "name": "Unknown shape",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0323",
+   "milestone": "M3",
+   "name": "Interface not kept",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0324",
+   "milestone": "M3",
+   "name": "Limit not met",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0325",
+   "milestone": "M3",
+   "name": "Interface function missing",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0326",
+   "milestone": "M3",
+   "name": "Exact decimal with decimal",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0330",
+   "milestone": "M3",
+   "name": "Input kinds missing",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0331",
+   "milestone": "M3",
+   "name": "Result kind missing",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0332",
+   "milestone": "M2",
+   "name": "Fail in an ordinary function",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0334",
+   "milestone": "M4",
+   "name": "Task result taken twice",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0401",
+   "milestone": "M2",
+   "name": "Use after give",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0402",
+   "milestone": "M2",
+   "name": "Changed while read",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0403",
+   "milestone": "M2",
+   "name": "Two writers",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0404",
+   "milestone": "M2",
+   "name": "Read while changed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0405",
+   "milestone": "M2",
+   "name": "Temporary lent too long",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0406",
+   "milestone": "M2",
+   "name": "Fixed name changed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0407",
+   "milestone": "M2",
+   "name": "Lend to change of a fixed name",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0408",
+   "milestone": "M2",
+   "name": "Borrow in a record",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0409",
+   "milestone": "M2",
+   "name": "Borrow returned",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0410",
+   "milestone": "M2",
+   "name": "Given while borrowed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0411",
+   "milestone": "M2",
+   "name": "Cannot copy",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0412",
+   "milestone": "M2",
+   "name": "Shared value changed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0430",
+   "milestone": "M3",
+   "name": "Closure outlives borrow",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0431",
+   "milestone": "M3",
+   "name": "Unique closure copied",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0440",
+   "milestone": "M3",
+   "name": "Address outside Be careful",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0441",
+   "milestone": "M3",
+   "name": "Read at outside Be careful",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0442",
+   "milestone": "M3",
+   "name": "Write at outside Be careful",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0450",
+   "milestone": "M4",
+   "name": "Value crosses tasks unsafely",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0451",
+   "milestone": "M4",
+   "name": "Changeable name in a task",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0460",
+   "milestone": "M4",
+   "name": "Lock across a wait",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0462",
+   "milestone": "M4",
+   "name": "Task outlives its block",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0501",
+   "milestone": "M3",
+   "name": "No package file",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0502",
+   "milestone": "M3",
+   "name": "Unknown package",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0503",
+   "milestone": "M3",
+   "name": "Version not found",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0504",
+   "milestone": "M3",
+   "name": "Major versions clash",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0505",
+   "milestone": "M3",
+   "name": "Lock file out of date",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0506",
+   "milestone": "M3",
+   "name": "Permission not granted",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0507",
+   "milestone": "M3",
+   "name": "Checksum mismatch",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0508",
+   "milestone": "M3",
+   "name": "Unsupported target",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0509",
+   "milestone": "M1a",
+   "name": "Feature arrives later",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0510",
+   "milestone": "M3",
+   "name": "Dependency cycle",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0511",
+   "milestone": "M3",
+   "name": "Wrong edition",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0512",
+   "milestone": "M3",
+   "name": "Publish refused",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0513",
+   "milestone": "M3",
+   "name": "Package has no name",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0514",
+   "milestone": "M3",
+   "name": "Bad version",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0515",
+   "milestone": "M3",
+   "name": "Dependency folder wrong",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0516",
+   "milestone": "M3",
+   "name": "Lock file damaged",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0517",
+   "milestone": "M3",
+   "name": "Generic grows without end",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0518",
+   "milestone": "M3",
+   "name": "Unknown permission",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0519",
+   "milestone": "M3",
+   "name": "Overflow folded at build time",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0520",
+   "milestone": "M4",
+   "name": "Git dependency failed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0521",
+   "milestone": "M4",
+   "name": "Certificate checks skipped outside Be careful",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0522",
+   "milestone": "M5",
+   "name": "Database failed to open",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0523",
+   "milestone": "M5",
+   "name": "Migration failed",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0525",
+   "milestone": "M6",
+   "name": "C library not found",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0526",
+   "milestone": "M6",
+   "name": "Installer tool missing",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0527",
+   "milestone": "M7",
+   "name": "Android tools missing",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0528",
+   "milestone": "M7",
+   "name": "iOS needs a Mac",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0529",
+   "milestone": "M7",
+   "name": "Device file wrong",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0601",
+   "milestone": "M2",
+   "name": "Item out of range",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0602",
+   "milestone": "M3",
+   "name": "Contract failed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0603",
+   "milestone": "M1b",
+   "name": "Whole overflow",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0604",
+   "milestone": "M1b",
+   "name": "Whole division by zero",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0605",
+   "milestone": "M2",
+   "name": "Check failed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0606",
+   "milestone": "M2",
+   "name": "Impossible shape",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0607",
+   "milestone": "M1b",
+   "name": "Stack overflow",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0608",
+   "milestone": "M2",
+   "name": "Invariant broken",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0609",
+   "milestone": "M4",
+   "name": "Send on closed channel",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0610",
+   "milestone": "M4",
+   "name": "Deadlock",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0611",
+   "milestone": "M5",
+   "name": "Memory limit passed",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0612",
+   "milestone": "M5",
+   "name": "Time limit passed",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0613",
+   "milestone": "M2",
+   "name": "Remove from empty queue",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0614",
+   "milestone": "M2",
+   "name": "Property failed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0615",
+   "milestone": "M2",
+   "name": "Array item never set",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0616",
+   "milestone": "M4",
+   "name": "Handler stopped",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0617",
+   "milestone": "M4",
+   "name": "Format decode failed",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0618",
+   "milestone": "M4",
+   "name": "Port in use",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0619",
+   "milestone": "M4",
+   "name": "Certificate refused",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0620",
+   "milestone": "M4",
+   "name": "Impossible date",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0621",
+   "milestone": "M5",
+   "name": "Model file damaged",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0622",
+   "milestone": "M5",
+   "name": "Sandbox refused",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0623",
+   "milestone": "M7",
+   "name": "Out of memory",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0701",
+   "milestone": "M6",
+   "name": "Picture without description",
+   "severity": "Warning",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0702",
+   "milestone": "M6",
+   "name": "Unknown theme",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0703",
+   "milestone": "M6",
+   "name": "Unknown colour size or shape",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0704",
+   "milestone": "M6",
+   "name": "Show outside a screen",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0705",
+   "milestone": "M6",
+   "name": "Event on unknown item",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0706",
+   "milestone": "M6",
+   "name": "Field without a state name",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0707",
+   "milestone": "M6",
+   "name": "Not a style sentence",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0708",
+   "milestone": "M6",
+   "name": "Unknown screen",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0710",
+   "milestone": "M6",
+   "name": "Cannot show this kind",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0711",
+   "milestone": "M6",
+   "name": "Unknown theme",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0713",
+   "milestone": "M6",
+   "name": "Picture file missing",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0714",
+   "milestone": "M6",
+   "name": "Two buttons with one text",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0715",
+   "milestone": "M6",
+   "name": "State changed by a task",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0716",
+   "milestone": "M7",
+   "name": "Every frame misplaced",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0717",
+   "milestone": "M7",
+   "name": "Unknown key",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0718",
+   "milestone": "M7",
+   "name": "Sound file missing",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0719",
+   "milestone": "M7",
+   "name": "No game area",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0801",
+   "milestone": "M7",
+   "name": "Needs the standard library",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0802",
+   "milestone": "M7",
+   "name": "No heap",
+   "severity": "Error",
+   "status": "reserved",
+   "note": "reserved: gives T0509"
+  },
+  {
+   "id": "T0901",
+   "milestone": "M1a",
+   "name": "Internal error",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0902",
+   "milestone": "M3",
+   "name": "Backend disagrees",
+   "severity": "Error",
+   "status": "covered"
+  },
+  {
+   "id": "T0903",
+   "milestone": "M1b",
+   "name": "Cache damaged",
+   "severity": "Error",
+   "status": "covered"
+  }
+ ]
+}

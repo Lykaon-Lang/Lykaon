@@ -1,4 +1,4 @@
-# The Lykaon command line (v0.1)
+# The Lykaon command line (v0.2)
 
 Two programs come with a release:
 

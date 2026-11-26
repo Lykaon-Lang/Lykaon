@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_check_postfix/input.lykaon, line 2: Check that first 2 of numbers sorted is 5.
+                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the first 2 of numbers, sorted, or the first 2 of numbers sorted.
+Fix: Split it into two sentences.
+

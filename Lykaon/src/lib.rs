@@ -1,29 +1,56 @@
-//! Lykaon compiler - M1a (syntax only).
+﻿//! Lykaon compiler - M1a (syntax only).
 //! Lexer, sentence splitter, name pre-scan, parser, formatter, M1a diagnostics.
 
 pub mod cli;
 pub mod codegen;
 pub mod coverage_map;
+pub mod agent;
+pub mod audit;
+pub mod dap;
+pub mod diag_json;
 pub mod diagnostics;
+pub mod docgen;
+pub mod fix;
 pub mod formatter;
+pub mod grammar;
+pub mod test_coverage;
 pub mod interp;
+pub mod isolate;
 pub mod lexer;
+pub mod lint;
 pub mod linker;
+pub mod lsp;
+pub mod m5c;
+pub mod mutation;
 pub mod optimizer;
+pub mod outline;
 pub mod packages;
 pub mod parser;
 pub mod pre_scan;
+pub mod profile;
 pub mod prover;
 pub mod sem;
+pub mod supplement;
+pub mod serve;
+pub mod setup;
+pub mod run_many;
+pub mod sbom;
 pub mod splitter;
+pub mod snapshot;
+pub mod trace;
 pub mod wpo;
 
 // The MIR block graph lives in lykaon-core (the generator suspension runs it);
 // the name stays available here for the M1b callers of compile_mir.
+pub use lykaon_core::alloc;
+pub use lykaon_core::db;
+pub use lykaon_core::migrate;
 pub use lykaon_core::mir;
+pub use lykaon_core::trace::{TraceEvent, TraceMode};
 // M4-8 (Appendix K 7.10/7.11): the tool-argument parser and the signal
 // flags are lykaon-core items; the runner and the built program use them.
 pub use lykaon_core::args;
+pub use lykaon_core::sandbox;
 pub use lykaon_core::signals;
 
 use std::path::{Path, PathBuf};
@@ -32,6 +59,14 @@ use std::path::{Path, PathBuf};
 
 /// Check a source file: lex, split into sentences, pre-scan names, parse.
 /// Returns the diagnostic output text and whether the check succeeded (no errors).
+/// M5c: the structured diagnostics for a source file (not just the text).
+pub fn check_diagnostics(source: &str, file_name: &str) -> Vec<diagnostics::Diagnostic> {
+    match compile(source, file_name) {
+        Compiled::Diags(d) => d,
+        Compiled::Ready(_) => Vec::new(),
+    }
+}
+
 pub fn check_source(source: &str, file_name: &str) -> (String, bool) {
     let diagnostics = check_source_diagnostics(source, file_name);
     let has_error = diagnostics
@@ -39,6 +74,15 @@ pub fn check_source(source: &str, file_name: &str) -> (String, bool) {
         .any(|d| d.severity == diagnostics::Severity::Error);
     let out = diagnostics
         .iter()
+        // Notes and Help are supplementary: plain `check` shows only the
+        // Error/Warning lines (so ordinary output stays stable), while
+        // `check --suggest` and `check --json` include them.
+        .filter(|d| {
+            matches!(
+                d.severity,
+                diagnostics::Severity::Error | diagnostics::Severity::Warning
+            )
+        })
         .map(|d| d.to_string())
         .collect::<Vec<_>>()
         .join("\n");
@@ -173,7 +217,7 @@ pub fn compile_tree(
 }
 
 /// Compile to the old MIR graph (kept for M1b callers; M3's optimizer runs
-/// on the typed tree instead, see `optimizer::optimize_tree` — the MIR
+/// on the typed tree instead, see `optimizer::optimize_tree` â€” the MIR
 /// graph stays the fresh build here).
 pub fn compile_mir(
     source: &str,
@@ -506,6 +550,152 @@ pub fn run_source_budgeted(
     }
 }
 
+/// M5g item f: the resource outcome of one source run. Additive: the older
+/// `run_source*` functions still return just (output, exit).
+#[derive(Clone, Debug, PartialEq)]
+pub struct RunOutcome {
+    /// The program output; a printed failure keeps its trailing line feed.
+    pub output: String,
+    /// Process exit code (the `Exit with N.` code, or 1).
+    pub exit: i32,
+    /// Why the run ended (`ok`, `compile`, `fuel`, `time`, ...).
+    pub reason: crate::interp::ExitReason,
+    /// Sentences executed (0 when the source did not compile).
+    pub fuel_used: u64,
+    /// Peak live allocation above this run's baseline, in bytes. A run that
+    /// never rises above the process baseline reports 0.
+    pub peak_alloc_bytes: u64,
+    /// M5g item f: the permissions the run used (`file ...`, `host ...`,
+    /// `env ...`, `processes N`), empty when no sandbox was active.
+    pub permissions_used: Vec<String>,
+}
+
+/// M5g item c: a traced run's outcome and recorded events.
+pub struct TracedRun {
+    pub outcome: RunOutcome,
+    /// Outside-world reads in execution order (empty unless recording).
+    pub events: Vec<lykaon_core::trace::TraceEvent>,
+    /// Recorded events a replay never consumed (0 on a clean replay).
+    pub replay_left: usize,
+}
+
+/// Same as run_source_budgeted_metered, also recording or replaying the
+/// outside-world reads (M5g item c).
+pub fn run_source_traced(
+    source: &str,
+    file_name: &str,
+    stdin_text: &str,
+    budget: u64,
+    trace: lykaon_core::trace::TraceMode,
+    deterministic: bool,
+    seed: u64,
+) -> TracedRun {
+    let baseline = lykaon_core::alloc::reset_peak();
+    let peak_now = || (lykaon_core::alloc::peak().saturating_sub(baseline)) as u64;
+    match compile(source, file_name) {
+        Compiled::Diags(diags) => {
+            let out = diags
+                .iter()
+                .map(|d| d.to_string())
+                .collect::<Vec<_>>()
+                .join("\n");
+            TracedRun {
+                outcome: RunOutcome {
+                    output: if out.is_empty() { String::new() } else { out + "\n" },
+                    exit: 1,
+                    reason: crate::interp::ExitReason::Compile,
+                    fuel_used: 0,
+                    peak_alloc_bytes: peak_now(),
+                    permissions_used: Vec::new(),
+                },
+                events: Vec::new(),
+                replay_left: 0,
+            }
+        }
+        Compiled::Ready(program) => {
+            let (result, _ranges, fuel_used, events, replay_left, permissions_used) =
+                interp::run_budgeted_streams_traced(
+                    &program,
+                    stdin_text,
+                    budget,
+                    &[],
+                    true,
+                    trace,
+                    deterministic,
+                    seed,
+                );
+            let peak_alloc_bytes = peak_now();
+            let outcome = match result {
+                Ok(out) => RunOutcome {
+                    output: out,
+                    exit: 0,
+                    reason: crate::interp::ExitReason::Ok,
+                    fuel_used,
+                    peak_alloc_bytes,
+                    permissions_used,
+                },
+                Err(e) => RunOutcome {
+                    output: if e.message.is_empty() {
+                        e.out
+                    } else {
+                        format!("{}\n", e.message)
+                    },
+                    exit: e.code,
+                    reason: e.reason,
+                    fuel_used,
+                    peak_alloc_bytes,
+                    permissions_used,
+                },
+            };
+            TracedRun {
+                outcome,
+                events,
+                replay_left,
+            }
+        }
+    }
+}
+
+/// Same as run_source_budgeted_metered.
+pub fn run_source_budgeted_metered(
+    source: &str,
+    file_name: &str,
+    stdin_text: &str,
+    budget: u64,
+) -> RunOutcome {
+    let (deterministic, seed) = lykaon_core::trace::env_config();
+    run_source_traced(
+        source,
+        file_name,
+        stdin_text,
+        budget,
+        lykaon_core::trace::TraceMode::Off,
+        deterministic,
+        seed,
+    )
+    .outcome
+}
+
+/// Same as run_source, also reporting the resource outcome.
+pub fn run_source_metered(source: &str, file_name: &str, stdin_text: &str) -> RunOutcome {
+    run_source_budgeted_metered(source, file_name, stdin_text, 0)
+}
+
+/// M5c: run a source with sentence tracing on, returning the program output,
+/// the collected trace lines and the exit code. The trace is a real record of
+/// the sentences the interpreter executed (not a static estimate).
+pub fn run_source_trace(
+    source: &str,
+    file_name: &str,
+    stdin_text: &str,
+) -> (String, Vec<String>, i32) {
+    lykaon_core::interp::enable_trace();
+    let (out, code) = run_source(source, file_name, stdin_text);
+    let trace = lykaon_core::interp::take_trace();
+    lykaon_core::interp::disable_trace();
+    (out, trace, code)
+}
+
 /// M4-8 (Appendix K 7.11): run with the tool's own arguments. The Takes
 /// and Option values are parsed against the program's declarations
 /// (M4-S82): `help`/`--help` first gives the usage text and exit 0
@@ -584,9 +774,14 @@ pub fn run_source_tool_streams(
     }
 }
 
-/// Format source to the canonical layout.
-pub fn format_source(source: &str) -> String {
-    formatter::format(source)
+/// Format source to the canonical layout, or return the layout errors that
+/// make the file unsafe to format. This is the checked formatter used by
+/// `lykaon fmt`, the language server and the conformance tests.
+pub fn try_format_source(
+    source: &str,
+    file_name: &str,
+) -> Result<String, Vec<diagnostics::Diagnostic>> {
+    formatter::try_format(source, file_name)
 }
 
 /// Compile a source file to a native object file, reporting which lowering
@@ -598,6 +793,7 @@ pub fn native_object(
     source: &str,
     file_name: &str,
     mode: &str,
+    meter: bool,
 ) -> Result<(Vec<u8>, codegen::LowerKind, Vec<optimizer::PassReport>), NativeFail> {
     match compile(source, file_name) {
         Compiled::Diags(diags) => {
@@ -616,7 +812,7 @@ pub fn native_object(
             // fast and small builds run the typed-tree passes first
             // (M3-D6); debug keeps the freshly compiled tree
             let reports = optimizer::optimize_tree(&mut prog, mode);
-            codegen::Codegen::build_object(source, &prog, mode)
+            codegen::Codegen::build_object(source, &prog, mode, meter)
                 .map(|(obj, kind)| (obj, kind, reports))
                 .map_err(NativeFail::Tool)
         }
@@ -656,7 +852,7 @@ pub fn native_run_captured(
     file_name: &str,
     mode: &str,
 ) -> Result<(i32, String), NativeFail> {
-    let (obj, _kind, _reports) = native_object(source, file_name, mode)?;
+    let (obj, _kind, _reports) = native_object(source, file_name, mode, false)?;
     // parallel worker threads of one test process share its pid: a global
     // counter keeps the object and exe file names unique
     static CALL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -709,8 +905,9 @@ pub fn native_run_tool(
     file_name: &str,
     mode: &str,
     argv: &[String],
+    fuel: u64,
 ) -> Result<(i32, String, String), NativeFail> {
-    let (obj, _kind, _reports) = native_object(source, file_name, mode)?;
+    let (obj, _kind, _reports) = native_object(source, file_name, mode, fuel > 0)?;
     static CALL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let n = CALL.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let tmp = std::env::temp_dir();
@@ -727,12 +924,18 @@ pub fn native_run_tool(
         .and_then(|rt_lib| linker::link(&obj_path, &rt_lib, &exe_path).map_err(NativeFail::Tool))
         .and_then(|()| {
             let mut cmd = std::process::Command::new(&exe_path);
-            if let Some(dir) = std::path::Path::new(file_name).parent() {
-                if !dir.as_os_str().is_empty() {
-                    cmd.current_dir(dir);
-                }
-            }
+            // Run in the caller's working directory (do NOT switch to the
+            // source folder): the embedded source_dir is the path the
+            // compiler was given, relative to the caller's cwd, so changing
+            // cwd here would break every source-relative file lookup. This
+            // also matches the interpreter (`lykaon run --interpret`), so
+            // native and interpreted runs resolve files identically.
             cmd.env("LYKAON_TOOL_NAME", &tool_name).args(argv);
+            // M5g item a: the built program reads the sentence budget from
+            // the environment (0 = unlimited, the default).
+            if fuel > 0 {
+                cmd.env("LYKAON_FUEL", fuel.to_string());
+            }
             // the built program reads the caller's standard input (a
             // terminal person answers an Ask, M4-S86; a piped one feeds
             // the input reads) - output captures only out and err
@@ -763,7 +966,7 @@ pub fn native_compile_to_exe(
     out_dir: &Path,
 ) -> Result<(PathBuf, f64), NativeFail> {
     let start = std::time::Instant::now();
-    let (obj, _kind, _reports) = native_object(source, file_name, mode)?;
+    let (obj, _kind, _reports) = native_object(source, file_name, mode, false)?;
     static CALL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let n = CALL.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let obj_path = out_dir.join(format!("lykaon_bench_{}_{}.obj", std::process::id(), n));

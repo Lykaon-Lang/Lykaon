@@ -848,6 +848,9 @@ fn verdict(e: &Expr, st: &State) -> Verdict {
 
 fn eval_rng(e: &Expr, st: &State, depth: usize) -> Rng {
     match &e.e {
+        // M5-S31 vectors are outside the interval prover's language.
+        E::Vector(_) | E::Dot(_, _) | E::Norm(_) => None,
+        E::Encrypt(_, _) | E::Decrypt(_, _) | E::RandomKey | E::KeyFrom(_) => None,
         E::Whole(w) => Some(singleton(Rat::whole(*w), false)),
         E::Dec(x) => Rat::from_f64(*x).map(|v| singleton(v, true)),
         E::Name(n) => st.names.get(n).map(|iv| {
@@ -1006,6 +1009,12 @@ fn deepbump(depth: usize) -> usize {
 
 pub fn children(e: &Expr) -> Vec<&Expr> {
     match &e.e {
+        E::Vector(items) => items.iter().collect(),
+        E::Dot(a, b) => vec![a, b],
+        E::Norm(a) => vec![a],
+        E::Encrypt(a, b) | E::Decrypt(a, b) => vec![a, b],
+        E::KeyFrom(a) => vec![a],
+        E::RandomKey => vec![],
         E::Neg(x) | E::Round(x, _) | E::Factorial(x) | E::CountIn(x) | E::Lower(x) | E::Upper(x)
         | E::Trimmed(x) | E::Normalized(x) | E::AsWhole(x) | E::AsDecimal(x) | E::AsBig(x)
         | E::AsText(x) | E::AsNumber(x) | E::AsMaybe(x) | E::CopyOf(x) | E::Move(x) | E::Share(x)
@@ -1244,6 +1253,26 @@ fn scan_stmts(stmts: &[sem::Stmt], st: &mut State, gave: &mut bool) {
             | sem::Stmt::WhenLive { body, .. } => scan_stmts(body, st, gave),
             sem::Stmt::Respond { .. } | sem::Stmt::PageDecl { .. } | sem::Stmt::WsSend { .. } => {}
             sem::Stmt::Careful { body } => scan_stmts(body, st, gave),
+            // M5 (Appendix L 7.1): a row loop walks its body; the data
+            // sentences write no analyzed name.
+            sem::Stmt::ForEachRow { body, .. } => scan_stmts(body, st, gave),
+            sem::Stmt::LoadTable { .. }
+            | sem::Stmt::SayData { .. }
+            | sem::Stmt::SayGroup { .. }
+            | sem::Stmt::SayRows { .. }
+            | sem::Stmt::Plot { .. }
+            | sem::Stmt::Predict { .. }
+            | sem::Stmt::SayModel { .. }
+            | sem::Stmt::SaveModel { .. }
+            | sem::Stmt::OpenDatabase { .. }
+            | sem::Stmt::LoadDatabase { .. }
+            | sem::Stmt::DbAdd { .. }
+            | sem::Stmt::DbRemove { .. }
+            | sem::Stmt::DbSet { .. }
+            | sem::Stmt::Limit { .. }
+            | sem::Stmt::AskAssistant { .. }
+            | sem::Stmt::LoadModel { .. } => {}
+            sem::Stmt::Transaction { body } => scan_stmts(body, st, gave),
             sem::Stmt::If { branches, other } => {
                 for (_, b) in branches {
                     scan_stmts(b, st, gave);
@@ -1372,6 +1401,26 @@ fn scan_stmts(stmts: &[sem::Stmt], st: &mut State, gave: &mut bool) {
             | sem::Stmt::WhenLive { body, .. } => scan_stmts(body, st, gave),
             sem::Stmt::Respond { .. } | sem::Stmt::PageDecl { .. } | sem::Stmt::WsSend { .. } => {}
             sem::Stmt::Careful { body } => scan_stmts(body, st, gave),
+            // M5 (Appendix L 7.1): a row loop walks its body; the data
+            // sentences write no analyzed name.
+            sem::Stmt::ForEachRow { body, .. } => scan_stmts(body, st, gave),
+            sem::Stmt::LoadTable { .. }
+            | sem::Stmt::SayData { .. }
+            | sem::Stmt::SayGroup { .. }
+            | sem::Stmt::SayRows { .. }
+            | sem::Stmt::Plot { .. }
+            | sem::Stmt::Predict { .. }
+            | sem::Stmt::SayModel { .. }
+            | sem::Stmt::SaveModel { .. }
+            | sem::Stmt::OpenDatabase { .. }
+            | sem::Stmt::LoadDatabase { .. }
+            | sem::Stmt::DbAdd { .. }
+            | sem::Stmt::DbRemove { .. }
+            | sem::Stmt::DbSet { .. }
+            | sem::Stmt::Limit { .. }
+            | sem::Stmt::AskAssistant { .. }
+            | sem::Stmt::LoadModel { .. } => {}
+            sem::Stmt::Transaction { body } => scan_stmts(body, st, gave),
             sem::Stmt::WhenSignal { body, .. } => scan_stmts(body, st, gave),
             sem::Stmt::ForEachInput { var, body, .. } => {
                 st.names.remove(var);

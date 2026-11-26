@@ -1,4 +1,4 @@
-//! Sentence splitter: one sentence per line, indented blocks (Ch.3, p.20).
+﻿//! Sentence splitter: one sentence per line, indented blocks (Ch.3, p.20).
 //! Produces lexing diagnostics (T0001-T0024).
 
 use crate::diagnostics::Diagnostic;
@@ -693,7 +693,7 @@ fn to_has_inline_give(text: &str) -> bool {
     // "block": [_to, name, (input), (with input)...] then optional "give x".
     // block simple: "give" appears after the first input.
     // "with" separates further inputs, so the give (if any) is the last cluster;
-    // easiest: any "give" that is not the word "gives"…
+    // easiest: any "give" that is not the word "gives"â€¦
     // "to double n give n times 2." -> give at position 3.
     // A block function never has give on the To line.
     words
@@ -762,7 +762,7 @@ fn can_open_block(text: &str) -> bool {
         .trim_end_matches('.')
         .to_ascii_lowercase();
     match first.as_str() {
-        "if" | "otherwise" | "repeat" | "for" | "try" | "look"
+        "about" | "example" | "if" | "otherwise" | "repeat" | "for" | "try" | "look"
         | "careful" | "together" | "start" | "test" | "about" | "to"
         // a When block of a Look at holds its body (ch.21)
         | "when" => true,
@@ -784,12 +784,17 @@ fn can_open_block(text: &str) -> bool {
             let second = text.split_whitespace().nth(1).unwrap_or("").trim_end_matches('.');
             second.eq_ignore_ascii_case("lines")
         }
-        // M4 (Appendix K): only "Do these together." opens a block.
+        // M4 (Appendix K): "Do these together." opens a block; M5-G30:
+        // "Do these all or none." opens a transaction block.
         "do" => {
             let ws: Vec<&str> = text.split_whitespace().collect();
             ws.len() >= 3
                 && ws[1].trim_end_matches('.').eq_ignore_ascii_case("these")
-                && ws[2].trim_end_matches('.').eq_ignore_ascii_case("together")
+                && (ws[2].trim_end_matches('.').eq_ignore_ascii_case("together")
+                    || (ws.len() >= 5
+                        && ws[2].trim_end_matches('.').eq_ignore_ascii_case("all")
+                        && ws[3].trim_end_matches('.').eq_ignore_ascii_case("or")
+                        && ws[4].trim_end_matches('.').eq_ignore_ascii_case("none")))
         }
         // M4-4 (Appendix K 7.3/7.4): the timer, stream and spread lines can
         // hold indented bodies (the semantic layer reports wrong shapes).

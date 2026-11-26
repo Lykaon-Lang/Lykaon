@@ -3,7 +3,7 @@ members = [".", "core", "rt"]
 
 [package]
 name = "lykaon"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 # The two command-line fronts, renamed so the GUI can own the short names:
@@ -42,9 +42,17 @@ flate2 = "1"
 # Unknown. OFF by default: the plain `cargo build` never touches Z3.
 z3 = { version = "0.12", optional = true }
 
+# M5g item e: the POSIX rlimits (`RLIMIT_AS`, `RLIMIT_CPU`) the --isolate
+# wrapper applies to the child on Linux. Not built on Windows.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [features]
-default = ["tls"]
+default = ["tls", "sqlite", "crypto"]
 smt = ["dep:z3"]
 tls = ["lykaon-core/tls"]
+sqlite = ["lykaon-core/sqlite"]
+crypto = ["lykaon-core/crypto"]
 
 [dev-dependencies]
+lykaon-core = { path = "core" }

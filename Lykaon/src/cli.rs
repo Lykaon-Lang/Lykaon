@@ -26,8 +26,16 @@ pub fn run_interpreter(source: String, file: String, prog_args: Vec<String>) -> 
     // calls, which a 1 MB main-thread stack cannot hold in debug builds.
     // Run it on a roomy worker thread.
     let (tx, rx) = std::sync::mpsc::channel::<(String, Vec<(usize, usize)>, i32)>();
+    // M5g item e: an isolated child under a memory cap cannot reserve the
+    // full 256 MB stack (the reservation counts against a cgroup / rlimit),
+    // so `--isolate` asks for a smaller one. Unset, it stays 256 MB.
+    let stack_mb = std::env::var("LYKAON_STACK_MB")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .filter(|n| *n > 0)
+        .unwrap_or(256);
     let h = std::thread::Builder::new()
-        .stack_size(256 * 1024 * 1024)
+        .stack_size(stack_mb * 1024 * 1024)
         .spawn(move || {
             let (out, ranges, code) = crate::run_source_tool_streams(
                 &source,
@@ -58,10 +66,44 @@ pub fn run_interpreter(source: String, file: String, prog_args: Vec<String>) -> 
 
 /// The REPL session (M1b): one sentence at a time; a block opener waits
 /// for its indented body; quit. ends. The lykaon front's repl.
+/// Run one REPL candidate and commit or roll back the session.
+fn repl_eval(candidate: String, committed: &mut String, text: &mut String, printed: &mut usize) {
+    let (out, code) = crate::run_source(&candidate, "repl", "");
+    if code == 0 {
+        *text = candidate.clone();
+        *committed = candidate;
+        *printed = print_new_tail(&out, *printed);
+    } else {
+        *printed = print_new_tail(&out, *printed);
+        *text = committed.clone();
+    }
+    if !out.ends_with('\n') {
+        println!();
+    }
+    let _ = std::io::Write::flush(&mut std::io::stdout());
+}
+
+/// The REPL session (M1b): one sentence at a time, or a pasted program.
+/// A block opener waits for its indented body; a blank line or a line at the
+/// left margin closes the block and runs the whole buffer. quit. ends.
+/// Run the REPL session on a large-stack worker: the evaluator recurses per
+/// nested call, so a pasted function can overflow the default main-thread
+/// stack. If the worker cannot start, fall back to the current thread.
 pub fn repl_session() -> ExitCode {
+    match std::thread::Builder::new()
+        .stack_size(256 * 1024 * 1024)
+        .spawn(repl_session_inner)
+    {
+        Ok(handle) => handle.join().unwrap_or(ExitCode::from(1)),
+        Err(_) => repl_session_inner(),
+    }
+}
+
+fn repl_session_inner() -> ExitCode {
     use std::io::Write;
-    println!("Lykaon - type one sentence and press Enter. quit. ends.");
+    println!("Lykaon - type a sentence, or paste a whole program, then press Enter.");
     println!("A block opener (If ..., To ..., ...) waits for its indented body.");
+    println!("A blank line or a line at the left margin finishes the block.");
     // the session's committed program: everything that ran successfully
     let mut committed = String::new();
     // what is being typed right now (committed + unfinished lines)
@@ -78,22 +120,49 @@ pub fn repl_session() -> ExitCode {
         let _ = std::io::stdout().flush();
         let mut line = String::new();
         match std::io::stdin().read_line(&mut line) {
-            Ok(0) => break, // end of input
+            Ok(0) => {
+                // end of input: run a pasted block that ended inside its body
+                if !text.trim().is_empty() {
+                    let candidate = if text.ends_with('\n') {
+                        text.clone()
+                    } else {
+                        format!("{text}\n")
+                    };
+                    repl_eval(candidate, &mut committed, &mut text, &mut printed);
+                }
+                break; // end of input
+            }
             Ok(_) => {}
             Err(_) => break,
         }
         let t = line.trim_end();
         let trimmed = t.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
         if trimmed == "quit." || trimmed == "quit" || trimmed == "exit." || trimmed == "exit" {
             break;
         }
-        let candidate = format!("{text}{}\n", t);
-        // keep the prompt open while the sentence has no period yet or a
-        // block opener has no indented body under it (T0014)
-        let incomplete = !trimmed.ends_with('.') || {
+        if trimmed.is_empty() {
+            // a blank line closes an open block (or is just a fresh prompt)
+            if !text.trim().is_empty() {
+                let candidate = if text.ends_with('\n') {
+                    text.clone()
+                } else {
+                    format!("{text}\n")
+                };
+                repl_eval(candidate, &mut committed, &mut text, &mut printed);
+            }
+            continue;
+        }
+        let candidate = if text.is_empty() {
+            format!("{t}\n")
+        } else {
+            format!("{text}{t}\n")
+        };
+        let last_line = candidate.lines().last().unwrap_or("");
+        let last_indented = last_line.starts_with(' ') || last_line.starts_with('\t');
+        // Keep the prompt open while the sentence has no period, the block
+        // has no body yet (T0014), or the last line is still indented (the
+            // block may continue on the next line).
+        let incomplete = !trimmed.ends_with('.') || last_indented || {
             let (out, ok) = crate::check_source(&candidate, "repl");
             !ok && out.contains("T0014")
         };
@@ -101,24 +170,7 @@ pub fn repl_session() -> ExitCode {
             text = candidate;
             continue;
         }
-        let (out, code) = crate::run_source(&candidate, "repl", "");
-        if code == 0 {
-            text = candidate.clone();
-            committed = candidate;
-            printed = print_new_tail(&out, printed);
-        } else {
-            // the new line made the program fail: show why and drop
-            // everything typed since the last clean run, so one bad
-            // sentence cannot poison the session
-            printed = print_new_tail(&out, printed);
-            text = committed.clone();
-        }
-        // display only: keep the next prompt on its own line (this does
-        // not change what counts as already shown)
-        if !out.ends_with('\n') {
-            println!();
-        }
-        let _ = std::io::stdout().flush();
+        repl_eval(candidate, &mut committed, &mut text, &mut printed);
     }
     ExitCode::from(0)
 }

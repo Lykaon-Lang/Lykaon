@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_position_in_hole/input.lykaon, line 2: Say position of 8 in numbers sorted.
+                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the position of 8 in numbers, sorted, or the position of 8 in numbers sorted.
+Fix: Split it into two sentences.
+

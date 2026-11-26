@@ -1,4 +1,4 @@
-//! Semantic layer (M1b): the typed tree (Ch.67: "a typed tree, then a
+﻿//! Semantic layer (M1b): the typed tree (Ch.67: "a typed tree, then a
 //! mid-level graph"). Builds a Program from the sentence tree, resolves names
 //! and kinds (Ch.4, 6, 15, 17, 66), and reports the M1b semantic diagnostics:
 //! T0205, T0301, T0302, T0303, T0406, T0509. The result feeds the mid-level
@@ -34,6 +34,19 @@ struct Scope {
     /// A block that is transparent for task names (M4-D2) passes its own
     /// task names back out (Do these together).
     tasks: Vec<String>,
+    /// M5-D3: the tables loaded in this scope and its enclosing blocks,
+    /// with the column names the data sentences may use. A table name is
+    /// also a definition of kind Table.
+    tables: Vec<(String, TableInfo)>,
+}
+
+/// The compile-time side of a loaded table: the columns the file's header
+/// gives, with the kinds inferred from its cells when the parser could
+/// read the file. Unreadable files leave the column list empty; the data
+/// sentences then defer the name checks to run time.
+#[derive(Clone, Debug, Default)]
+struct TableInfo {
+    columns: Vec<(String, Kind)>,
 }
 
 impl Scope {
@@ -41,6 +54,7 @@ impl Scope {
         Scope {
             defs: self.defs.clone(),
             tasks: self.tasks.clone(),
+            tables: self.tables.clone(),
         }
     }
     fn find(&self, name: &str) -> Option<Def> {
@@ -52,6 +66,28 @@ impl Scope {
     }
     fn define(&mut self, name: &str, d: Def) {
         self.defs.push((name.to_string(), d));
+    }
+    /// M5-D3: the visible tables, nearest definition first, one entry per
+    /// name (a later Load of the same name replaces it).
+    fn visible_tables(&self) -> Vec<(String, TableInfo)> {
+        let mut out: Vec<(String, TableInfo)> = Vec::new();
+        for (n, t) in self.tables.iter().rev() {
+            if !out.iter().any(|(m, _)| m == n) {
+                out.push((n.clone(), t.clone()));
+            }
+        }
+        out
+    }
+    fn find_table(&self, name: &str) -> Option<TableInfo> {
+        self.tables
+            .iter()
+            .rev()
+            .find(|(n, _)| n.eq_ignore_ascii_case(name))
+            .map(|(_, t)| t.clone())
+    }
+    fn define_table(&mut self, name: &str, info: TableInfo) {
+        self.tables.retain(|(n, _)| !n.eq_ignore_ascii_case(name));
+        self.tables.push((name.to_string(), info));
     }
     fn define_task(&mut self, name: &str) {
         self.tasks.push(name.to_string());
@@ -96,6 +132,7 @@ pub fn build(
         top_kinds: HashMap::new(),
         err_reported: false,
         text_depth: 0,
+        db_cond_depth: 0,
         record_types: HashMap::new(),
         enum_types: HashMap::new(),
         shape_names: HashMap::new(),
@@ -364,6 +401,11 @@ struct Builder<'a> {
     /// carries the DECLARED kind for the M4-D3 shared kinds.
     top_kinds: HashMap<String, Kind>,
     err_reported: bool,
+    /// M5-S34/S36: >0 while parsing a database where condition, where the
+    /// column names are not in the program's scope (they come from the
+    /// database at run time). An unknown word there is a column, kind
+    /// unknown, and T0205 is suppressed.
+    db_cond_depth: usize,
     /// 1 while parsing a value position (a definition value, a comparison
     /// value, the value after how many in / lower of): an unknown word there
     /// is text (Ch.4, rule 2). 0 in every other place: an unknown word is an
@@ -440,7 +482,7 @@ impl<'a> Builder<'a> {
             return;
         }
         self.err_reported = true;
-        self.diags.push(Diagnostic::error(
+        let mut diag = Diagnostic::error(
             code,
             what,
             self.file.clone(),
@@ -450,7 +492,42 @@ impl<'a> Builder<'a> {
             hi,
             why,
             fix,
-        ));
+        );
+        // M5c: a beginner-friendly, machine-applicable close match for an
+        // unknown name. Only names within distance 2 are offered.
+        let mut help: Option<Diagnostic> = None;
+        if code == "T0205" {
+            if let Some(word) = s.text.get(lo..hi) {
+                let word = word.trim();
+                if !word.is_empty() {
+                    if let Some(sugg) = closest_in(&self.names, word) {
+                        diag.suggestions.push(crate::diagnostics::Suggestion {
+                            text: format!("Did you mean {sugg}?"),
+                            lo,
+                            hi,
+                            replacement: sugg.clone(),
+                        });
+                        // A Help child (rustc-style): plain `check` hides it,
+                        // `--suggest`/`--json` show it. Names are case-sensitive.
+                        help = Some(Diagnostic::help(
+                            "T0205",
+                            format!("Names are case-sensitive; did you mean {sugg}?"),
+                            self.file.clone(),
+                            s.line,
+                            s.text.clone(),
+                            lo,
+                            hi,
+                            format!("{word} is not a name you defined."),
+                            "Check the spelling and the capital letters.".to_string(),
+                        ));
+                    }
+                }
+            }
+        }
+        self.diags.push(diag);
+        if let Some(h) = help {
+            self.diags.push(h);
+        }
     }
 
     /// Like `err`, but tolerates a `None` sentence (used by the ownership
@@ -1050,6 +1127,13 @@ impl<'a> Builder<'a> {
     fn expr_children(e: &Expr) -> Vec<&Expr> {
         match &e.e {
             E::Call { args, .. } => args.iter().collect(),
+            // M5-S31: vector items and the operands of dot/norm.
+            E::Vector(items) => items.iter().collect(),
+            E::Dot(a, b) => vec![a, b],
+            E::Norm(a) => vec![a],
+            E::Encrypt(a, b) | E::Decrypt(a, b) => vec![a, b],
+            E::KeyFrom(a) => vec![a],
+            E::RandomKey => vec![],
             E::Neg(x)
             | E::Round(x, _)
             | E::Factorial(x)
@@ -1307,6 +1391,41 @@ impl<'a> Builder<'a> {
             }
             Stmt::PageDecl { .. } | Stmt::WsRecv { .. } => false,
             Stmt::Careful { body } => body.iter().any(|s| Self::stmt_mentions_call_to(s, name)),
+            // M5 (Appendix L 7.1): a data sentence's where condition and
+            // a row loop body are calls of the enclosing reachability.
+            Stmt::SayRows { cond, .. } => cond
+                .as_ref()
+                .map(|c| Self::expr_mentions_call_to(c, name))
+                .unwrap_or(false),
+            Stmt::ForEachRow { body, .. } => {
+                body.iter().any(|s| Self::stmt_mentions_call_to(s, name))
+            }
+            Stmt::LoadTable { .. }
+            | Stmt::SayData { .. }
+            | Stmt::SayGroup { .. }
+            | Stmt::Plot { .. }
+            | Stmt::Predict { .. }
+            | Stmt::SaveModel { .. }
+            | Stmt::OpenDatabase { .. }
+            | Stmt::LoadDatabase { .. }
+            | Stmt::Limit { .. }
+            | Stmt::AskAssistant { .. }
+            | Stmt::LoadModel { .. } => false,
+            Stmt::DbAdd { value, .. } => Self::expr_mentions_call_to(value, name),
+            Stmt::DbRemove { cond, .. } => Self::expr_mentions_call_to(cond, name),
+            Stmt::DbSet { value, cond, .. } => {
+                Self::expr_mentions_call_to(value, name)
+                    || Self::expr_mentions_call_to(cond, name)
+            }
+            Stmt::Transaction { body } => {
+                body.iter().any(|s| Self::stmt_mentions_call_to(s, name))
+            }
+            Stmt::SayModel { items } => items.iter().any(|it| match it {
+                ModelItem::Prediction(pairs) => {
+                    pairs.iter().any(|(_, e)| Self::expr_mentions_call_to(e, name))
+                }
+                _ => false,
+            }),
             Stmt::Exit { .. } => false,
             Stmt::WhenSignal { body, .. } | Stmt::ForEachInput { body, .. } => {
                 body.iter().any(|s| Self::stmt_mentions_call_to(s, name))
@@ -1704,7 +1823,7 @@ impl<'a> Builder<'a> {
                     // a plain `Check ...` falls through to build_one; a property
                     // check keeps its body (ch.38)
                     if low.starts_with("check for any") {
-                        // "check for any <kind words...> <name>" â€” define the
+                        // "check for any <kind words...> <name>" Ã¢â‚¬â€ define the
                         // generated name so the body can use it
                         let words: Vec<&str> = low.split_whitespace().collect();
                         let (kind_words, gen_name) = if words.len() >= 5 {
@@ -1824,6 +1943,17 @@ impl<'a> Builder<'a> {
                     let low = s.text.to_ascii_lowercase();
                     let words: Vec<&str> = low.split_whitespace().collect();
                     let words: Vec<&str> = words.iter().map(|w| w.trim_end_matches('.')).collect();
+                    if words.get(1) == Some(&"these")
+                        && words.get(2) == Some(&"all")
+                        && words.get(3) == Some(&"or")
+                        && words.get(4) == Some(&"none")
+                    {
+                        // M5-G30: Do these all or none. + block.
+                        let body = self.build_block(&s.children, sc, false, env);
+                        out.push(Stmt::Transaction { body });
+                        i += 1;
+                        continue;
+                    }
                     if words.get(1) == Some(&"these") && words.get(2) == Some(&"together") {
                         // M4-D2: the block is transparent for task names -
                         // a task started inside is visible (and waitable)
@@ -2160,7 +2290,7 @@ impl<'a> Builder<'a> {
         {
             return None;
         }
-        // allowed forms: If that fails use X. / give X. ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â "use" per Ch.17
+        // allowed forms: If that fails use X. / give X. ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â "use" per Ch.17
         if !ws[3].eq_ignore_ascii_case("use") && !ws[3].eq_ignore_ascii_case("give") {
             return None;
         }
@@ -2539,6 +2669,16 @@ impl<'a> Builder<'a> {
         let first = first_word_lower(&s.text);
         match first.as_str() {
             "set" => self.parse_set(s, &toks, sc),
+            // M5 (Appendix L 5.1): Load NAME / Load NAME from file F.
+            "load" => self.parse_load(s, &toks, sc),
+            // M5 (Appendix L 5.1): Plot VERTICAL against HORIZONTAL ...
+            "plot" => self.parse_plot(s, &toks, sc),
+            // M5 (Appendix L 7.3): Predict TARGET from ...
+            "predict" => self.parse_predict(s, &toks, sc),
+            // M5 (Appendix L 7.4): Open database NAME using ...
+            "open" => self.parse_open_db(s, &toks, sc),
+            // M5 (Appendix L 7.6): Limit memory/time ...
+            "limit" => self.parse_limit(s, &toks),
             // M4-S87 (7.12): Log LEVEL TEXT. - the level word comes
             // first (log is a reserved word, so no name starts a line
             // with it); the rest is raw text, parsed with the Say
@@ -2632,7 +2772,15 @@ impl<'a> Builder<'a> {
             }
             "ask" => self.parse_ask(s, &toks, sc),
             "repeat" => self.parse_repeat(s, sc, env).unwrap_or(Stmt::Note),
-            "for" => self.parse_for(s, sc, env).unwrap_or(Stmt::Note),
+            "for" => {
+                // M5-G11: For each row in NAME. is the table loop; every
+                // other For each keeps the list reading.
+                if let Some(st) = self.parse_for_each_row(s, &toks, sc, env) {
+                    st
+                } else {
+                    self.parse_for(s, sc, env).unwrap_or(Stmt::Note)
+                }
+            }
             "stop" => {
                 // M4-G19: Stop task NAME. is the cancel request; a bare
                 // Stop. stays the loop/block stop (M4's two words apart).
@@ -2688,6 +2836,10 @@ impl<'a> Builder<'a> {
             "tagged" => self.parse_tagged(s),
             "put" => self.parse_put(s, &toks, sc),
             "remove" => {
+                // M5-G28: Remove rows where COND from table T of DB.
+                if matches!(toks.get(1), Some(Token::Word { lower, .. }) if lower == "rows") {
+                    return self.parse_db_remove(s, &toks, sc);
+                }
                 // M4-G41 (Appendix K 7.5): Remove file <ref>. /
                 // Remove folder <ref>. - a plain value keeps the
                 // Remove-from reading of M2.
@@ -3295,6 +3447,10 @@ impl<'a> Builder<'a> {
                 self.parse_decl(s, toks, sc)
             }
             "save" => {
+                // M5-G20: Save model as NAME.
+                if matches!(toks.get(1), Some(Token::Word { lower, .. }) if lower == "model") {
+                    return self.parse_save_model(s, &toks);
+                }
                 // M4-6: Save <value> as json to file F. (the format word
                 // also toml, yaml, xml, csv). Save is a files-chapter
                 // shape here; a `Save` that holds no as-format falls
@@ -3671,6 +3827,21 @@ impl<'a> Builder<'a> {
         let value_toks = ts.rest_until_word("to");
         let value = self.parse_expr(value_toks, Some(s), sc, false);
         ts.pos += 1; // to
+        // M5-G27: Add RECORD to table T of DB.
+        if ts.peek_word() == Some("table") {
+            ts.pos += 1;
+            let table = match ts.peek_word() {
+                Some(w) => w.to_ascii_lowercase(),
+                None => String::new(),
+            };
+            ts.pos += 1;
+            ts.consume_word("of");
+            let db = match ts.peek_word() {
+                Some(w) => w.to_ascii_lowercase(),
+                None => String::new(),
+            };
+            return Stmt::DbAdd { db, table, value };
+        }
         let list = match ts.peek_word() {
             Some(w) => w.to_ascii_lowercase(),
             None => String::new(),
@@ -4501,7 +4672,7 @@ impl<'a> Builder<'a> {
                         s.text.len(),
                         "The segment that takes any value is written anything called NAME."
                             .to_string(),
-                        "Write Page user page is users and anything called id.".to_string(),
+                        "Write Page user is users and anything called id.".to_string(),
                     );
                     return None;
                 }
@@ -4515,7 +4686,7 @@ impl<'a> Builder<'a> {
                         0,
                         s.text.len(),
                         "anything called needs the parameter's name.".to_string(),
-                        "Write Page user page is users and anything called id.".to_string(),
+                        "Write Page user is users and anything called id.".to_string(),
                     );
                     return None;
                 }
@@ -4537,7 +4708,7 @@ impl<'a> Builder<'a> {
                         0,
                         s.text.len(),
                         "Every page path segment is a word or anything called NAME.".to_string(),
-                        "Write Page users page is users.".to_string(),
+                        "Write Page users is users.".to_string(),
                     );
                     return None;
                 }
@@ -4575,7 +4746,7 @@ impl<'a> Builder<'a> {
                 0,
                 s.text.len(),
                 "Page is written Page <name words> is <segments>.".to_string(),
-                "Write Page users page is users.".to_string(),
+                "Write Page users is users.".to_string(),
             );
             return Stmt::Note;
         }
@@ -4587,7 +4758,7 @@ impl<'a> Builder<'a> {
                 0,
                 s.text.len(),
                 "The page's path comes after is.".to_string(),
-                "Write Page users page is users.".to_string(),
+                "Write Page users is users.".to_string(),
             );
             return Stmt::Note;
         }
@@ -4602,7 +4773,7 @@ impl<'a> Builder<'a> {
                 0,
                 s.text.len(),
                 "The page sentence ends after the path.".to_string(),
-                "Write Page users page is users.".to_string(),
+                "Write Page users is users.".to_string(),
             );
             return Stmt::Note;
         }
@@ -4826,7 +4997,7 @@ impl<'a> Builder<'a> {
                     None => {
                         self.err("T0173", format!("The address names an unknown page {name}."), s, 0, s.text.len(),
                             "A page name is looked up in the Page sentences; no Page sentence declares it.".to_string(),
-                            "Write Page users page is users. first, or use path users.".to_string());
+                            "Write Page users is users. first, or use path users.".to_string());
                         return None;
                     }
                 }
@@ -5584,7 +5755,7 @@ impl<'a> Builder<'a> {
                 s.text.len(),
                 "A page name is looked up in the Page sentences; no Page sentence declares it."
                     .to_string(),
-                "Write Page users page is users. first.".to_string(),
+                "Write Page users is users. first.".to_string(),
             );
             return Some(Stmt::Note);
         };
@@ -6263,6 +6434,9 @@ impl<'a> Builder<'a> {
 
     /// Set <name> to <value>.
     fn parse_set(&mut self, s: &'a Sentence, toks: &[Token], sc: &mut Scope) -> Stmt {
+        if let Some(st) = self.try_db_set(s, toks, sc) {
+            return st;
+        }
         let mut ts = TS::new(toks);
         ts.pos += 1;
         // Set age of maya to 32. / Set street of home of maya to Oak. (ch.20)
@@ -6509,7 +6683,7 @@ impl<'a> Builder<'a> {
                 // this declaration is parsed twice (the pre-function hoist
                 // and the real statement pass); the kinds map is an insert
                 // and dedupes for free, but Always entries would register
-                // twice ï¿½ once is already the second visit's twin
+                // twice Ã¯Â¿Â½ once is already the second visit's twin
                 if !self
                     .always
                     .iter()
@@ -6982,7 +7156,7 @@ impl<'a> Builder<'a> {
         let mut ts = TS::new(toks);
         ts.pos += 1; // check
         if ts.peek_word() == Some("for") {
-            // Check for any <kind> <name>. â€” property test (ch.38)
+            // Check for any <kind> <name>. Ã¢â‚¬â€ property test (ch.38)
             let words: Vec<String> = ts
                 .rest_without_period()
                 .iter()
@@ -7063,6 +7237,29 @@ impl<'a> Builder<'a> {
 
     /// Ask <name> [as number|decimal|text]. The reply is text unless converted.
     fn parse_ask(&mut self, s: &Sentence, toks: &[Token], sc: &mut Scope) -> Stmt {
+        // M5-G22: Ask assistant about TEXT.
+        if matches!(toks.get(1), Some(Token::Word { lower, .. }) if lower == "assistant") {
+            let mut words: Vec<String> = Vec::new();
+            let mut i = 2usize;
+            let mut seen_about = false;
+            while i < toks.len() {
+                match &toks[i] {
+                    Token::Word { text, lower } => {
+                        if lower == "about" && !seen_about {
+                            seen_about = true;
+                            i += 1;
+                            continue;
+                        }
+                        words.push(text.clone());
+                        i += 1;
+                    }
+                    _ => break,
+                }
+            }
+            return Stmt::AskAssistant {
+                text: words.join(" "),
+            };
+        }
         let mut ts = TS::new(toks);
         ts.pos += 1;
         let name = ts.peek_word().unwrap_or("").to_ascii_lowercase();
@@ -7099,8 +7296,31 @@ impl<'a> Builder<'a> {
         ts.pos += 1;
         match ts.peek().cloned() {
             Some(Token::Whole { value }) => {
+                if value < 0 {
+                    self.err(
+                        "T0122",
+                        "Bad repeat count.".to_string(),
+                        s,
+                        ts.pos,
+                        ts.pos + 5,
+                        "Repeat has a negative or decimal count.".to_string(),
+                        "Use a whole number of 0 or more.".to_string(),
+                    );
+                    return Some(Stmt::Note);
+                }
                 ts.pos += 1;
-                ts.consume_word("times");
+                if !ts.consume_word("times") {
+                    self.err(
+                        "T0113",
+                        "A sentence cannot be read.".to_string(),
+                        s,
+                        ts.pos,
+                        (ts.pos + 1).min(s.text.len()),
+                        "Repeat needs times after the count.".to_string(),
+                        "Write Repeat 3 times.".to_string(),
+                    );
+                    return Some(Stmt::Note);
+                }
                 let body = if ts.peek_word().is_some()
                     && !matches!(ts.peek(), Some(Token::Period) | Some(Token::Eof))
                 {
@@ -7123,7 +7343,56 @@ impl<'a> Builder<'a> {
                 let body = self.build_block(&s.children, &mut sc.child(), false, env);
                 Some(Stmt::RepeatForever { body })
             }
-            _ => None,
+            Some(Token::Word { lower, .. }) if lower == "minus" => {
+                self.err(
+                    "T0122",
+                    "Bad repeat count.".to_string(),
+                    s,
+                    ts.pos,
+                    ts.pos + 5,
+                    "Repeat has a negative or decimal count.".to_string(),
+                    "Use a whole number of 0 or more.".to_string(),
+                );
+                Some(Stmt::Note)
+            }
+            Some(Token::Word { lower, .. }) if is_number_word(&lower) => {
+                self.err(
+                    "T0006",
+                    "Number spelled as letters.".to_string(),
+                    s,
+                    ts.pos,
+                    ts.pos + 1,
+                    "A number is written as a word where a number is expected.".to_string(),
+                    "Write the number with digits. To make the word a text value, write as text."
+                        .to_string(),
+                );
+                Some(Stmt::Note)
+            }
+            Some(Token::Decimal { .. }) | Some(Token::Negative { .. }) => {
+                self.err(
+                    "T0122",
+                    "Bad repeat count.".to_string(),
+                    s,
+                    ts.pos,
+                    ts.pos + 5,
+                    "Repeat has a negative or decimal count.".to_string(),
+                    "Use a whole number of 0 or more.".to_string(),
+                );
+                Some(Stmt::Note)
+            }
+            _ => {
+                self.err(
+                    "T0113",
+                    "A sentence cannot be read.".to_string(),
+                    s,
+                    ts.pos,
+                    (ts.pos + 1).min(s.text.len()),
+                    "Repeat needs a count written with digits, or while, or forever.".to_string(),
+                    "Write Repeat 3 times., Repeat while <question>., or Repeat forever."
+                        .to_string(),
+                );
+                Some(Stmt::Note)
+            }
         }
     }
 
@@ -7640,6 +7909,1232 @@ impl<'a> Builder<'a> {
 
     // ------------------------------------------------------------ say
 
+    // ------------------------------------------------------------ M5 data
+    // Appendix L 5.1: Load, Say data, For each row.
+    // The parser resolves the table and column names it can see; the
+    // runtime loads the rows. Column names are data words, not program
+    // names (M5-D3), so they are resolved against the loaded table here.
+
+    /// M5-G20: Save model as NAME.
+    fn parse_save_model(&mut self, s: &'a Sentence, toks: &[Token]) -> Stmt {
+        let name = match toks.get(3) {
+            Some(Token::Word { lower, .. }) => lower.clone(),
+            _ => {
+                self.err(
+                    "T0113",
+                    "A model sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "Save model expects as <name>.".to_string(),
+                    "Write Save model as churn.".to_string(),
+                );
+                return Stmt::Note;
+            }
+        };
+        Stmt::SaveModel { name }
+    }
+
+    /// M5-G33: Limit memory N megabytes. / Limit time N seconds.
+    fn parse_limit(&mut self, s: &'a Sentence, toks: &[Token]) -> Stmt {
+        let w = |i: usize| -> Option<String> {
+            match toks.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        let kind = match w(1).as_deref() {
+            Some("memory") => LimitKind::Memory,
+            Some("time") => LimitKind::Time,
+            _ => {
+                self.err(
+                    "T0113",
+                    "A Limit sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "Limit names memory or time.".to_string(),
+                    "Write Limit memory 512 megabytes. or Limit time 30 seconds.".to_string(),
+                );
+                return Stmt::Note;
+            }
+        };
+        let amount = match toks.get(2) {
+            Some(Token::Whole { value }) => *value as u64,
+            _ => {
+                self.err(
+                    "T0113",
+                    "A Limit sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "Limit needs a number.".to_string(),
+                    "Write Limit memory 512 megabytes.".to_string(),
+                );
+                return Stmt::Note;
+            }
+        };
+        let unit = w(3).unwrap_or_default();
+        Stmt::Limit {
+            kind,
+            amount,
+            unit,
+        }
+    }
+
+    /// M5-G25: Open database NAME using sqlite file F / postgres at ADDRESS.
+    fn parse_open_db(&mut self, s: &'a Sentence, toks: &[Token], sc: &mut Scope) -> Stmt {
+        let w = |i: usize| -> Option<String> {
+            match toks.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        let name = match w(2) {
+            Some(n) => n,
+            None => {
+                self.err(
+                    "T0113",
+                    "An Open database sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "Open database does not name a database.".to_string(),
+                    "Write Open database shop using sqlite file shopdata.".to_string(),
+                );
+                return Stmt::Note;
+            }
+        };
+        let driver = match w(4).as_deref() {
+            Some("sqlite") => {
+                let fr = self.parse_file_ref_at(s, toks, 5);
+                match fr {
+                    Some(fr) => DbDriver::Sqlite(fr),
+                    None => return Stmt::Note,
+                }
+            }
+            Some("postgres") => {
+                let mut ts = TS::new(toks);
+                ts.pos = 6; // at ADDRESS
+                match self.parse_net_address(&mut ts, s) {
+                    Some(addr) => DbDriver::Postgres(addr),
+                    None => return Stmt::Note,
+                }
+            }
+            _ => {
+                self.err(
+                    "T0113",
+                    "An Open database sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "The driver is sqlite or postgres.".to_string(),
+                    "Write using sqlite file <name> or using postgres at <address>.".to_string(),
+                );
+                return Stmt::Note;
+            }
+        };
+        sc.define(
+            &name,
+            Def {
+                kind: Kind::Database,
+                mutable: false,
+                shared: false,
+            },
+        );
+        Stmt::OpenDatabase { name, driver }
+    }
+
+    /// M5-G28: Remove rows where COND from table T of DB.
+    fn parse_db_remove(
+        &mut self,
+        s: &'a Sentence,
+        toks: &[Token],
+        sc: &mut Scope,
+    ) -> Stmt {
+        let w = |i: usize| -> Option<String> {
+            match toks.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        let mut from_at = None;
+        for i in 3..toks.len() {
+            if w(i).as_deref() == Some("from") && w(i + 1).as_deref() == Some("table") {
+                from_at = Some(i);
+                break;
+            }
+        }
+        let Some(from_at) = from_at else {
+            self.err(
+                "T0113",
+                "A database sentence cannot be read.".to_string(),
+                s,
+                0,
+                s.text.len(),
+                "Remove rows expects from table <name> of <database>.".to_string(),
+                "Write Remove rows where <cond> from table <name> of <database>.".to_string(),
+            );
+            return Stmt::Note;
+        };
+        let table = w(from_at + 2).unwrap_or_default();
+        let db = if w(from_at + 3).as_deref() == Some("of") {
+            w(from_at + 4).unwrap_or_default()
+        } else {
+            String::new()
+        };
+        let cond_toks = toks[3..from_at].to_vec();
+        self.db_cond_depth += 1;
+        let cond = self.parse_condition(cond_toks, Some(s), sc);
+        self.db_cond_depth -= 1;
+        Stmt::DbRemove { db, table, cond }
+    }
+
+    /// M5-G29: Set COL to VALUE in rows of T of DB where COND.
+    fn try_db_set(
+        &mut self,
+        s: &'a Sentence,
+        toks: &[Token],
+        sc: &mut Scope,
+    ) -> Option<Stmt> {
+        let w = |i: usize| -> Option<String> {
+            match toks.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        if w(1).is_none() || w(2).as_deref() != Some("to") {
+            return None;
+        }
+        let mut in_at = None;
+        for i in 3..toks.len() {
+            if w(i).as_deref() == Some("in") && w(i + 1).as_deref() == Some("rows") {
+                in_at = Some(i);
+                break;
+            }
+        }
+        let in_at = in_at?;
+        if w(in_at + 2).as_deref() != Some("of") {
+            return None;
+        }
+        let table = w(in_at + 3)?;
+        let db = if w(in_at + 4).as_deref() == Some("of") {
+            w(in_at + 5)?
+        } else {
+            return None;
+        };
+        let mut where_at = None;
+        for i in (in_at + 6)..toks.len() {
+            if w(i).as_deref() == Some("where") {
+                where_at = Some(i);
+                break;
+            }
+        }
+        let where_at = where_at?;
+        let column = w(1)?;
+        let value = self.parse_expr(toks[3..in_at].to_vec(), Some(s), sc, false);
+        self.db_cond_depth += 1;
+        let cond = self.parse_condition(toks[(where_at + 1)..].to_vec(), Some(s), sc);
+        self.db_cond_depth -= 1;
+        Some(Stmt::DbSet {
+            db,
+            table,
+            column,
+            value,
+            cond,
+        })
+    }
+
+    /// M5-G16: Predict TARGET from the rest [using MODEL] [of TABLE].
+    fn parse_predict(&mut self, s: &'a Sentence, toks: &[Token], sc: &mut Scope) -> Stmt {
+        let t: Vec<Token> = toks
+            .iter()
+            .filter(|x| !matches!(x, Token::Period | Token::Eof))
+            .cloned()
+            .collect();
+        let word = |i: usize| -> Option<String> {
+            match t.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        let Some(target_word) = word(1) else {
+            self.err(
+                "T0113",
+                "A Predict sentence cannot be read.".to_string(),
+                s,
+                0,
+                s.text.len(),
+                "Predict does not name a target column.".to_string(),
+                "Write Predict churned from the rest.".to_string(),
+            );
+            return Stmt::Note;
+        };
+        if word(2).as_deref() != Some("from") {
+            self.err(
+                "T0113",
+                "A Predict sentence cannot be read.".to_string(),
+                s,
+                0,
+                s.text.len(),
+                "A Predict sentence is Predict <target> from ...".to_string(),
+                "Write Predict churned from the rest.".to_string(),
+            );
+            return Stmt::Note;
+        }
+        let mut idx = 3usize;
+        let mut inputs: Option<Vec<String>> = None;
+        if word(3).as_deref() == Some("the") && word(4).as_deref() == Some("rest") {
+            idx = 5;
+        } else {
+            let mut names: Vec<String> = Vec::new();
+            while idx < t.len() {
+                match word(idx).as_deref() {
+                    Some("using") | Some("of") => break,
+                    Some("and") => idx += 1,
+                    Some(w) => {
+                        names.push(w.to_string());
+                        idx += 1;
+                    }
+                    None => break,
+                }
+            }
+            if names.is_empty() {
+                self.err(
+                    "T0113",
+                    "A Predict sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "Predict names no input columns.".to_string(),
+                    "Write Predict y from a and b.".to_string(),
+                );
+                return Stmt::Note;
+            }
+            inputs = Some(names);
+        }
+        let mut kind = lykaon_core::model::ModelKind::RandomForest;
+        if word(idx).as_deref() == Some("using") {
+            let mut words: Vec<String> = Vec::new();
+            let mut j = idx + 1;
+            while j < t.len() {
+                if word(j).as_deref() == Some("of") {
+                    break;
+                }
+                match word(j) {
+                    Some(w) => words.push(w),
+                    None => break,
+                }
+                j += 1;
+            }
+            match lykaon_core::model::ModelKind::from_words(&words) {
+                Some(k) => kind = k,
+                None => {
+                    self.err(
+                        "T0183",
+                        "Unknown model.".to_string(),
+                        s,
+                        0,
+                        s.text.len(),
+                        "using names a model that does not exist.".to_string(),
+                        "Use a listed model.".to_string(),
+                    );
+                    return Stmt::Note;
+                }
+            }
+            idx = j;
+        }
+        let mut explicit: Option<String> = None;
+        let mut end = t.len();
+        if word(idx).as_deref() == Some("of") {
+            explicit = word(idx + 1);
+            end = idx + 2;
+        } else if end >= 2 && word(end - 2).as_deref() == Some("of") {
+            explicit = word(end - 1);
+            end -= 2;
+        }
+        let _ = end;
+        let Some(table) = self.data_table(sc, explicit.as_deref(), Some(s)) else {
+            return Stmt::Note;
+        };
+        // M5-T0179: the target must be a column.
+        let known = sc.find_table(&table).and_then(|info| {
+            info.columns
+                .iter()
+                .find(|(n, _)| n.eq_ignore_ascii_case(&target_word))
+                .map(|(n, _)| n.clone())
+        });
+        let target = match known {
+            Some(t) => t,
+            None => {
+                if sc.find_table(&table).map(|i| i.columns.is_empty()).unwrap_or(true) {
+                    target_word.clone()
+                } else {
+                    self.err(
+                        "T0179",
+                        "Target is not a column.".to_string(),
+                        s,
+                        0,
+                        s.text.len(),
+                        "Predict names a column that does not exist.".to_string(),
+                        "Use a column name.".to_string(),
+                    );
+                    return Stmt::Note;
+                }
+            }
+        };
+        let mut resolved: Option<Vec<String>> = None;
+        if let Some(names) = inputs {
+            let mut out = Vec::with_capacity(names.len());
+            for n in &names {
+                match self.data_column(sc, &table, n, false, Some(s)) {
+                    Some(c) => out.push(c),
+                    None => return Stmt::Note,
+                }
+            }
+            resolved = Some(out);
+        }
+        sc.define(
+            "model",
+            Def {
+                kind: Kind::Model,
+                mutable: false,
+                shared: false,
+            },
+        );
+        Stmt::Predict {
+            table,
+            target,
+            inputs: resolved,
+            kind,
+        }
+    }
+
+    /// M5-G18/G19: Say accuracy / error / what matters most /
+    /// what cleaning did / prediction for ... . The sentence only exists
+    /// after Predict (the model is the value named model).
+    fn try_model_say(
+        &mut self,
+        toks: &[Token],
+        s: Option<&'a Sentence>,
+        sc: &mut Scope,
+    ) -> Option<Stmt> {
+        let t: Vec<Token> = toks
+            .iter()
+            .filter(|x| !matches!(x, Token::Period | Token::Eof))
+            .cloned()
+            .collect();
+        let word = |i: usize| -> Option<String> {
+            match t.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        let w0 = word(0)?;
+        if w0 == "prediction" && word(1).as_deref() == Some("for") {
+            let mut pairs: Vec<(String, Expr)> = Vec::new();
+            let mut i = 2usize;
+            while i < t.len() {
+                let Some(name) = word(i) else { break };
+                i += 1;
+                let start = i;
+                while i < t.len() && word(i).as_deref() != Some("and") {
+                    i += 1;
+                }
+                let expr = self.parse_expr(t[start..i].to_vec(), s, sc, true);
+                pairs.push((name, expr));
+                if i < t.len() && word(i).as_deref() == Some("and") {
+                    i += 1;
+                }
+            }
+            if pairs.is_empty() {
+                return None;
+            }
+            return Some(Stmt::SayModel {
+                items: vec![ModelItem::Prediction(pairs)],
+            });
+        }
+        let first = match w0.as_str() {
+            "accuracy" => ModelItem::Accuracy,
+            "error" => ModelItem::Error,
+            "what" if word(1).as_deref() == Some("matters") && word(2).as_deref() == Some("most") => {
+                ModelItem::Importance
+            }
+            "what" if word(1).as_deref() == Some("cleaning") && word(2).as_deref() == Some("did") => {
+                ModelItem::Cleaning
+            }
+            _ => return None,
+        };
+        let mut items = vec![first];
+        let mut i = match w0.as_str() {
+            "accuracy" | "error" => 1,
+            _ => 3,
+        };
+        while i < t.len() {
+            if word(i).as_deref() == Some("and") {
+                i += 1;
+            }
+            let item = match word(i).as_deref() {
+                Some("accuracy") => {
+                    i += 1;
+                    ModelItem::Accuracy
+                }
+                Some("error") => {
+                    i += 1;
+                    ModelItem::Error
+                }
+                Some("what") if word(i + 1).as_deref() == Some("matters") => {
+                    i += 3;
+                    ModelItem::Importance
+                }
+                Some("what") if word(i + 1).as_deref() == Some("cleaning") => {
+                    i += 3;
+                    ModelItem::Cleaning
+                }
+                _ => break,
+            };
+            items.push(item);
+        }
+        Some(Stmt::SayModel { items })
+    }
+
+    /// M5-G12: Plot VERTICAL against HORIZONTAL [as KIND] [to file F]
+    /// [of TABLE]. The first column is the vertical axis (M5-S13).
+    fn parse_plot(&mut self, s: &'a Sentence, toks: &[Token], sc: &mut Scope) -> Stmt {
+        let t: Vec<Token> = toks
+            .iter()
+            .filter(|x| !matches!(x, Token::Period | Token::Eof))
+            .cloned()
+            .collect();
+        let word = |i: usize| -> Option<String> {
+            match t.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        let Some(vertical_word) = word(1) else {
+            self.err(
+                "T0113",
+                "A Plot sentence cannot be read.".to_string(),
+                s,
+                0,
+                s.text.len(),
+                "Plot does not name a column.".to_string(),
+                "Write Plot price against size.".to_string(),
+            );
+            return Stmt::Note;
+        };
+        if word(2).as_deref() != Some("against") || word(3).is_none() {
+            self.err(
+                "T0113",
+                "A Plot sentence cannot be read.".to_string(),
+                s,
+                0,
+                s.text.len(),
+                "A Plot sentence is Plot <column> against <column>.".to_string(),
+                "Write Plot price against size.".to_string(),
+            );
+            return Stmt::Note;
+        }
+        let horizontal_word = word(3).unwrap();
+        let mut idx = 4usize;
+        let mut kind = None;
+        if word(idx).as_deref() == Some("as") {
+            let Some(k) = word(idx + 1)
+                .as_deref()
+                .and_then(lykaon_core::chart::PlotKind::from_word)
+            else {
+                self.err(
+                    "T0113",
+                    "A Plot sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "The chart kind is dots, bars or line.".to_string(),
+                    "Write as dots, as bars or as line.".to_string(),
+                );
+                return Stmt::Note;
+            };
+            kind = Some(k);
+            idx += 2;
+        }
+        // `of TABLE` is the table reference at the end.
+        let mut end = t.len();
+        let mut explicit: Option<String> = None;
+        if end >= 2 && word(end - 2).as_deref() == Some("of") {
+            explicit = word(end - 1);
+            end -= 2;
+        }
+        let mut file = None;
+        if word(idx).as_deref() == Some("to") {
+            match self.parse_file_ref_at(s, &t[..end], idx + 1) {
+                Some(fr) => file = Some(fr),
+                None => return Stmt::Note,
+            }
+        }
+        let Some(table) = self.data_table(sc, explicit.as_deref(), Some(s)) else {
+            return Stmt::Note;
+        };
+        let Some(vertical) = self.data_column(sc, &table, &vertical_word, false, Some(s)) else {
+            return Stmt::Note;
+        };
+        let Some(horizontal) =
+            self.data_column(sc, &table, &horizontal_word, false, Some(s))
+        else {
+            return Stmt::Note;
+        };
+        Stmt::Plot {
+            table,
+            vertical,
+            horizontal,
+            kind,
+            file,
+        }
+    }
+
+    fn parse_load(&mut self, s: &'a Sentence, toks: &[Token], sc: &mut Scope) -> Stmt {
+        // M5-G21: Load model NAME.
+        if matches!(toks.get(1), Some(Token::Word { lower, .. }) if lower == "model") {
+            let name = match toks.get(2) {
+                Some(Token::Word { lower, .. }) => lower.clone(),
+                _ => {
+                    self.err(
+                        "T0113",
+                        "A Load sentence cannot be read.".to_string(),
+                        s,
+                        0,
+                        s.text.len(),
+                        "Load model does not name a model.".to_string(),
+                        "Write Load model churn.".to_string(),
+                    );
+                    return Stmt::Note;
+                }
+            };
+            sc.define(
+                "model",
+                Def {
+                    kind: Kind::Model,
+                    mutable: false,
+                    shared: false,
+                },
+            );
+            return Stmt::LoadModel { name };
+        }
+        // M5-G26: Load NAME from database DB.
+        if matches!(toks.get(2), Some(Token::Word { lower, .. }) if lower == "from")
+            && matches!(toks.get(3), Some(Token::Word { lower, .. }) if lower == "database")
+        {
+            let name = match toks.get(1) {
+                Some(Token::Word { lower, .. }) => lower.clone(),
+                _ => String::new(),
+            };
+            let db = match toks.get(4) {
+                Some(Token::Word { lower, .. }) => lower.clone(),
+                _ => String::new(),
+            };
+            sc.define(
+                &name,
+                Def {
+                    kind: Kind::Table,
+                    mutable: false,
+                    shared: false,
+                },
+            );
+            sc.define_table(&name, TableInfo::default());
+            return Stmt::LoadDatabase { name, db };
+        }
+        let name = match toks.get(1) {
+            Some(Token::Word { lower, .. }) => lower.clone(),
+            _ => {
+                self.err(
+                    "T0113",
+                    "A Load sentence cannot be read.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "Load does not name a table.".to_string(),
+                    "Write Load sales.".to_string(),
+                );
+                return Stmt::Note;
+            }
+        };
+        if name == "model" {
+            self.err(
+                "T0113",
+                "A Load sentence cannot be read.".to_string(),
+                s,
+                0,
+                s.text.len(),
+                "Loading a model arrives with the model sentences of M5.".to_string(),
+                "Write Load sales.".to_string(),
+            );
+            return Stmt::Note;
+        }
+        let origin = if matches!(toks.get(2), Some(Token::Word { lower, .. }) if lower == "from") {
+            match toks.get(3) {
+                Some(Token::Word { lower, .. }) if lower == "file" || lower == "folder" => {
+                    match self.parse_file_ref_at(s, toks, 3) {
+                        Some(fr) => TableOrigin::File(fr),
+                        None => return Stmt::Note,
+                    }
+                }
+                Some(Token::Word { lower, .. }) if lower == "database" => {
+                    let db = match toks.get(4) {
+                        Some(Token::Word { lower, .. }) => lower.clone(),
+                        _ => String::new(),
+                    };
+                    TableOrigin::Database(db)
+                }
+                Some(Token::Word { lower, .. }) => TableOrigin::Data(lower.clone()),
+                _ => TableOrigin::Data(name.clone()),
+            }
+        } else {
+            TableOrigin::Data(name.clone())
+        };
+        let info = self.read_table_info(&name, &origin, s);
+        // The table name is a value of kind Table in the visible scope.
+        sc.define(
+            &name,
+            Def {
+                kind: Kind::Table,
+                mutable: false,
+                shared: false,
+            },
+        );
+        sc.define_table(&name, info);
+        Stmt::LoadTable { name, origin }
+    }
+
+    /// Read the header (and, when the file parses, the inferred kinds) so
+    /// the data sentences can check column names at compile time. A file
+    /// that is missing or unreadable leaves the columns empty; the runtime
+    /// reports the load failure.
+    fn read_table_info(
+        &mut self,
+        name: &str,
+        origin: &TableOrigin,
+        s: &'a Sentence,
+    ) -> TableInfo {
+        let Some(path) = self.table_path(name, origin) else {
+            return TableInfo::default();
+        };
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            return TableInfo::default();
+        };
+        let Ok(rows) = lykaon_core::formats::parse_csv(&text) else {
+            return TableInfo::default();
+        };
+        let Some(header) = rows.first() else {
+            return TableInfo::default();
+        };
+        let names: Vec<String> = header
+            .iter()
+            .map(|n| n.trim().to_ascii_lowercase())
+            .collect();
+        let hard = crate::lexer::hard_words();
+        for (i, n) in names.iter().enumerate() {
+            if n.is_empty() || !valid_data_name(n) || hard.contains(&n.as_str()) {
+                self.err(
+                    "T0181",
+                    "Column name has a hard word.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    format!("The column name {n} cannot be used as a name."),
+                    "Rename the header.".to_string(),
+                );
+                return TableInfo::default();
+            }
+            if names[..i].iter().any(|m| m == n) {
+                self.err(
+                    "T0182",
+                    "Duplicate column.".to_string(),
+                    s,
+                    0,
+                    s.text.len(),
+                    "Two columns have the same name after trimming and lower-casing.".to_string(),
+                    "Rename one.".to_string(),
+                );
+                return TableInfo::default();
+            }
+        }
+        match lykaon_core::data::load_csv_text(&text) {
+            Ok(t) => TableInfo {
+                columns: t.columns.into_iter().map(|c| (c.name, c.kind)).collect(),
+            },
+            Err(_) => TableInfo::default(),
+        }
+    }
+
+    /// The file a Load reads, trying the project data folder first and the
+    /// folder of the sentence's file second (M5-D2).
+    fn table_path(&self, name: &str, origin: &TableOrigin) -> Option<std::path::PathBuf> {
+        match origin {
+            TableOrigin::Data(stem) => {
+                let stem = if stem.is_empty() { name } else { stem };
+                let mut cands: Vec<std::path::PathBuf> = Vec::new();
+                let dir = std::path::Path::new(&self.source_dir);
+                cands.push(dir.join("data").join(format!("{stem}.csv")));
+                cands.push(dir.join(format!("{stem}.csv")));
+                cands.push(std::path::Path::new("data").join(format!("{stem}.csv")));
+                cands.push(std::path::PathBuf::from(format!("{stem}.csv")));
+                cands.into_iter().find(|p| p.exists())
+            }
+            TableOrigin::File(fr) => {
+                if let Some(raw) = &fr.raw {
+                    let p = std::path::PathBuf::from(raw);
+                    return if p.exists() { Some(p) } else { None };
+                }
+                let dir = std::path::Path::new(&self.source_dir);
+                let mut p = dir.to_path_buf();
+                for f in fr.folders.iter().rev() {
+                    p.push(f);
+                }
+                let mut file = fr.name.clone();
+                if let Some(ext) = &fr.ext {
+                    file.push('.');
+                    file.push_str(ext);
+                }
+                p.push(file);
+                if p.exists() { Some(p) } else { None }
+            }
+            TableOrigin::Database(_) => None,
+        }
+    }
+
+    /// The table a data sentence uses: the `of NAME` reference, or the one
+    /// table loaded in visible scopes (M5-D13: none is T0178, two is T0177).
+    fn data_table(
+        &mut self,
+        sc: &Scope,
+        explicit: Option<&str>,
+        s: Option<&'a Sentence>,
+    ) -> Option<String> {
+        if let Some(name) = explicit {
+            if sc.find_table(name).is_some() {
+                return Some(name.to_string());
+            }
+            self.err(
+                "T0178",
+                "No table loaded.".to_string(),
+                s?,
+                0,
+                s?.text.len(),
+                format!("The sentence names table {name}, which is not loaded."),
+                "Load a table first.".to_string(),
+            );
+            return None;
+        }
+        let tables = sc.visible_tables();
+        match tables.len() {
+            0 => {
+                if let Some(ss) = s {
+                    self.err(
+                        "T0178",
+                        "No table loaded.".to_string(),
+                        ss,
+                        0,
+                        ss.text.len(),
+                        "A data sentence has no table.".to_string(),
+                        "Load a table first.".to_string(),
+                    );
+                }
+                None
+            }
+            1 => Some(tables[0].0.clone()),
+            _ => {
+                if let Some(ss) = s {
+                    self.err(
+                        "T0177",
+                        "Which table.".to_string(),
+                        ss,
+                        0,
+                        ss.text.len(),
+                        "More than one table is loaded and the sentence does not name one."
+                            .to_string(),
+                        format!("Add of {}.", tables[0].0),
+                    );
+                }
+                None
+            }
+        }
+    }
+
+    /// Resolve a column word against the table (exact first). A grouping
+    /// hole also accepts the plural (M5-D3).
+    fn data_column(
+        &mut self,
+        sc: &Scope,
+        table: &str,
+        word: &str,
+        group_hole: bool,
+        s: Option<&'a Sentence>,
+    ) -> Option<String> {
+        let Some(info) = sc.find_table(table) else {
+            return Some(word.to_string());
+        };
+        if info.columns.is_empty() {
+            return Some(word.to_string());
+        }
+        if let Some((n, _)) = info
+            .columns
+            .iter()
+            .find(|(n, _)| n.eq_ignore_ascii_case(word))
+        {
+            return Some(n.clone());
+        }
+        if group_hole {
+            let stem = word.strip_suffix('s').unwrap_or(word);
+            if let Some((n, _)) = info
+                .columns
+                .iter()
+                .find(|(n, _)| n.eq_ignore_ascii_case(stem))
+            {
+                return Some(n.clone());
+            }
+        }
+        if let Some(ss) = s {
+            self.err(
+                "T0175",
+                "Unknown column.".to_string(),
+                ss,
+                0,
+                ss.text.len(),
+                format!("The table {table} does not have a column {word}."),
+                "Check the column names.".to_string(),
+            );
+        }
+        None
+    }
+
+    /// Appendix L 5.1: does this Say sentence have a data form? The table
+    /// must be loaded; without one, only the unmistakable forms report
+    /// T0178 so an ordinary name called `total` still works.
+    fn try_data_say(
+        &mut self,
+        toks: &[Token],
+        s: Option<&'a Sentence>,
+        sc: &mut Scope,
+    ) -> Option<Stmt> {
+        let t: Vec<Token> = toks
+            .iter()
+            .filter(|x| !matches!(x, Token::Period | Token::Eof))
+            .cloned()
+            .collect();
+        let word = |i: usize| -> Option<String> {
+            match t.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        let num = |i: usize| -> Option<i64> {
+            match t.get(i) {
+                Some(Token::Whole { value }) => Some(*value),
+                _ => None,
+            }
+        };
+        let w0 = word(0)?;
+        // A sentence that starts with a defined function is an ordinary
+        // expression (`Say total length numbers.`), not a data sentence.
+        if self.func_names.iter().any(|name| {
+            let parts: Vec<&str> = name.split_whitespace().collect();
+            !parts.is_empty()
+                && parts.len() <= t.len()
+                && parts.iter().enumerate().all(|(i, part)| {
+                    matches!(t.get(i), Some(Token::Word { lower, .. }) if lower.as_str() == *part)
+                })
+        }) {
+            return None;
+        }
+        let stat_lead = matches!(
+            w0.as_str(),
+            "average" | "median" | "total" | "smallest" | "biggest" | "spread"
+        ) || (w0 == "how" && word(1).as_deref() == Some("many"));
+        // M2's `Say how many in <collection>.` is an ordinary expression,
+        // not the M5 `how many <column>` statistic.
+        if w0 == "how" && word(1).as_deref() == Some("many") && word(2).as_deref() == Some("in") {
+            return None;
+        }
+        let rows_lead = w0 == "rows";
+        let columns_lead = w0 == "columns";
+        let top_lead = w0 == "top" || w0 == "bottom";
+        let first_rows = w0 == "first" && num(1).is_some() && word(2).as_deref() == Some("rows");
+        if !(stat_lead || rows_lead || columns_lead || top_lead || first_rows) {
+            return None;
+        }
+        let no_table = sc.visible_tables().is_empty() && !t.iter().any(|x| matches!(x, Token::Word { lower, .. } if lower == "of"));
+        if no_table {
+            // A name that the program already defines is an ordinary
+            // expression (Say total.), not a data sentence.
+            if let Some(Token::Word { lower, .. }) = t.first() {
+                if sc.find(lower).is_some() {
+                    return None;
+                }
+            }
+            if stat_lead && t.len() == 2 && sc.find(&w0).is_some() {
+                return None;
+            }
+            self.data_table(sc, None, s)?;
+            return None;
+        }
+        // `of NAME` at the end names the table.
+        let mut explicit: Option<String> = None;
+        let mut end = t.len();
+        if end >= 2 && word(end - 2).as_deref() == Some("of") {
+            explicit = word(end - 1);
+            end -= 2;
+        }
+        let table = self.data_table(sc, explicit.as_deref(), s)?;
+
+        // Say columns.
+        if columns_lead && end == 1 {
+            return Some(Stmt::SayData {
+                table,
+                items: vec![DataItem::Columns],
+            });
+        }
+
+        // Say top N group by stat column.
+        if top_lead {
+            let n = num(1).unwrap_or(0).max(0) as usize;
+            let group_word = word(2)?;
+            if word(3).as_deref() != Some("by") {
+                self.err(
+                    "T0113",
+                    "A data sentence cannot be read.".to_string(),
+                    s?,
+                    0,
+                    s?.text.len(),
+                    "A top sentence is top N <column> by <statistic> <column>.".to_string(),
+                    "Write Say top 5 regions by total price.".to_string(),
+                );
+                return Some(Stmt::Note);
+            }
+            let stat = self.stat_word_at(&t, 4)?;
+            let stat_at = if stat.is_how_many() { 2 } else { 1 };
+            let col_word = word(4 + stat_at)?;
+            let group_column = self.data_column(sc, &table, &group_word, true, s)?;
+            let column = self.data_column(sc, &table, &col_word, false, s)?;
+            return Some(Stmt::SayGroup {
+                table,
+                highest: Some(w0 == "top"),
+                count: Some(n),
+                group_column,
+                stat,
+                column,
+            });
+        }
+
+        // Say stat column by group  (M5-G8).
+        if stat_lead {
+            if let Some(by) = (0..end).find(|&i| word(i).as_deref() == Some("by")) {
+                let stat = self.stat_word_at(&t, 0)?;
+                let stat_at = if stat.is_how_many() { 2 } else { 1 };
+                let col_word = word(stat_at)?;
+                let group_word = word(by + 1)?;
+                let group_column = self.data_column(sc, &table, &group_word, true, s)?;
+                let column = self.data_column(sc, &table, &col_word, false, s)?;
+                return Some(Stmt::SayGroup {
+                    table,
+                    highest: None,
+                    count: None,
+                    group_column,
+                    stat,
+                    column,
+                });
+            }
+        }
+
+        // Say rows ... / Say first N rows ...
+        if rows_lead || first_rows {
+            let mut pos = if first_rows { 3 } else { 1 };
+            let mut first = if first_rows {
+                num(1).map(|n| n.max(0) as usize)
+            } else {
+                None
+            };
+            let mut cond_toks: Option<Vec<Token>> = None;
+            let mut sorted_by: Option<String> = None;
+            let mut descending = false;
+            while pos < end {
+                match word(pos).as_deref() {
+                    Some("where") => {
+                        let start = pos + 1;
+                        let mut stop = end;
+                        let mut j = start;
+                        while j < end {
+                            if matches!(word(j).as_deref(), Some("sorted") | Some("first")) {
+                                stop = j;
+                                break;
+                            }
+                            j += 1;
+                        }
+                        cond_toks = Some(t[start..stop].to_vec());
+                        pos = stop;
+                    }
+                    Some("sorted") => {
+                        if word(pos + 1).as_deref() != Some("by") {
+                            break;
+                        }
+                        let Some(col) = word(pos + 2) else { break };
+                        sorted_by = self.data_column(sc, &table, &col, false, s);
+                        pos += 3;
+                        if word(pos).as_deref() == Some("descending") {
+                            descending = true;
+                            pos += 1;
+                        }
+                    }
+                    Some("first") if num(pos + 1).is_some() && word(pos + 2).as_deref() == Some("rows") => {
+                        first = num(pos + 1).map(|n| n.max(0) as usize);
+                        pos += 3;
+                    }
+                    _ => break,
+                }
+            }
+            let cond = cond_toks.map(|ct| {
+                let mut csc = sc.child();
+                if let Some(info) = sc.find_table(&table) {
+                    for (n, k) in info.columns {
+                        csc.define(
+                            &n,
+                            Def {
+                                kind: k,
+                                mutable: false,
+                                shared: false,
+                            },
+                        );
+                    }
+                }
+                self.parse_condition(ct, s, &csc)
+            });
+            // `Say rows.` (and `Say rows and ...`) is the count data item,
+            // not a table; a where/sorted/first form prints the table.
+            let table_form = first.is_some() || cond.is_some() || sorted_by.is_some();
+            if table_form {
+                return Some(Stmt::SayRows {
+                    table,
+                    first,
+                    cond,
+                    sorted_by,
+                    descending,
+                });
+            }
+        }
+
+        // Say stat column [and stat column]...
+        let mut items: Vec<DataItem> = Vec::new();
+        let mut i = 0usize;
+        while i < end {
+            if word(i).as_deref() == Some("and") {
+                i += 1;
+                continue;
+            }
+            if word(i).as_deref() == Some("columns") {
+                items.push(DataItem::Columns);
+                i += 1;
+                continue;
+            }
+            if word(i).as_deref() == Some("rows") {
+                items.push(DataItem::Rows);
+                i += 1;
+                continue;
+            }
+            let Some(stat) = self.stat_word_at(&t, i) else {
+                break;
+            };
+            let at = if stat.is_how_many() { i + 2 } else { i + 1 };
+            let Some(col_word) = word(at) else { break };
+            let column = self.data_column(sc, &table, &col_word, false, s)?;
+            items.push(DataItem::Stat(stat, column));
+            i = at + 1;
+        }
+        if items.is_empty() {
+            None
+        } else {
+            Some(Stmt::SayData { table, items })
+        }
+    }
+
+    fn stat_word_at(&self, t: &[Token], at: usize) -> Option<lykaon_core::data::StatWord> {
+        let w = match t.get(at) {
+            Some(Token::Word { lower, .. }) => lower.as_str(),
+            _ => return None,
+        };
+        if w == "how" {
+            match t.get(at + 1) {
+                Some(Token::Word { lower, .. }) if lower == "many" => {
+                    return Some(lykaon_core::data::StatWord::HowMany)
+                }
+                _ => return None,
+            }
+        }
+        lykaon_core::data::StatWord::from_word(w)
+    }
+
+    /// For each row in NAME. + block (M5-G11): the body sees `row` as a
+    /// record whose parts are the table's columns (M5-D12).
+    fn parse_for_each_row(
+        &mut self,
+        s: &'a Sentence,
+        toks: &[Token],
+        sc: &mut Scope,
+        env: &mut OwnEnv,
+    ) -> Option<Stmt> {
+        let w = |i: usize| -> Option<String> {
+            match toks.get(i) {
+                Some(Token::Word { lower, .. }) => Some(lower.clone()),
+                _ => None,
+            }
+        };
+        if !(w(1).as_deref() == Some("each")
+            && w(2).as_deref() == Some("row")
+            && w(3).as_deref() == Some("in"))
+        {
+            return None;
+        }
+        let table = w(4)?;
+        let info = sc.find_table(&table)?;
+        if s.children.is_empty() {
+            self.err(
+                "T0113",
+                "A For each row block cannot be read.".to_string(),
+                s,
+                0,
+                s.text.len(),
+                "For each row needs its steps on indented lines under it.".to_string(),
+                "Indent the steps under For each row in sales.".to_string(),
+            );
+            return Some(Stmt::Note);
+        }
+        let type_name = format!("row of {table}");
+        let parts: Vec<(String, Kind)> = info.columns.clone();
+        let kind = Kind::Record(type_name.clone(), parts.clone());
+        let saved = self.record_types.insert(type_name, parts.clone());
+        let mut inner = sc.child();
+        inner.define(
+            "row",
+            Def {
+                kind,
+                mutable: false,
+                shared: false,
+            },
+        );
+        let body = self.build_block(&s.children, &mut inner, false, env);
+        match saved {
+            Some(old) => {
+                self.record_types.insert(format!("row of {table}"), old);
+            }
+            None => {
+                self.record_types.remove(&format!("row of {table}"));
+            }
+        }
+        Some(Stmt::ForEachRow {
+            table,
+            var: "row".to_string(),
+            body,
+        })
+    }
+
     fn parse_say(
         &mut self,
         toks: Vec<Token>,
@@ -7647,6 +9142,14 @@ impl<'a> Builder<'a> {
         sc: &mut Scope,
         literal: bool,
     ) -> Stmt {
+        if !literal {
+            if let Some(st) = self.try_model_say(&toks, s, sc) {
+                return st;
+            }
+            if let Some(st) = self.try_data_say(&toks, s, sc) {
+                return st;
+            }
+        }
         let lines: Vec<String> = s
             .map(|x| {
                 x.children
@@ -8314,6 +9817,29 @@ impl<'a> Builder<'a> {
             && matches!(toks.get(1), Some(Token::Word { lower: l2, .. }) if l2 == "of")
         {
             return true;
+        }
+        // M5-S31: vector of ... / dot of ... / norm of ... are values,
+        // never flat text (including in a definition value).
+        if matches!(toks.first(), Some(Token::Word { lower, .. }) if lower == "vector" || lower == "dot" || lower == "norm")
+            && toks.len() >= 2
+            && matches!(toks.get(1), Some(Token::Word { lower: l2, .. }) if l2 == "of")
+        {
+            return true;
+        }
+        // M5-S49: encrypted/decrypted X with key, random key, key from
+        // password are values, never flat text.
+        if matches!(toks.first(), Some(Token::Word { lower, .. }) if lower == "encrypted" || lower == "decrypted")
+        {
+            return true;
+        }
+        if toks.len() >= 2 {
+            if let (Some(Token::Word { lower: a, .. }), Some(Token::Word { lower: b, .. })) =
+                (toks.first(), toks.get(1))
+            {
+                if (a == "random" && b == "key") || (a == "key" && b == "from") {
+                    return true;
+                }
+            }
         }
         // ---- M4-7 (Appendix K 7.7): the time, random and secret value
         // words are never flat text ----
@@ -9261,6 +10787,31 @@ impl<'a> Builder<'a> {
                 s, 0, s.text.len(),
                 "A whole number and a decimal meet in one operation.".to_string(),
                 format!("Write {whole_side} as decimal."));
+            // M5c: a real secondary label per operand (rustc-style `----`):
+            // point at the whole-number operand and the decimal operand.
+            if let Some(d) = self.diags.last_mut() {
+                let (whole, dec) = if lw {
+                    (l.dis.clone(), r.dis.clone())
+                } else {
+                    (r.dis.clone(), l.dis.clone())
+                };
+                if let Some(a) = s.text.find(&whole) {
+                    d.labels.push(crate::diagnostics::Label {
+                        text: "this is a whole number".to_string(),
+                        lo: a,
+                        hi: a + whole.len(),
+                        primary: false,
+                    });
+                }
+                if let Some(b) = s.text.find(&dec) {
+                    d.labels.push(crate::diagnostics::Label {
+                        text: "this is a decimal".to_string(),
+                        lo: b,
+                        hi: b + dec.len(),
+                        primary: false,
+                    });
+                }
+            }
         } else if (l.kind == Kind::Text && is_num_kind(&r.kind))
             || (is_num_kind(&l.kind) && r.kind == Kind::Text)
         {
@@ -9683,6 +11234,100 @@ impl<'a> Builder<'a> {
                     num_word: false,
                 }
             }
+            // M5-S31: vector of ..., dot of a and b, norm of a.
+            "vector" => {
+                if ts.peek_next() != Some("of") {
+                    return self.plain_word_operand(ts, text, lower, sc, s);
+                }
+                ts.pos += 2; // vector of
+                self.text_depth += 1;
+                let mut items = vec![self.op_operand(ts, sc, s)];
+                while ts.consume_word("and") {
+                    items.push(self.op_operand(ts, sc, s));
+                }
+                self.text_depth -= 1;
+                Expr {
+                    kind: Kind::List(Box::new(Kind::Decimal)),
+                    e: E::Vector(items),
+                    dis: "vector".to_string(),
+                    can_fail: false,
+                    num_word: false,
+                }
+            }
+            "dot" => {
+                if ts.peek_next() != Some("of") {
+                    return self.plain_word_operand(ts, text, lower, sc, s);
+                }
+                ts.pos += 2;
+                self.text_depth += 1;
+                let a = self.op_operand(ts, sc, s);
+                ts.consume_word("and");
+                let b = self.op_operand(ts, sc, s);
+                self.text_depth -= 1;
+                Expr {
+                    kind: Kind::Decimal,
+                    e: E::Dot(Box::new(a), Box::new(b)),
+                    dis: "dot".to_string(),
+                    can_fail: false,
+                    num_word: false,
+                }
+            }
+            "norm" => {
+                if ts.peek_next() != Some("of") {
+                    return self.plain_word_operand(ts, text, lower, sc, s);
+                }
+                ts.pos += 2;
+                self.text_depth += 1;
+                let a = self.op_operand(ts, sc, s);
+                self.text_depth -= 1;
+                Expr {
+                    kind: Kind::Decimal,
+                    e: E::Norm(Box::new(a)),
+                    dis: "norm".to_string(),
+                    can_fail: false,
+                    num_word: false,
+                }
+            }
+            // M5-S49: encrypted X with key / decrypted X with key.
+            "encrypted" | "decrypted" => {
+                let is_encrypt = lower == "encrypted";
+                ts.pos += 1;
+                // the value is a value position (ch.4): an unknown word is
+                // the text to encrypt, not a missing name.
+                self.text_depth += 1;
+                let value = self.parse_operand(ts, sc, s);
+                self.text_depth -= 1;
+                ts.consume_word("with");
+                let key = self.op_operand(ts, sc, s);
+                let (a, b) = (Box::new(value), Box::new(key));
+                Expr {
+                    kind: Kind::Unknown,
+                    e: if is_encrypt {
+                        E::Encrypt(a, b)
+                    } else {
+                        E::Decrypt(a, b)
+                    },
+                    dis: format!("{lower} value"),
+                    can_fail: !is_encrypt,
+                    num_word: false,
+                }
+            }
+            "key" => {
+                if ts.peek_next() != Some("from") {
+                    return self.plain_word_operand(ts, text, lower, sc, s);
+                }
+                ts.pos += 2;
+                self.text_depth += 1;
+                let password = self.parse_operand(ts, sc, s);
+                self.text_depth -= 1;
+                Expr {
+                    kind: Kind::Unknown,
+                    e: E::KeyFrom(Box::new(password)),
+                    dis: "key from password".to_string(),
+                    can_fail: false,
+                    num_word: false,
+                }
+            }
             "json" => {
                 if ts.peek_next() != Some("of") {
                     return self.plain_word_operand(ts, text, lower, sc, s);
@@ -9929,6 +11574,17 @@ impl<'a> Builder<'a> {
                 // M4-G57: random number from A to B / random decimal /
                 // random item of L. Another shape falls back (flat text).
                 let next = ts.peek_next().unwrap_or("").to_string();
+                if next == "key" {
+                    // M5-S49: random key (32 random bytes).
+                    ts.pos += 2;
+                    return Expr {
+                        kind: Kind::Unknown,
+                        e: E::RandomKey,
+                        dis: "random key".to_string(),
+                        can_fail: false,
+                        num_word: false,
+                    };
+                }
                 let pick = match next.as_str() {
                     "number" | "decimal" | "item" => next,
                     _ => return self.plain_word_operand(ts, text, lower, sc, s),
@@ -11331,8 +12987,9 @@ impl<'a> Builder<'a> {
                             format!("{lower} belongs to module {m}, which does not share it."),
                             format!("Add Share {lower}. to {m}.lykaon, or use a shared name."),
                         );
-                    } else if !(sc.find_task(&lower)
-                        && s.is_some_and(|ss| task_escape_shape(&ss.text, &lower)))
+                    } else if self.db_cond_depth == 0
+                        && !(sc.find_task(&lower)
+                            && s.is_some_and(|ss| task_escape_shape(&ss.text, &lower)))
                     {
                         self.err(
                             "T0205",
@@ -11448,8 +13105,10 @@ impl<'a> Builder<'a> {
                         format!("{lower} belongs to module {m}, which does not share it."),
                         format!("Add Share {lower}. to {m}.lykaon, or use a shared name."),
                     );
-                } else if !(sc.find_task(&lower)
-                    && s.is_some_and(|ss| task_escape_shape(&ss.text, &lower)))
+                } else if self.db_cond_depth == 0
+                    && !(sc.find_task(&lower)
+                        && s.is_some_and(|ss| task_escape_shape(&ss.text, &lower))
+                    )
                 {
                     self.err(
                         "T0205",
@@ -11460,6 +13119,7 @@ impl<'a> Builder<'a> {
                         format!("{text} is used where it is not defined."),
                         "Define it first, or check the spelling.".to_string(),
                     );
+
                 }
             }
         }
@@ -12030,6 +13690,61 @@ fn task_escape_shape(text: &str, name: &str) -> bool {
     returned || stored || assigned
 }
 
+/// Levenshtein distance (ASCII case-insensitive use).
+fn levenshtein(a: &str, b: &str) -> usize {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    let mut prev: Vec<usize> = (0..=b.len()).collect();
+    let mut cur = vec![0usize; b.len() + 1];
+    for i in 1..=a.len() {
+        cur[0] = i;
+        for j in 1..=b.len() {
+            let cost = if a[i - 1] == b[j - 1] { 0 } else { 1 };
+            cur[j] = (prev[j] + 1).min(cur[j - 1] + 1).min(prev[j - 1] + cost);
+        }
+        std::mem::swap(&mut prev, &mut cur);
+    }
+    prev[b.len()]
+}
+
+/// M5c: the closest visible name for a misspelling (beginner-friendly
+/// "Did you mean ...?"). Only names at distance <= 2 are offered.
+fn closest_visible_name(sc: &Scope, word: &str) -> Option<String> {
+    let lower = word.to_ascii_lowercase();
+    let mut best: Option<(usize, String)> = None;
+    for (n, _) in &sc.defs {
+        let d = levenshtein(&n.to_ascii_lowercase(), &lower);
+        if d <= 2 && best.as_ref().map(|(bd, _)| d < *bd).unwrap_or(true) {
+            best = Some((d, n.clone()));
+        }
+    }
+    best.map(|(_, n)| n)
+}
+
+/// M5c: closest name in a word list (used for did-you-mean).
+fn closest_in(names: &[String], word: &str) -> Option<String> {
+    let lower = word.to_ascii_lowercase();
+    let mut best: Option<(usize, String)> = None;
+    for n in names {
+        let d = levenshtein(&n.to_ascii_lowercase(), &lower);
+        if d <= 2 && best.as_ref().map(|(bd, _)| d < *bd).unwrap_or(true) {
+            best = Some((d, n.clone()));
+        }
+    }
+    best.map(|(_, n)| n)
+}
+
+/// M5-S1: a CSV header cell is usable when it is one plain Lykaon name:
+/// letters, digits and underscores, starting with a letter.
+fn valid_data_name(n: &str) -> bool {
+    let mut chars = n.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_alphabetic() => {}
+        _ => return false,
+    }
+    chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
 /// Does a value of kind `given` belong in a place declared as `declared`?
 /// The checker only rejects what it can see: an unknown or missing kind is
 /// never an error, the three number kinds are interchangeable (the language's
@@ -12099,22 +13814,13 @@ pub(crate) fn later_milestone_shape(text: &str) -> Option<String> {
             return None;
         }
     }
-    // Appendix K 1.1: databases, Load, Plot, Predict, the sandbox, Limit
-    // memory/time, encryption, screens and bridges are NOT in M4; a later
-    // sentence gives T0509 and never crashes the compiler. The phrases
-    // (not just the first word) keep ordinary names such as `load` usable.
-    const LATER: [&str; 22] = [
-        "limit memory",
-        "limit time",
-        "load the",
+    // Appendix K 1.1: databases, Predict, the sandbox, Limit memory/time,
+    // encryption, screens and bridges are NOT in M4; a later sentence gives
+    // T0509 and never crashes the compiler. Load and Plot arrived in M5, so
+    // they are no longer in this list.
+    const LATER: [&str; 13] = [
         "load a model",
-        "load data",
-        "plot ",
-        "plot",
-        "predict ",
-        "predict",
-        "open database",
-        "open the database",
+        "load the model",
         "query the database",
         "sqlite",
         "encrypt ",
@@ -12424,7 +14130,7 @@ impl<'a> Builder<'a> {
             Stmt::Define(d) => {
                 // the value is evaluated before the name is bound
                 if let E::Move(inner) = &d.expr.e {
-                    // `Others is give names.` â€” names was given to others (ch.28)
+                    // `Others is give names.` Ã¢â‚¬â€ names was given to others (ch.28)
                     if let E::Name(n) = &inner.e {
                         if env.params.iter().any(|p| p == n) {
                             // T0410: the value is given away while it is still
@@ -12816,6 +14522,59 @@ impl<'a> Builder<'a> {
             Stmt::PageDecl { .. } | Stmt::WsRecv { .. } => {}
             Stmt::Careful { body } => {
                 self.check_stmts(body, env, s);
+            }
+            // M5 (Appendix L 7.1): a row loop lends one row into the body.
+            Stmt::ForEachRow { body, .. } => {
+                let saved = env.vars.insert(
+                    "row".to_string(),
+                    VarState {
+                        kind: Kind::Unknown,
+                        mutable: false,
+                        alive: true,
+                        mode: ParamMode::Lent,
+                    },
+                );
+                self.check_stmts(body, env, s);
+                match saved {
+                    Some(v) => {
+                        env.vars.insert("row".to_string(), v);
+                    }
+                    None => {
+                        env.vars.remove("row");
+                    }
+                }
+            }
+            Stmt::SayRows { cond, .. } => {
+                if let Some(c) = cond {
+                    self.check_expr(c, env, s);
+                }
+            }
+            Stmt::LoadTable { .. }
+            | Stmt::SayData { .. }
+            | Stmt::SayGroup { .. }
+            | Stmt::Plot { .. }
+            | Stmt::Predict { .. }
+            | Stmt::SaveModel { .. }
+            | Stmt::OpenDatabase { .. }
+            | Stmt::LoadDatabase { .. }
+            | Stmt::Limit { .. }
+            | Stmt::AskAssistant { .. }
+            | Stmt::LoadModel { .. } => {}
+            Stmt::DbAdd { value, .. } => self.check_expr(value, env, s),
+            Stmt::DbRemove { cond, .. } => self.check_expr(cond, env, s),
+            Stmt::DbSet { value, cond, .. } => {
+                self.check_expr(value, env, s);
+                self.check_expr(cond, env, s);
+            }
+            Stmt::Transaction { body } => self.check_stmts(body, env, s),
+            Stmt::SayModel { items } => {
+                for item in items {
+                    if let ModelItem::Prediction(pairs) = item {
+                        for (_, e) in pairs {
+                            self.check_expr(e, env, s);
+                        }
+                    }
+                }
             }
             Stmt::WhenSignal { body, .. } | Stmt::ForEachInput { body, .. } => {
                 self.check_stmts(body, env, s);

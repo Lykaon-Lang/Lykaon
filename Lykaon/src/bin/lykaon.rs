@@ -9,6 +9,9 @@
 use std::io::IsTerminal;
 use std::process::ExitCode;
 
+#[global_allocator]
+static GLOBAL_ALLOC: lykaon::alloc::CountingAllocator = lykaon::alloc::CountingAllocator;
+
 fn main() -> ExitCode {
     // A double click on the exe opens a console that would close before the
     // usage text can be read. When stdout is a real console window, start the
@@ -30,6 +33,10 @@ fn main() -> ExitCode {
             // the file is the program's own command line (M4-S82).
             // --interpret is this front's default (the flag is accepted);
             // the compiler flags belong to lykaonc
+            // M5-S43: `lykaon run safely [file]` (or --safely) enables
+            // the permission sandbox before the program runs.
+            let mut trace = false;
+            let mut safely = false;
             let mut file: Option<String> = None;
             let mut prog_args: Vec<String> = Vec::new();
             let mut i = 2;
@@ -38,6 +45,8 @@ fn main() -> ExitCode {
                 if file.is_none() {
                     match a {
                         "--interpret" => {} // this front's default
+                        "--safely" | "safely" => safely = true,
+                        "--trace-json" => trace = true,
                         "--native" | "--fast" | "--small" => {
                             eprintln!("the compiler front is lykaonc-cli ({a} belongs there)");
                             return ExitCode::from(2);
@@ -61,7 +70,25 @@ fn main() -> ExitCode {
                     return ExitCode::from(1);
                 }
             };
-            lykaon::cli::run_interpreter(source, file, prog_args)
+            if safely {
+                unsafe { std::env::set_var("LYKAON_SAFE", "1") };
+            }
+            if trace {
+                lykaon_core::interp::enable_trace();
+            }
+            let code = lykaon::cli::run_interpreter(source, file, prog_args);
+            if trace {
+                let steps = lykaon_core::interp::take_trace();
+                println!(
+                    "{{\"steps\":[{}]}}",
+                    steps
+                        .iter()
+                        .map(|s| format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")))
+                        .collect::<Vec<_>>()
+                        .join(",")
+                );
+            }
+            code
         }
         Some("repl") => lykaon::cli::repl_session(),
         Some("ui") | Some("--ui") => {

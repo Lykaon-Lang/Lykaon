@@ -1,0 +1,6 @@
+Error: This sentence can be read two ways. (T0130)
+Where: tests/conformance/m1b/errors/ch65_add_postfix/input.lykaon, line 3: Add first 2 of numbers sorted to total.
+                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Why: it can mean the first 2 of numbers, sorted, or the first 2 of numbers sorted.
+Fix: Split it into two sentences.
+

@@ -258,13 +258,28 @@ fn c_type(k: &CKind) -> &'static str {
 /// Load a dynamic library by file name (M6-G31). The handle is an opaque
 /// platform value; use `resolve_symbol` to look up a C symbol.
 pub fn load_library(file: &str) -> Result<usize, String> {
+    load_library_impl(file, false)
+}
+
+/// Load a dynamic library with its symbols in the global namespace
+/// (`RTLD_GLOBAL` on Unix). Python C extensions resolve `libpython` symbols
+/// against the global namespace, so the interpreter library must be loaded
+/// this way; loading it `RTLD_LOCAL` makes numpy fail with
+/// `undefined symbol: PyObject_SelfIter`.
+pub fn load_library_global(file: &str) -> Result<usize, String> {
+    load_library_impl(file, true)
+}
+
+fn load_library_impl(file: &str, global: bool) -> Result<usize, String> {
     let c = std::ffi::CString::new(file).map_err(|_| "bad library name".to_string())?;
     #[cfg(unix)]
     unsafe {
         unsafe extern "C" {
             fn dlopen(filename: *const std::os::raw::c_char, flag: i32) -> *mut std::os::raw::c_void;
         }
-        let h = dlopen(c.as_ptr(), 2); // RTLD_NOW
+        // RTLD_NOW = 2, RTLD_GLOBAL = 0x100.
+        let flag = if global { 2 | 0x100 } else { 2 };
+        let h = dlopen(c.as_ptr(), flag);
         if h.is_null() {
             Err("the library cannot be loaded".to_string())
         } else {
@@ -276,6 +291,7 @@ pub fn load_library(file: &str) -> Result<usize, String> {
         unsafe extern "system" {
             fn LoadLibraryA(name: *const u8) -> *mut std::os::raw::c_void;
         }
+        let _ = global; // LoadLibraryA already puts the library in the process namespace.
         let h = LoadLibraryA(c.as_ptr() as *const u8);
         if h.is_null() {
             Err("the library cannot be loaded".to_string())

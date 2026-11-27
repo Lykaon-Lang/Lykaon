@@ -224,9 +224,6 @@ runtime library and licenses.
 
 - **Performance** is not yet a focus; correctness and byte-exact
   interpreter/native output come first.
-- **macOS** is not a target. **ARM64** binaries are not shipped yet; the
-  ARM64 targets exist in the build plan but the runtime is not verified on
-  ARM64 hardware.
 - **Bridges and built-ins** (C, Python, JavaScript, plugins, the registry and
   the M6b standard-library built-ins) run on the interpreter path, for example
   `lykaon-cli run --interpret program.lykaon`. Native builds of programs that

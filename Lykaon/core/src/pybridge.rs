@@ -228,7 +228,7 @@ impl PyApi {
         let mut handle = None;
         let mut last = String::new();
         for c in candidates {
-            match crate::cbridge::load_library(c) {
+            match crate::cbridge::load_library_global(c) {
                 Ok(h) => {
                     handle = Some(h);
                     break;

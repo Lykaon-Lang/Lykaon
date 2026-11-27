@@ -9,7 +9,7 @@ you build a native executable, because that is the final link step.
 
 - Platform: Linux x86-64 (glibc 2.39 or newer, e.g. Ubuntu 24.04+).
 - Built and tested on Ubuntu 26.04 x86-64.
-- The native Apple/ARM machines are not part of this archive.
+- Includes the compiler, interpreter, runtime library, installer and licenses.
 
 ## Install
 

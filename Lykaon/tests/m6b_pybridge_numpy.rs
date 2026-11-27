@@ -4,9 +4,9 @@
 //! and the Python C API leaves the process with a non-daemon thread that can
 //! block the test harness at exit. One process per binary keeps it isolated.
 //!
-//! The numpy wheel is verified on Windows. On Linux the embedded interpreter
-//! does not load the distribution numpy (its C extension is built against a
-//! different Python), so the case is Windows-only rather than a silent skip.
+//! The numpy wheel is verified on Windows and Linux. The bridge loads
+//! libpython with RTLD_GLOBAL so the extension can resolve libpython symbols
+//! (RTLD_LOCAL makes numpy fail with `undefined symbol: PyObject_SelfIter`).
 
 use lykaon::run_source;
 use std::path::PathBuf;
@@ -19,7 +19,6 @@ fn stage(name: &str, module: &str, stub: &str) -> PathBuf {
     dir
 }
 
-#[cfg(windows)]
 #[test]
 fn call_numpy_sqrt() {
     let dir = stage(

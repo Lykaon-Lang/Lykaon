@@ -204,6 +204,12 @@ pub fn detect() -> Result<Toolchain, String> {
     )
 }
 
+/// Find `cl.exe` next to a detected `link.exe`.
+pub fn cl_from_link(link: &Path) -> Option<PathBuf> {
+    let cl = link.parent()?.join("cl.exe");
+    if cl.exists() { Some(cl) } else { None }
+}
+
 /// Link one object plus liblykaon_rt into a console executable. The runtime
 /// library provides `main`; the object provides `lykaon_main` (and the data
 /// symbols it references).

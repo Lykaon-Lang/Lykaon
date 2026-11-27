@@ -443,3 +443,40 @@ Serve on port 8080.
   value: `Send welcome to connection.` and `Receive from connection.`
   (maybe text, missing when the other side closes)
 - Sessions: `Put hello in session under name.` inside a handler
+
+## Standard-library built-ins (M6b)
+
+Nine gaps found by the Python standard-library audit are built into the
+interpreter (`core/src/builtins.rs`, `docs/stdlib-audit.md`). Call a built-in
+by name; two- and three-argument calls use `with` (or `and` where the parser
+groups the arguments).
+
+```lykaon
+Say sqrt 9.
+Say power 2 with 10.
+Say b64encode hi.
+Say mode list of 1 and 2 and 2 and 3.
+```
+
+| Built-in | Meaning |
+|---|---|
+| `sqrt x` | square root (decimal) |
+| `floor x`, `ceiling x` | round down / up (whole) |
+| `logarithm x` | natural logarithm (decimal) |
+| `power x with y` | x to the power y |
+| `sha256 text`, `md5 text` | hex digest |
+| `b64encode text`, `b64decode text` | base64 (decode can fail) |
+| `packwhole n`, `unpackwhole text` | 8-byte little-endian whole |
+| `packdecimal d`, `unpackdecimal text` | 8-byte little-endian decimal |
+| `capture command` | run a command, return standard output (can fail) |
+| `mapdefault map with key with fallback` | map lookup with a default |
+| `regexreplace text with pattern with replacement` | regular-expression replace |
+| `regexsplit text with pattern` | split on a pattern (list of text) |
+| `tcpopen host with port`, `tcpsend connection with text`, `tcpclose connection` | raw TCP socket (can fail) |
+| `mode list`, `stdev list` | most common value, standard deviation |
+
+- Regex supports `. * + ? [] ^ $ \d \w \s` and alternation-free patterns.
+- `capture`, `tcp*` and the permission-sensitive built-ins are gated by
+  `lykaon run safely` (`docs/unsafe-boundary.md`).
+- These run on the interpreter path (`lykaon-cli run --interpret`); the native
+  default backend does not lower them.

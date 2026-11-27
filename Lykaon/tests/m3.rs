@@ -136,10 +136,14 @@ fn run() {
                     _ => break,
                 }
             }
-            let bases = [
-                format!("\\\\?\\{}", base.to_string_lossy()),
-                base.to_string_lossy().to_string(),
-            ];
+            // A filesystem root (`/` on Linux, `C:\` on Windows) is not a
+            // project folder: replacing it would rewrite every separator in
+            // a relative path. Only real folders are normalized.
+            let mut bases: Vec<String> = Vec::new();
+            if base.file_name().is_some() {
+                bases.push(format!("\\\\?\\{}", base.to_string_lossy()));
+                bases.push(base.to_string_lossy().to_string());
+            }
             let mut out = out.replace('\\', "/").replace("\r\n", "\n");
             for b in bases {
                 out = out.replace(&b.replace('\\', "/"), "<root>");

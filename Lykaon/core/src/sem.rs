@@ -1784,10 +1784,33 @@ pub enum FnBody {
     Block(Vec<Stmt>),
 }
 
+/// M6-G33: the C layout phrases of one record.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct RecordLayout {
+    pub as_c: bool,
+    pub packed: bool,
+    pub align: Option<usize>,
+}
+
+#[derive(Clone, Debug)]
 pub struct Program {
     pub body: Vec<Stmt>,
     pub funcs: Vec<FuncDef>,
     pub tests: Vec<TestDef>, // Test blocks (ch.38), run by `lykaon test`
+    /// M6-G33: C layout phrases per record, for the C ABI.
+    pub record_layouts: Vec<(String, RecordLayout)>,
+    /// M6-G31: C libraries named by `Use C library NAME.`.
+    pub c_libraries: Vec<String>,
+    /// M6-G35: plugins named by `Load plugin NAME.`.
+    pub plugins: Vec<String>,
+    /// M6-G32: functions marked by `Share for C.`.
+    pub c_exports: Vec<FuncDef>,
+    /// M6-G38: C functions declared by `.stub.shelf` files.
+    pub c_functions: Vec<crate::cbridge::CDecl>,
+    /// M6b: Python functions declared by `.py.shelf` files.
+    pub py_functions: Vec<crate::pybridge::PyDecl>,
+    /// M6-G33: record fields for C record returns.
+    pub record_types: Vec<(String, Vec<(String, Kind)>)>,
     // ---- M3 ----
     pub interfaces: Vec<Interface>, // Anything that can VERB must have FN.
     /// The implementation blocks, in file order.
@@ -1829,6 +1852,7 @@ pub struct Need {
 }
 
 /// A collected test block: name and the statements inside it (ch.38).
+#[derive(Clone, Debug)]
 pub struct TestDef {
     pub name: String,
     pub body: Vec<Stmt>,

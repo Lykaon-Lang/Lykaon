@@ -34,3 +34,6 @@ secrets*
 
 # Release staging (uploaded as GitHub Release assets, not repo content)
 release/
+
+# M5 database test scratch
+Lykaon/m5db*

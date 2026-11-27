@@ -1,4 +1,4 @@
-﻿//! M4-12: the Appendix K conformance table (M4-T02 .. M4-T29), plus the
+//! M4-12: the Appendix K conformance table (M4-T02 .. M4-T29), plus the
 //! traceability map for the cases that live in the harness instead of a
 //! single program (servers, CLI tools, the Linux-only `Run echo` case).
 //!
@@ -361,10 +361,10 @@ Fetch plain nowhere dot invalid home.
 fn m4_12_appendix_k_conformance_table() {
     // T10's environment: the variable named by the words in upper case
     // joined by _ (M4-S80), so `Environment lykaon m4 conformance.` reads
-    // Lykaon_M4_CONFORMANCE.
+    // LYKAON_M4_CONFORMANCE.
     // SAFETY: test-only, set before any program run reads the variable (the
     // same helper shape tests/m4.rs uses for the M4-8 environment cases)
-    unsafe { std::env::set_var("Lykaon_M4_CONFORMANCE", "normal") };
+    unsafe { std::env::set_var("LYKAON_M4_CONFORMANCE", "normal") };
     let mut failures: Vec<String> = Vec::new();
     let mut ran = 0usize;
     let mut elsewhere = 0usize;

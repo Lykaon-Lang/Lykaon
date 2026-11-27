@@ -710,8 +710,9 @@ checksum = "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c"
 
 [[package]]
 name = "lykaon"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
+ "cc",
  "cranelift-codegen",
  "cranelift-frontend",
  "cranelift-module",
@@ -731,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "lykaon-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "argon2",
  "cc",
@@ -751,8 +752,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "lykaon-ffi"
+version = "0.3.0"
+dependencies = [
+ "lykaon",
+]
+
+[[package]]
+name = "lykaon-playground"
+version = "0.3.0"
+dependencies = [
+ "lykaon",
+]
+
+[[package]]
 name = "lykaon-rt"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "lykaon",
  "lykaon-core",

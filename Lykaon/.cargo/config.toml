@@ -13,3 +13,10 @@
 #   linker = "C:/<your-rustup-home>/toolchains/stable-x86_64-pc-windows-msvc/
 #             lib/rustlib/x86_64-pc-windows-msvc/bin/rust-lld.exe"
 # (machine-specific, so it is deliberately not set here)
+
+# The M5 value tree is large (table/model/database values); deep recursive
+# programs and the test harness need more than the default thread stack.
+# The native runtime already runs the evaluator on a 64 MiB thread; this
+# gives cargo test and the CLI the same headroom.
+[env]
+RUST_MIN_STACK = "67108864"

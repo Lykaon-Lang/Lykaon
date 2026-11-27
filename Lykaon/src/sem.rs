@@ -107,6 +107,19 @@ impl Scope {
 
 // ---------------------------------------------------------------- builder
 
+/// M6: is this name a bridge stub or a standard-library built-in (seen in
+/// `Program.funcs` only through the parser's seeded table)? These belong to
+/// the interpreter path, never to the source program's own functions.
+fn is_bridge_or_builtin(name: &str) -> bool {
+    lykaon_core::cbridge::c_functions()
+        .iter()
+        .any(|d| d.name.eq_ignore_ascii_case(name))
+        || lykaon_core::pybridge::py_functions()
+            .iter()
+            .any(|d| d.name.eq_ignore_ascii_case(name))
+        || lykaon_core::builtins::find(name).is_some()
+}
+
 pub fn build(
     all: &[Sentence],
     roots: &[usize],
@@ -116,6 +129,166 @@ pub fn build(
     if std::env::var("Lykaon_DEBUG").is_ok() {
         eprintln!("DBG names={:?}", names.spellings());
     }
+    let c_funcs = lykaon_core::cbridge::c_functions();
+    fn c_param(k: &lykaon_core::cbridge::CKind) -> ParamType {
+        use lykaon_core::cbridge::CKind;
+        ParamType::K(match k {
+            CKind::Whole => Kind::Whole,
+            CKind::Decimal => Kind::Decimal,
+            CKind::YesNo => Kind::Boolean,
+            CKind::Letter | CKind::Text | CKind::Bytes => Kind::Text,
+            CKind::Record(name) => Kind::Record(name.clone(), Vec::new()),
+        })
+    }
+    let c_defs: Vec<lykaon_core::sem::FuncDef> = c_funcs
+        .iter()
+        .map(|d| {
+            let inputs: Vec<(String, lykaon_core::sem::ParamMode)> = d
+                .inputs
+                .iter()
+                .enumerate()
+                .map(|(i, _)| (format!("a{i}"), lykaon_core::sem::ParamMode::MoveIn))
+                .collect();
+            let input_types = d
+                .inputs
+                .iter()
+                .map(|k| Some(c_param(k)))
+                .collect();
+            lykaon_core::sem::FuncDef {
+                name: d.name.clone(),
+                inputs,
+                can_fail: d.can_fail,
+                default_last: None,
+                body: lykaon_core::sem::FnBody::Block(Vec::new()),
+                shared: false,
+                input_types,
+                result_type: Some(c_param(&d.result)),
+                requires: Vec::new(),
+                ensures: Vec::new(),
+                tags: Vec::new(),
+                is_generator: false,
+                is_local: false,
+                captures: Vec::new(),
+            }
+        })
+        .collect();
+    let c_names: Vec<String> = c_funcs.iter().map(|d| d.name.clone()).collect();
+    let c_arity: Vec<(String, usize, bool, Vec<Option<ParamType>>)> = c_funcs
+        .iter()
+        .map(|d| {
+            (
+                d.name.clone(),
+                d.inputs.len(),
+                d.can_fail,
+                d.inputs.iter().map(|k| Some(c_param(k))).collect(),
+            )
+        })
+        .collect();
+    let py_funcs = lykaon_core::pybridge::py_functions();
+    let py_defs: Vec<lykaon_core::sem::FuncDef> = py_funcs
+        .iter()
+        .map(|d| {
+            let inputs: Vec<(String, lykaon_core::sem::ParamMode)> = d
+                .inputs
+                .iter()
+                .enumerate()
+                .map(|(i, _)| (format!("a{i}"), lykaon_core::sem::ParamMode::MoveIn))
+                .collect();
+            let input_types = d
+                .inputs
+                .iter()
+                .map(|k| Some(c_param(k)))
+                .collect();
+            lykaon_core::sem::FuncDef {
+                name: d.name.clone(),
+                inputs,
+                can_fail: d.can_fail,
+                default_last: None,
+                body: lykaon_core::sem::FnBody::Block(Vec::new()),
+                shared: false,
+                input_types,
+                result_type: Some(c_param(&d.result)),
+                requires: Vec::new(),
+                ensures: Vec::new(),
+                tags: Vec::new(),
+                is_generator: false,
+                is_local: false,
+                captures: Vec::new(),
+            }
+        })
+        .collect();
+    let py_names: Vec<String> = py_funcs.iter().map(|d| d.name.clone()).collect();
+    let py_arity: Vec<(String, usize, bool, Vec<Option<ParamType>>)> = py_funcs
+        .iter()
+        .map(|d| {
+            (
+                d.name.clone(),
+                d.inputs.len(),
+                d.can_fail,
+                d.inputs.iter().map(|k| Some(c_param(k))).collect(),
+            )
+        })
+        .collect();
+    let bi_funcs = lykaon_core::builtins::all();
+    let bi_defs: Vec<lykaon_core::sem::FuncDef> = bi_funcs
+        .iter()
+        .map(|d| {
+            let inputs: Vec<(String, lykaon_core::sem::ParamMode)> = d
+                .inputs
+                .iter()
+                .enumerate()
+                .map(|(i, _)| (format!("a{i}"), lykaon_core::sem::ParamMode::MoveIn))
+                .collect();
+            let input_types = d
+                .inputs
+                .iter()
+                .map(|k| {
+                    Some(if matches!(k, Kind::Unknown) {
+                        ParamType::Any
+                    } else {
+                        ParamType::K(k.clone())
+                    })
+                })
+                .collect();
+            lykaon_core::sem::FuncDef {
+                name: d.name.to_string(),
+                inputs,
+                can_fail: d.can_fail,
+                default_last: None,
+                body: lykaon_core::sem::FnBody::Block(Vec::new()),
+                shared: false,
+                input_types,
+                result_type: Some(ParamType::K(d.result.clone())),
+                requires: Vec::new(),
+                ensures: Vec::new(),
+                tags: Vec::new(),
+                is_generator: false,
+                is_local: false,
+                captures: Vec::new(),
+            }
+        })
+        .collect();
+    let bi_names: Vec<String> = bi_funcs.iter().map(|d| d.name.to_string()).collect();
+    let bi_arity: Vec<(String, usize, bool, Vec<Option<ParamType>>)> = bi_funcs
+        .iter()
+        .map(|d| {
+            (
+                d.name.to_string(),
+                d.inputs.len(),
+                d.can_fail,
+                d.inputs
+                    .iter()
+                    .map(|k| {
+                        Some(if matches!(k, Kind::Unknown) {
+                            ParamType::Any
+                        } else {
+                            ParamType::K(k.clone())
+                        })
+                    })
+                    .collect(),
+            )
+        })
+        .collect();
     let mut b = Builder {
         all,
         file: file.to_string(),
@@ -125,15 +298,21 @@ pub fn build(
             .unwrap_or_default(),
         diags: Vec::new(),
         names: sorted_names(names),
-        funcs: Vec::new(),
-        func_names: Vec::new(),
-        func_arity: Vec::new(),
+        funcs: c_defs.into_iter().chain(py_defs).chain(bi_defs).collect(),
+        func_names: c_names.into_iter().chain(py_names).chain(bi_names).collect(),
+        func_arity: c_arity.into_iter().chain(py_arity).chain(bi_arity).collect(),
         top_defs: Vec::new(), // filled right after, together with top_kinds
         top_kinds: HashMap::new(),
         err_reported: false,
         text_depth: 0,
         db_cond_depth: 0,
         record_types: HashMap::new(),
+        record_layouts: HashMap::new(),
+        c_libraries: Vec::new(),
+        c_exports: Vec::new(),
+        share_for_c_line: None,
+        share_for_c_done: false,
+        plugins: Vec::new(),
         enum_types: HashMap::new(),
         shape_names: HashMap::new(),
         defining: None,
@@ -168,6 +347,9 @@ pub fn build(
         page_table: Vec::new(),
         fresh_kind: Kind::Unknown,
     };
+    if std::env::var("Lykaon_DEBUG").is_ok() {
+        eprintln!("DBG func_names={:?}", b.func_names);
+    }
     let (td, tk) = collect_top_defs(all, roots);
     b.top_defs = td;
     b.top_kinds = tk;
@@ -252,8 +434,42 @@ pub fn build(
     (
         Program {
             body,
-            funcs: b.funcs,
+            // M6: the C/Python stubs and the built-ins sit in `b.funcs` so
+            // the name, arity and can-fail checks resolve their calls, but
+            // they are not source functions. `Program.funcs` is what the
+            // code generator, the whole-program optimizer and the doc tools
+            // walk; a stub there would look like a user function with an
+            // empty body (and break the scalar backend's shape gate).
+            funcs: b
+                .funcs
+                .into_iter()
+                .filter(|f| !is_bridge_or_builtin(&f.name))
+                .collect(),
             tests: b.tests,
+        record_layouts: b
+            .record_layouts
+            .iter()
+            .map(|(n, l)| {
+                (
+                    n.clone(),
+                    lykaon_core::sem::RecordLayout {
+                        as_c: l.as_c,
+                        packed: l.packed,
+                        align: l.align,
+                    },
+                )
+            })
+            .collect(),
+        c_libraries: b.c_libraries.clone(),
+        plugins: b.plugins.clone(),
+        c_exports: b.c_exports.clone(),
+        c_functions: Vec::new(),
+        py_functions: Vec::new(),
+        record_types: b
+            .record_types
+            .iter()
+            .map(|(n, ps)| (n.clone(), ps.clone()))
+            .collect(),
             interfaces: b.interfaces,
             impls: b.impls,
             always: b.always,
@@ -413,6 +629,17 @@ struct Builder<'a> {
     text_depth: usize,
     /// Declared record types: person -> [(name, text), (age, number)] (ch.20).
     record_types: HashMap<String, Vec<(String, Kind)>>,
+    /// M6-G33: C layout phrases per record (`as C does`, `packed`, `aligned to N`).
+    record_layouts: HashMap<String, crate::cbridge::Layout>,
+    /// M6-G31: C libraries named by `Use C library NAME.`.
+    c_libraries: Vec<String>,
+    /// M6-G32: functions marked by `Share for C.`.
+    c_exports: Vec<FuncDef>,
+    /// M6-G32: the line of `Share for C.` and whether the export was taken.
+    share_for_c_line: Option<usize>,
+    share_for_c_done: bool,
+    /// M6-G35: plugins named by `Load plugin NAME.`.
+    plugins: Vec<String>,
     /// Declared enums: payment -> [(cash, []), (card, [(owner, text)])] (ch.21).
     enum_types: HashMap<String, Vec<(String, Vec<(String, Kind)>)>>,
     /// A shape name -> its enum type and parts (ch.21).
@@ -597,7 +824,13 @@ impl<'a> Builder<'a> {
     fn hoist_share(&mut self, idx: usize) {
         let low = self.all[idx].text.to_ascii_lowercase();
         let words: Vec<&str> = low.split_whitespace().collect();
-        if words.first() == Some(&"share") && words.len() >= 2 {
+        if words.first() == Some(&"share")
+            && words.len() >= 3
+            && words[1] == "for"
+            && words[2].trim_end_matches('.') == "c"
+        {
+            self.share_for_c_line = Some(self.all[idx].line);
+        } else if words.first() == Some(&"share") && words.len() >= 2 {
             let name = words[1..].join(" ").trim_end_matches('.').to_string();
             if !self.shared_names.iter().any(|n| n == &name) {
                 self.shared_names.push(name);
@@ -1090,7 +1323,7 @@ impl<'a> Builder<'a> {
             .filter(|(n, _)| *n != name && !inputs.iter().any(|(i, _)| i == n))
             .map(|(n, _)| n.clone())
             .collect();
-        Some(FuncDef {
+        let fd = FuncDef {
             name,
             inputs,
             can_fail,
@@ -1105,7 +1338,14 @@ impl<'a> Builder<'a> {
             is_generator,
             is_local: false,
             captures,
-        })
+        };
+        if let Some(line) = self.share_for_c_line {
+            if s.line > line && !self.share_for_c_done {
+                self.c_exports.push(fd.clone());
+                self.share_for_c_done = true;
+            }
+        }
+        Some(fd)
     }
 
     /// Does the expression tree contain a call to the function named `name`?
@@ -1598,15 +1838,30 @@ impl<'a> Builder<'a> {
                 continue;
             };
             let comparable = |x: &Kind| !matches!(x, Kind::Unknown | Kind::Missing);
+            let is_c = lykaon_core::cbridge::c_functions()
+                .iter()
+                .any(|d| d.name == name)
+                || lykaon_core::pybridge::py_functions()
+                    .iter()
+                    .any(|d| d.name == name)
+                || lykaon_core::builtins::find(name).is_some();
             // Number accepts any number kind; Any/Limited accept anything
-            let kind_ok = match want {
-                // an unknown argument kind is not checked (the call's
-                // result kind is not tracked in the registry)
-                ParamType::K(kind) => {
-                    !comparable(got_kind) || (comparable(kind) && kind == got_kind)
+            let kind_ok = if is_c
+                && matches!(want, ParamType::K(Kind::Decimal))
+                && matches!(got_kind, Kind::Whole)
+            {
+                // C `double` parameters accept a whole number.
+                true
+            } else {
+                match want {
+                    // an unknown argument kind is not checked (the call's
+                    // result kind is not tracked in the registry)
+                    ParamType::K(kind) => {
+                        !comparable(got_kind) || (comparable(kind) && kind == got_kind)
+                    }
+                    ParamType::Number => matches!(got_kind, Kind::Whole | Kind::Decimal | Kind::Big),
+                    ParamType::Any | ParamType::Limited(_) => true,
                 }
-                ParamType::Number => matches!(got_kind, Kind::Whole | Kind::Decimal | Kind::Big),
-                ParamType::Any | ParamType::Limited(_) => true,
             };
             if !kind_ok {
                 self.err(
@@ -2670,7 +2925,33 @@ impl<'a> Builder<'a> {
         match first.as_str() {
             "set" => self.parse_set(s, &toks, sc),
             // M5 (Appendix L 5.1): Load NAME / Load NAME from file F.
-            "load" => self.parse_load(s, &toks, sc),
+            "load" => {
+                // M6-G35: Load plugin NAME.
+                if toks.len() >= 3
+                    && matches!(&toks[1], Token::Word { lower, .. } if lower == "plugin")
+                {
+                    let name = match &toks[2] {
+                        Token::Word { lower, .. } => lower.clone(),
+                        Token::Whole { value } => value.to_string(),
+                        _ => String::new(),
+                    };
+                    if name.is_empty() {
+                        self.err(
+                            "T0113",
+                            "A plugin sentence cannot be read.".to_string(),
+                            s,
+                            0,
+                            s.text.len(),
+                            "Load plugin does not name a plugin.".to_string(),
+                            "Write Load plugin <name>.".to_string(),
+                        );
+                    } else {
+                        self.plugins.push(name);
+                    }
+                    return Stmt::Note;
+                }
+                self.parse_load(s, &toks, sc)
+            }
             // M5 (Appendix L 5.1): Plot VERTICAL against HORIZONTAL ...
             "plot" => self.parse_plot(s, &toks, sc),
             // M5 (Appendix L 7.3): Predict TARGET from ...
@@ -2865,6 +3146,31 @@ impl<'a> Builder<'a> {
             "close" => self.parse_close(Some(s), &toks, sc),
             "share" => self.parse_share(Some(s), &toks, sc),
             "use" => {
+                // M6-G31: Use C library NAME.
+                if toks.len() >= 4
+                    && matches!(&toks[1], Token::Word { lower, .. } if lower == "c")
+                    && matches!(&toks[2], Token::Word { lower, .. } if lower == "library")
+                {
+                    let name = match &toks[3] {
+                        Token::Word { lower, .. } => lower.clone(),
+                        Token::Whole { value } => value.to_string(),
+                        _ => String::new(),
+                    };
+                    if name.is_empty() {
+                        self.err(
+                            "T0113",
+                            "A C library sentence cannot be read.".to_string(),
+                            s,
+                            0,
+                            s.text.len(),
+                            "Use C library does not name a library.".to_string(),
+                            "Write Use C library <name>.".to_string(),
+                        );
+                    } else {
+                        self.c_libraries.push(name);
+                    }
+                    return Stmt::Note;
+                }
                 // M4-G17 (Appendix K 7.3): Use NUMBER workers. sets the
                 // Spread worker count. The module Use of chapter 36 reads
                 // Use <module path>. - only words - so a leading whole
@@ -6616,9 +6922,12 @@ impl<'a> Builder<'a> {
             let mut parts: Vec<(String, Kind)> = Vec::new();
             loop {
                 let p = match ts.peek_word() {
-                    Some(w) => w.to_ascii_lowercase(),
+                    Some(w) => w.to_string(),
                     None => break,
                 };
+                if p == "as" || p == "packed" || p == "aligned" {
+                    break;
+                }
                 ts.pos += 1;
                 let mut kind = Kind::Unknown;
                 if ts.consume_word("as") {
@@ -6626,12 +6935,48 @@ impl<'a> Builder<'a> {
                 }
                 parts.push((p, kind));
                 if ts.peek_word() == Some("and") {
+                    let save = ts.pos;
                     ts.pos += 1;
+                    if matches!(ts.peek_word(), Some("as" | "packed" | "aligned")) {
+                        ts.pos = save;
+                        break;
+                    }
                     continue;
                 }
                 break;
             }
+            // M6-G33: layout phrases follow the last field.
+            let mut layout = crate::cbridge::Layout::default();
+            if ts.peek_word() == Some("and") {
+                ts.pos += 1;
+                let words: Vec<String> = ts
+                    .rest_without_period()
+                    .iter()
+                    .filter_map(|t| match t {
+                        Token::Word { lower, .. } => Some(lower.clone()),
+                        Token::Whole { value } => Some(value.to_string()),
+                        _ => None,
+                    })
+                    .collect();
+                let refs: Vec<&str> = words.iter().map(|s| s.as_str()).collect();
+                match crate::cbridge::parse_layout(&refs) {
+                    Ok(l) => layout = l,
+                    Err(e) => self.err(
+                        "T0192",
+                        "Layout phrases clash.".to_string(),
+                        s,
+                        0,
+                        s.text.len(),
+                        e,
+                        "Use as C does, packed, or aligned to N.".to_string(),
+                    ),
+                }
+            }
             self.record_types.insert(tname.clone(), parts.clone());
+            if std::env::var("Lykaon_DEBUG").is_ok() {
+                eprintln!("DBG record {tname} parts={:?}", parts);
+            }
+            self.record_layouts.insert(tname.clone(), layout);
             // the Always block of a record (ch.64, M3-S38): `Always cond.`
             // children say what is true of every value of the kind
             for &c in &s.children {
@@ -7043,6 +7388,14 @@ impl<'a> Builder<'a> {
 
     /// Share <name>. marks a definition visible to other modules (ch.36).
     fn parse_share(&mut self, s: Option<&'a Sentence>, toks: &[Token], sc: &mut Scope) -> Stmt {
+        // M6-G32: Share for C. marks the next function for the C ABI.
+        if toks.len() >= 4
+            && matches!(&toks[1], Token::Word { lower, .. } if lower == "for")
+            && matches!(&toks[2], Token::Word { lower, .. } if lower == "c")
+        {
+            self.share_for_c_line = s.map(|x| x.line);
+            return Stmt::Note;
+        }
         let mut ts = TS::new(toks);
         ts.pos += 1; // share
         let mut words: Vec<String> = Vec::new();
@@ -7068,6 +7421,13 @@ impl<'a> Builder<'a> {
     /// Use <name>. / Use <name> from <folder>. brings one module's shared
     /// definitions in (ch.36). The file load happens at compile time in `build`.
     fn parse_use(&mut self, s: Option<&'a Sentence>, toks: &[Token]) -> Stmt {
+        // M6-G31: Use C library NAME. is not a module load.
+        if toks.len() >= 4
+            && matches!(&toks[1], Token::Word { lower, .. } if lower == "c")
+            && matches!(&toks[2], Token::Word { lower, .. } if lower == "library")
+        {
+            return Stmt::Note;
+        }
         let mut ts = TS::new(toks);
         ts.pos += 1; // use
         let mut head: Vec<String> = Vec::new();
@@ -9771,6 +10131,12 @@ impl<'a> Builder<'a> {
     /// Does the token run need the expression path? The operation words (ch.4)
     /// or a part read "X of <record>" (ch.20) do; plain words stay flat text.
     fn expr_gate(&self, toks: &[Token], sc: &Scope) -> bool {
+        // A C stub name is a function call, never flat text.
+        if let Some(Token::Word { lower, .. }) = toks.first() {
+            if self.func_names.iter().any(|f| f.eq_ignore_ascii_case(lower)) {
+                return true;
+            }
+        }
         if has_operation_word(toks) {
             return true;
         }
@@ -13055,6 +13421,45 @@ impl<'a> Builder<'a> {
         // a defined single-word name ...else an undefined word: text in a
         // value position (Ch.4, rule 2), an error in a math-operand position
         // (Ch.4, rule 3).
+        // A C stub name is a function call even when the generic function
+        // matcher did not take it (the stub is registered, not defined by To).
+        if let Some(name) = self
+            .func_names
+            .iter()
+            .find(|f| f.eq_ignore_ascii_case(&lower))
+            .cloned()
+        {
+            ts.pos += 1;
+            let mut args = Vec::new();
+            while !matches!(
+                ts.peek(),
+                None | Some(Token::Period) | Some(Token::Eof)
+            ) {
+                args.push(self.arg_operand(ts, sc, s));
+            }
+            let call_can_fail = self.func_can_fail(&name);
+            let kind = self
+                .funcs
+                .iter()
+                .find(|f| f.name.eq_ignore_ascii_case(&name))
+                .and_then(|f| f.result_type.as_ref())
+                .map(|p| match p {
+                    ParamType::K(Kind::Record(name, _)) => Kind::Record(
+                        name.clone(),
+                        self.record_types.get(name).cloned().unwrap_or_default(),
+                    ),
+                    ParamType::K(k) => k.clone(),
+                    _ => Kind::Unknown,
+                })
+                .unwrap_or(Kind::Unknown);
+            return Expr {
+                kind,
+                e: E::Call { name, args },
+                dis: text.to_string(),
+                can_fail: call_can_fail,
+                num_word: false,
+            };
+        }
         ts.pos += 1;
         let found = sc.find(lower);
         if found.is_none() {
@@ -13256,6 +13661,20 @@ impl<'a> Builder<'a> {
 
     fn match_name_at(&mut self, ts: &mut TS, first: &str) -> Option<String> {
         let save = ts.pos;
+        // A C/Python stub name or a built-in is a function, not a plain name.
+        // User functions stay nameable: `Both values is both 3 with 4.` must
+        // still resolve `both values` as the value, not call `both` with one
+        // input.
+        if lykaon_core::cbridge::c_functions()
+            .iter()
+            .any(|d| d.name.eq_ignore_ascii_case(first))
+            || lykaon_core::pybridge::py_functions()
+                .iter()
+                .any(|d| d.name.eq_ignore_ascii_case(first))
+            || lykaon_core::builtins::find(first).is_some()
+        {
+            return None;
+        }
         let mut words: Vec<String> = Vec::new();
         let mut p = ts.pos;
         while p < ts.toks.len() && words.len() <= 4 {
@@ -13467,6 +13886,18 @@ pub fn body_has_hand_back(b: &FnBody) -> bool {
     match b {
         FnBody::Block(ss) => stmts(ss),
         _ => false,
+    }
+}
+
+/// Map a C ABI kind to the Lykaon kind used by the type layer.
+fn ckind_to_kind(k: &lykaon_core::cbridge::CKind) -> Kind {
+    use lykaon_core::cbridge::CKind;
+    match k {
+        CKind::Whole => Kind::Whole,
+        CKind::Decimal => Kind::Decimal,
+        CKind::YesNo => Kind::Boolean,
+        CKind::Letter | CKind::Text | CKind::Bytes => Kind::Text,
+        CKind::Record(name) => Kind::Record(name.clone(), Vec::new()),
     }
 }
 

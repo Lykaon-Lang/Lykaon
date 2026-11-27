@@ -20,7 +20,7 @@ Every editor below calls `lykaonc-cli lsp` over stdio. Set `lykaon.compilerPath`
 ## 2. Editor by editor
 
 ### VS Code
-Install `editors/vscode/lykaon-0.2.0.vsix` (or publish it to the Marketplace).
+Install `editors/vscode/lykaon-0.3.0.vsix` (or publish it to the Marketplace).
 It gives syntax highlighting, LSP diagnostics/hover/completion/definition,
 format on save, Run/Test buttons, and DAP debugging.
 

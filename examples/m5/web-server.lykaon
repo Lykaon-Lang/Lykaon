@@ -1,0 +1,5 @@
+Page hello is hello.
+Open database shop using sqlite file shopdata.
+Serve on port 8080.
+    When someone gets hello.
+        Respond with hello.

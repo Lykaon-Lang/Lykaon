@@ -1,0 +1,9 @@
+region,size,price,churned
+north,55,140,yes
+north,40,100,no
+east,60,160,yes
+east,35,90,no
+south,45,125,no
+south,30,80,no
+west,50,130,no
+west,25,70,yes

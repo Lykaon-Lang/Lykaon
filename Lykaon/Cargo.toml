@@ -1,9 +1,9 @@
 [workspace]
-members = [".", "core", "rt"]
+members = [".", "core", "rt", "playground", "ffi"]
 
 [package]
 name = "lykaon"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 
 # The two command-line fronts, renamed so the GUI can own the short names:
@@ -20,6 +20,7 @@ name = "lykaon-cli"
 path = "src/bin/lykaon.rs"
 
 [dependencies]
+cc = "1"
 # TLS is optional here too and forwarded to lykaon-core's "tls" feature:
 # the native runtime (lykaon-rt) builds this crate without TLS, because the
 # C parts of the TLS stack do not link in the static-CRT exe link.

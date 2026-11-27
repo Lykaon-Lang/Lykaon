@@ -902,6 +902,44 @@ fn fatal(code: &str, cause: &str, fix: &str) -> TErr {
     TErr::Fatal(format!("Error: {cause} ({code})\nFix: {fix}"))
 }
 
+/// M6-G33: map a Lykaon kind to the C ABI kind.
+fn ckind_of_kind(k: &sem::Kind) -> crate::cbridge::CKind {
+    use crate::cbridge::CKind;
+    match k {
+        sem::Kind::Whole => CKind::Whole,
+        sem::Kind::Decimal => CKind::Decimal,
+        sem::Kind::Boolean => CKind::YesNo,
+        sem::Kind::Text => CKind::Text,
+        sem::Kind::Record(name, _) => CKind::Record(name.clone()),
+        sem::Kind::Maybe(inner) => ckind_of_kind(inner),
+        _ => CKind::Text,
+    }
+}
+
+/// M6-G31/G35: load the C libraries and plugins named by the program.
+fn load_program_libs(prog: &sem::Program) -> Result<(), TErr> {
+    for name in &prog.c_libraries {
+        crate::cbridge::load_library_name_at(std::path::Path::new(&prog.source_dir), name).map_err(|e| {
+            fatal(
+                "T0525",
+                &format!("the C library {name} cannot be loaded: {e}"),
+                "Check the library name, or install the library.",
+            )
+        })?;
+    }
+    let dir = std::path::Path::new(&prog.source_dir).join("plugins");
+    for name in &prog.plugins {
+        crate::cbridge::load_plugin(name, &dir).map_err(|e| {
+            fatal(
+                "T0525",
+                &format!("the plugin {name} cannot be loaded: {e}"),
+                "Check the plugin name, or install the plugin.",
+            )
+        })?;
+    }
+    Ok(())
+}
+
 /// SHA-256 as lower-case hex (the trace and report hash format).
 fn sha256_hex(bytes: &[u8]) -> String {
     use sha2::{Digest, Sha256};
@@ -1333,6 +1371,16 @@ pub fn run_budgeted_streams_traced(
     };
     if trace.is_recording() {
         trace.push(TraceEvent::Stdin(stdin_text.to_string()));
+    }
+    if let Err(e) = load_program_libs(prog) {
+        return (
+            Err(snapshot_run_error(String::new(), e)),
+            Vec::new(),
+            0,
+            Vec::new(),
+            0,
+            Vec::new(),
+        );
     }
     let mut it = Interp {
         prog,
@@ -7931,6 +7979,240 @@ impl<'p> Interp<'p> {
         self.eval_call_values(name, &values, frame, out)
     }
 
+    /// M6-G38: call a stub-declared C function through the FFI.
+    fn call_c(&mut self, decl: &crate::cbridge::CDecl, values: &[Value]) -> R<Value> {
+        use crate::cbridge::CKind;
+        if values.len() != decl.inputs.len() {
+            return Err(fatal(
+                "T0126",
+                &format!(
+                    "{} expects {} inputs, but {} were given",
+                    decl.name,
+                    decl.inputs.len(),
+                    values.len()
+                ),
+                "Match the inputs of the C function.",
+            ));
+        }
+        if decl.inputs.len() != 1 {
+            return Err(fatal(
+                "T0525",
+                "only one-input C functions are wired",
+                "Use a stub with one input.",
+            ));
+        }
+        if matches!(decl.inputs[0], CKind::Text | CKind::Bytes) {
+            if let Value::Text(s) = &values[0] {
+                let lib = decl.library.as_str();
+                let sym = decl.symbol.as_str();
+                return match decl.result {
+                    CKind::Whole => Ok(Value::Whole(
+                        crate::cbridge::call_c_text_whole(lib, sym, s)
+                            .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?,
+                    )),
+                    CKind::Text | CKind::Bytes => Ok(Value::Text(
+                        crate::cbridge::call_c_text(lib, sym, s)
+                            .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?,
+                    )),
+                    CKind::Decimal => Ok(Value::Dec(
+                        crate::cbridge::call_c_text_double(lib, sym, s)
+                            .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?,
+                    )),
+                    CKind::YesNo => Ok(Value::Boolean(
+                        crate::cbridge::call_c_text_int(lib, sym, s)
+                            .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?
+                            != 0,
+                    )),
+                    CKind::Letter => Ok(Value::Text(
+                        (crate::cbridge::call_c_text_letter(lib, sym, s)
+                            .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?
+                            as char)
+                            .to_string(),
+                    )),
+                    CKind::Record(_) => Err(fatal(
+                        "T0525",
+                        "record C calls are not wired yet",
+                        "Use a scalar return kind.",
+                    )),
+                };
+            }
+        }
+        let x = match (&decl.inputs[0], &values[0]) {
+            (CKind::Decimal, Value::Whole(n)) => *n as f64,
+            (CKind::Decimal, Value::Dec(x)) => *x,
+            (CKind::Whole | CKind::YesNo | CKind::Letter, Value::Whole(n)) => *n as f64,
+            (CKind::Whole | CKind::YesNo | CKind::Letter, Value::Dec(x)) => *x,
+            (CKind::Decimal, Value::Boolean(b)) => {
+                if *b {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
+            _ => {
+                return Err(fatal(
+                    "T0301",
+                    "a number is needed for the C call",
+                    "Pass a whole number or decimal.",
+                ))
+            }
+        };
+        let lib = decl.library.as_str();
+        let sym = decl.symbol.as_str();
+        match &decl.result {
+            CKind::Decimal => Ok(Value::Dec(
+                crate::cbridge::call_c_double(lib, sym, x)
+                    .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?,
+            )),
+            CKind::Whole => Ok(Value::Whole(
+                crate::cbridge::call_c_whole(lib, sym, x as i64)
+                    .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?,
+            )),
+            CKind::YesNo => Ok(Value::Boolean(
+                crate::cbridge::call_c_int(lib, sym, x as i64)
+                    .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?
+                    != 0,
+            )),
+            CKind::Letter => Ok(Value::Text(
+                (crate::cbridge::call_c_letter(lib, sym, x as i64)
+                    .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?
+                    as char)
+                    .to_string(),
+            )),
+            CKind::Record(name) => self.call_c_record(decl, name.as_str(), x as i64),
+            CKind::Text | CKind::Bytes => Err(fatal(
+                "T0525",
+                "text C calls are not wired yet",
+                "Use whole number, decimal, yes or no, or letter.",
+            )),
+        }
+    }
+
+    /// M6b: call a stub-declared Python function through the bridge.
+    fn call_py(&mut self, decl: &crate::pybridge::PyDecl, values: &[Value]) -> R<Value> {
+        use crate::pybridge::{PyArg, PyOut};
+        if values.len() != decl.inputs.len() {
+            return Err(fatal(
+                "T0126",
+                &format!(
+                    "{} expects {} inputs, but {} were given",
+                    decl.name,
+                    decl.inputs.len(),
+                    values.len()
+                ),
+                "Match the inputs of the Python function.",
+            ));
+        }
+        let mut args = Vec::with_capacity(values.len());
+        for (i, v) in values.iter().enumerate() {
+            let want_decimal = matches!(decl.inputs[i], crate::cbridge::CKind::Decimal);
+            let arg = match v {
+                Value::Whole(n) if want_decimal => PyArg::Decimal(*n as f64),
+                Value::Whole(n) => PyArg::Whole(*n),
+                Value::Dec(x) => PyArg::Decimal(*x),
+                Value::Boolean(b) => PyArg::YesNo(*b),
+                Value::Text(s) => PyArg::Text(s.clone()),
+                _ => {
+                    return Err(fatal(
+                        "T0301",
+                        "a scalar value is needed for the Python call",
+                        "Pass a whole number, decimal, yes or no, or text.",
+                    ))
+                }
+            };
+            args.push(arg);
+        }
+        let out = crate::pybridge::py_call(decl, &args)
+            .map_err(|e| fatal("T0525", &e, "Check the Python module and function."))?;
+        Ok(match out {
+            PyOut::Whole(n) => Value::Whole(n),
+            PyOut::Decimal(x) => Value::Dec(x),
+            PyOut::YesNo(b) => Value::Boolean(b),
+            PyOut::Text(s) => Value::Text(s),
+        })
+    }
+
+    /// M6-G33: call a C function returning a `#[repr(C)]` record pointer.
+    fn call_c_record(
+        &mut self,
+        decl: &crate::cbridge::CDecl,
+        record: &str,
+        x: i64,
+    ) -> R<Value> {
+        use crate::cbridge::CKind;
+        use std::os::raw::c_char;
+        let p = crate::cbridge::library_symbol(decl.library.as_str(), decl.symbol.as_str())
+            .map_err(|e| fatal("T0525", &e, "Check the library and symbol."))?;
+        let f: extern "C" fn(i64) -> *mut std::os::raw::c_void =
+            unsafe { std::mem::transmute(p) };
+        let ptr = f(x);
+        if ptr.is_null() {
+            return Ok(Value::Missing);
+        }
+        let fields = self
+            .prog
+            .record_types
+            .iter()
+            .find(|(n, _)| n == record)
+            .map(|(_, f)| f.clone())
+            .ok_or_else(|| {
+                fatal(
+                    "T0525",
+                    &format!("the C record {record} is not declared"),
+                    "Declare it with `A <name> has ... as C does.`.",
+                )
+            })?;
+        let layout = self
+            .prog
+            .record_layouts
+            .iter()
+            .find(|(n, _)| n == record)
+            .map(|(_, l)| l.clone())
+            .unwrap_or_default();
+        let cfields: Vec<(String, CKind)> = fields
+            .iter()
+            .map(|(n, k)| (n.clone(), ckind_of_kind(k)))
+            .collect();
+        let layout = crate::cbridge::Layout {
+            as_c: layout.as_c,
+            packed: layout.packed,
+            align: layout.align,
+        };
+        let (offsets, _, _) = crate::cbridge::layout_record(&cfields, &layout)
+            .map_err(|e| fatal("T0525", &e, "Fix the record layout."))?;
+        let mut parts = Vec::with_capacity(fields.len());
+        for (i, (name, _)) in fields.iter().enumerate() {
+            let off = offsets[i].offset;
+            let v = unsafe {
+                match cfields[i].1 {
+                    CKind::Whole => Value::Whole(ptr.add(off).cast::<i64>().read()),
+                    CKind::Decimal => Value::Dec(ptr.add(off).cast::<f64>().read()),
+                    CKind::YesNo => Value::Boolean(ptr.add(off).cast::<i32>().read() != 0),
+                    CKind::Letter => {
+                        Value::Text((ptr.add(off).cast::<u8>().read() as char).to_string())
+                    }
+                    CKind::Text | CKind::Bytes => {
+                        let p = ptr.add(off).cast::<*const c_char>().read();
+                        if p.is_null() {
+                            Value::Missing
+                        } else {
+                            Value::Text(std::ffi::CStr::from_ptr(p).to_string_lossy().to_string())
+                        }
+                    }
+                    CKind::Record(_) => {
+                        return Err(fatal(
+                            "T0525",
+                            "nested record C returns are not wired",
+                            "Use a scalar field.",
+                        ))
+                    }
+                }
+            };
+            parts.push((name.clone(), v));
+        }
+        Ok(Value::Record(record.to_string(), parts))
+    }
+
     fn eval_call_values(
         &mut self,
         name: &str,
@@ -7938,6 +8220,28 @@ impl<'p> Interp<'p> {
         frame: &mut Frame,
         out: &mut String,
     ) -> R<Value> {
+        // M6-G38: a stub-declared C function is called through the FFI.
+        if let Some(decl) = self
+            .prog
+            .c_functions
+            .iter()
+            .find(|d| d.name.eq_ignore_ascii_case(name))
+        {
+            return self.call_c(decl, values);
+        }
+        // M6b: a stub-declared Python function is called through the bridge.
+        if let Some(decl) = self
+            .prog
+            .py_functions
+            .iter()
+            .find(|d| d.name.eq_ignore_ascii_case(name))
+        {
+            return self.call_py(decl, values);
+        }
+        // M6b: a standard-library built-in is called by name.
+        if let Some(b) = crate::builtins::find(name) {
+            return (b.f)(values).map_err(|e| fatal("T0525", &e, "Check the built-in inputs."));
+        }
         // A closure of that name in scope is called (M3-S21). The closure
         // value carries the names it captured where it was written.
         if let Some(Value::Closure { .. }) = frame.find(name) {

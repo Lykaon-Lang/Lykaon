@@ -1,0 +1,16 @@
+[package]
+name = "lykaon-playground"
+version = "0.3.0"
+edition = "2024"
+
+# M5d-preview (ADD-ON, off-plan): the Lykaon interpreter compiled to
+# WebAssembly for the browser playground. Additive only: it changes no
+# language rule and is not part of the public repo until it works.
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# The same front end the CLI uses (lykaon::run_source); TLS is off, exactly
+# like the native runtime build of lykaon-rt.
+lykaon = { path = "..", default-features = false }

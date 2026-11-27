@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lykaon-lang.github.io/Lykaon/schemas/lykaon-report-v1.schema.json",
+  "title": "Lykaon resource report v1",
+  "description": "One run's resource report, printed by `lykaon report <file>` or returned by `lykaon serve` (the serve result also adds jsonrpc/id). The document describes the run; the `report` command itself exits 0 when it can write the document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "file",
+    "exit",
+    "exit_reason",
+    "fuel",
+    "fuel_used",
+    "wall_ms",
+    "output_bytes",
+    "peak_alloc_bytes"
+  ],
+  "properties": {
+    "schema": {
+      "const": "lykaon-report-v1",
+      "description": "Format identifier. A new incompatible report shape gets a new identifier."
+    },
+    "file": {
+      "type": "string",
+      "description": "The source file that was run."
+    },
+    "exit": {
+      "type": "integer",
+      "description": "Process exit code of the run: 0, the code from `Exit with N.`, or 1 for a failure."
+    },
+    "exit_reason": {
+      "type": "string",
+      "enum": [
+        "ok",
+        "compile",
+        "exit",
+        "signal",
+        "fuel",
+        "time",
+        "memory",
+        "permission",
+        "failure"
+      ],
+      "description": "Why the run ended. `compile` means the source never ran; `fuel` is the sentence budget, `time` is Limit time (T0612), `memory` is Limit memory (T0611), `permission` is a refused sandbox permission (T0622), `exit` is `Exit with N.`, `signal` is an unhandled can-fail end."
+    },
+    "fuel": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The sentence budget that was requested; 0 means unlimited."
+    },
+    "fuel_used": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sentences attempted. Counted whether or not a budget was set; 0 when the source did not compile."
+    },
+    "wall_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Wall-clock milliseconds for compile plus run, as measured by the reporting process."
+    },
+    "output_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Byte length of the program output (UTF-8)."
+    },
+    "peak_alloc_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Peak live allocation during the run above the run's starting baseline, in bytes. Approximate: the counter is process-wide and other threads can allocate while a run is active."
+    },
+    "input_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Byte length of the standard input the run read (0 when none was given)."
+    },
+    "permissions_used": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "The permissions the run actually used: `file <path>`, `host <h>`, `env <NAME>`, `processes <count>`. Empty when no sandbox was active."
+    }
+  }
+}

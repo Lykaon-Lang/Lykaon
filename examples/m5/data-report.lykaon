@@ -1,0 +1,4 @@
+Load sales.
+Say rows and average price.
+Say top 5 regions by total price.
+Plot price against size to file output.

@@ -310,6 +310,20 @@ fn fn_calls(
 
 // ------------------------------------------------------- dead functions
 
+/// M6: the C/Python bridge stubs and the built-ins sit in `prog.funcs` so
+/// the type checker can resolve their calls, but they are not source
+/// functions. They are always kept (a program never *defines* them) and
+/// never counted as removed.
+fn is_bridge_or_builtin(name: &str) -> bool {
+    lykaon_core::cbridge::c_functions()
+        .iter()
+        .any(|d| d.name.eq_ignore_ascii_case(name))
+        || lykaon_core::pybridge::py_functions()
+            .iter()
+            .any(|d| d.name.eq_ignore_ascii_case(name))
+        || lykaon_core::builtins::find(name).is_some()
+}
+
 /// Remove from `prog.funcs` every function the whole program cannot reach.
 /// Implementation blocks are kept whole (their dispatch is by value kind
 /// at run time). Returns how many were removed.
@@ -370,8 +384,9 @@ pub fn remove_dead_funcs(prog: &mut Program) -> usize {
         }
     }
     let before = prog.funcs.len();
-    prog.funcs
-        .retain(|f| f.shared || alive.contains(&f.name.to_ascii_lowercase()));
+    prog.funcs.retain(|f| {
+        f.shared || is_bridge_or_builtin(&f.name) || alive.contains(&f.name.to_ascii_lowercase())
+    });
     before - prog.funcs.len()
 }
 

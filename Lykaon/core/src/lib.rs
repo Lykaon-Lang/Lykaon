@@ -4,7 +4,9 @@
 
 pub mod alloc;
 pub mod args;
+pub mod builtins;
 pub mod chart;
+pub mod cbridge;
 pub mod font8x8;
 #[cfg(feature = "crypto")]
 pub mod crypto;
@@ -18,6 +20,7 @@ pub mod migrate;
 pub mod mir;
 pub mod net;
 pub mod png;
+pub mod pybridge;
 pub mod sandbox;
 pub mod sem;
 pub mod signals;

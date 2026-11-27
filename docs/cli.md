@@ -1,11 +1,11 @@
-# The Lykaon command line (v0.2)
+# The Lykaon command line (v0.3)
 
 Two programs come with a release:
 
 | Program | Role |
 |---|---|
-| `lykaon-cli.exe` (`lykaon`) | the interpreter front end: run, repl, ui, package commands |
-| `lykaonc-cli.exe` (`lykaonc`) | the compiler front end: build native executables |
+| `lykaon-cli` (`lykaon-cli.exe` on Windows) | the interpreter front end: run, repl, ui, package and registry commands |
+| `lykaonc-cli` (`lykaonc-cli.exe` on Windows) | the compiler front end: build native executables and library targets |
 
 ## Running programs
 
@@ -42,6 +42,27 @@ lykaonc-cli build fast hello.lykaon hello.exe
 `build` prints the optimizer report (contract prover, constant folding, inlining,
 dead code, bounds-check elimination, devirtualization, whole-program passes) —
 one line per pass with its change count.
+
+### Library and bridge targets (M6)
+
+```
+lykaonc-cli build for library input.lykaon [outdir]   # writes <stem>.h + <stem>.nest
+lykaonc-cli build for python  input.lykaon [outdir]   # writes a Python extension
+lykaonc-cli build for js      input.lykaon [outdir]   # writes <stem>.wasm + loader + .d.ts
+```
+
+- `build for library` exports the functions marked `Share for C.` as a C
+  header plus an export manifest (`.nest`).
+- `build for python` writes a Python extension module that embeds and runs the
+  program (`import <stem>; <stem>.run()`). It needs the Python development
+  headers and a C toolchain.
+- `build for js` writes the interpreter as WebAssembly plus an ES-module
+  loader; a browser or Node calls `run()`.
+
+The C/Python/JavaScript bridges, plugins and the M6b built-ins run on the
+interpreter path. A native build of a program that uses them falls back to the
+embedded evaluator, as documented in `docs/C_ABI.md` and
+`docs/unsafe-boundary.md`.
 
 The output is a standalone executable for the host platform: `.exe` on Windows,
 an ELF binary on Linux. Double-clicked in Explorer it keeps its window open
@@ -106,6 +127,32 @@ lykaon-cli update [NAME]             clone/fetch, check out the pinned tag,
   (`vX.Y.Z` or `X.Y.Z`); the lock records a SHA-256 tree checksum and refuses
   a rewritten tag (`Git dependency failed (T0520)`)
 - `lykaon.lock` is written and updated automatically; commit it
+
+## Local package registry (M6b)
+
+```
+lykaon registry status [--registry DIR]
+lykaon registry publish <folder> [--registry DIR]
+lykaon registry add <name> [dest] [--registry DIR]
+```
+
+- `publish` packs a folder into `<name>/<version>.ship` and records its SHA-256
+  in `index.json`; `add` verifies the checksum and extracts to
+  `<dest>/<name>/<version>/`; `status` prints the index.
+- The registry is a local or self-hostable folder: no network service, no
+  downloads and no code execution at install.
+- A checksum mismatch or a package path that escapes the destination is
+  refused. Details: `docs/registry.md`.
+
+## C headers: bindgen
+
+```
+lykaon bindgen header.h [out.stub.shelf]
+```
+
+Reads simple C prototypes (`int`, `long long`, `double`, `char *`, `void`) and
+writes Lykaon `C function ... as ... takes ... gives ...` declarations (a
+`.stub.shelf`) for the C bridge. With no output file the text goes to stdout.
 
 ## Benchmarks
 

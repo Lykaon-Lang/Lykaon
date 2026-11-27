@@ -1,0 +1,12 @@
+Bag is channel of whole number.
+Start task producer.
+    Send 1 to bag.
+    Send 2 to bag.
+    Send 3 to bag.
+Receive from bag.
+Say it.
+Receive from bag.
+Say it.
+Receive from bag.
+Say it.
+Wait for producer.

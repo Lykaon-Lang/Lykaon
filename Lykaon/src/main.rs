@@ -1,6 +1,6 @@
 use lykaon::{NativeFail, try_format_source, native_run_tool, packages};
 use std::io::IsTerminal;
-use std::{env, path::PathBuf, process::ExitCode};
+use std::{env, path::{Path, PathBuf}, process::ExitCode};
 
 // M5-S45: count allocations in the compiler front too, so lykaon profile
 // memory can report a peak.
@@ -643,6 +643,95 @@ fn main() -> ExitCode {
                 println!("{d}");
             }
             ExitCode::from(0)
+        }
+        "bindgen" => {
+            if args.len() < 3 {
+                eprintln!("usage: lykaon bindgen <header.h> [out.stub.shelf]");
+                return ExitCode::from(2);
+            }
+            let input = &args[2];
+            let source = match std::fs::read_to_string(input) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: cannot read {input}: {e}");
+                    return ExitCode::from(1);
+                }
+            };
+            let text = lykaon::bindgen::bindgen(&source);
+            match args.get(3) {
+                Some(out) => {
+                    if let Err(e) = std::fs::write(out, text) {
+                        eprintln!("Error: cannot write {out}: {e}");
+                        return ExitCode::from(1);
+                    }
+                }
+                None => print!("{text}"),
+            }
+            ExitCode::from(0)
+        }
+        "registry" => {
+            // lykaon registry status|publish <folder>|add <name> [dest] [--registry <dir>]
+            let mut reg = PathBuf::from("registry");
+            let mut rest: Vec<String> = Vec::new();
+            let mut i = 2usize;
+            while i < args.len() {
+                if args[i] == "--registry" {
+                    if let Some(p) = args.get(i + 1) {
+                        reg = PathBuf::from(p);
+                        i += 2;
+                        continue;
+                    }
+                }
+                rest.push(args[i].clone());
+                i += 1;
+            }
+            let Some(sub) = rest.first().map(|s| s.as_str()) else {
+                eprintln!("usage: lykaon registry status | publish <folder> | add <name> [dest]");
+                return ExitCode::from(2);
+            };
+            match sub {
+                "status" => {
+                    print!("{}", lykaon::registry::status(&reg));
+                    ExitCode::from(0)
+                }
+                "publish" => {
+                    let Some(folder) = rest.get(1) else {
+                        eprintln!("usage: lykaon registry publish <folder>");
+                        return ExitCode::from(2);
+                    };
+                    match lykaon::registry::publish(Path::new(folder), &reg) {
+                        Ok((name, version)) => {
+                            println!("Published {name} {version} to {}.", reg.display());
+                            ExitCode::from(0)
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {e}");
+                            ExitCode::from(1)
+                        }
+                    }
+                }
+                "add" => {
+                    let Some(name) = rest.get(1) else {
+                        eprintln!("usage: lykaon registry add <name> [dest]");
+                        return ExitCode::from(2);
+                    };
+                    let dest = rest.get(2).map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
+                    match lykaon::registry::add(name, &reg, &dest) {
+                        Ok(p) => {
+                            println!("Added {name} to {}.", p.display());
+                            ExitCode::from(0)
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {e}");
+                            ExitCode::from(1)
+                        }
+                    }
+                }
+                other => {
+                    eprintln!("Error: unknown registry command {other}.");
+                    ExitCode::from(2)
+                }
+            }
         }
         "checkpoint" => {
             // M5g item d: lykaon checkpoint <file> [--after N] [--out <file>]
@@ -1412,6 +1501,280 @@ fn main() -> ExitCode {
             }
         }
         "build" => {
+            // M6-G32: `lykaon build for library <input> [outdir]`.
+            if args.len() >= 4 && args[2] == "for" && args[3] == "library" {
+                let input = args[4].clone();
+                let outdir = args
+                    .get(5)
+                    .cloned()
+                    .unwrap_or_else(|| ".".to_string());
+                let source = match std::fs::read_to_string(&input) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("Error: cannot read {input}: {e}");
+                        return ExitCode::from(1);
+                    }
+                };
+                let prog = match lykaon::compile_tree(&source, &input) {
+                    Ok(p) => p,
+                    Err(diags) => {
+                        for d in &diags {
+                            eprintln!("{d}");
+                        }
+                        return ExitCode::from(1);
+                    }
+                };
+                let stem = std::path::Path::new(&input)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("library")
+                    .to_string();
+                let dir = std::path::Path::new(&outdir);
+                if let Err(e) = std::fs::create_dir_all(dir) {
+                    eprintln!("Error: cannot create {outdir}: {e}");
+                    return ExitCode::from(1);
+                }
+                let header = lykaon::c_header(&prog);
+                let header_path = dir.join(format!("{stem}.h"));
+                if let Err(e) = std::fs::write(&header_path, header) {
+                    eprintln!("Error: cannot write {}: {e}", header_path.display());
+                    return ExitCode::from(1);
+                }
+                let exports: Vec<String> =
+                    prog.c_exports.iter().map(|f| f.name.clone()).collect();
+                let nest = serde_json::json!({
+                    "name": stem,
+                    "exports": exports,
+                });
+                let nest_path = dir.join(format!("{stem}.nest"));
+                if let Err(e) = std::fs::write(&nest_path, nest.to_string()) {
+                    eprintln!("Error: cannot write {}: {e}", nest_path.display());
+                    return ExitCode::from(1);
+                }
+                println!("built {stem} for library");
+                return ExitCode::from(0);
+            }
+            // M6-G36: `lykaon build for python <input> [outdir]`.
+            if args.len() >= 4 && args[2] == "for" && args[3] == "python" {
+                let input = args[4].clone();
+                let outdir = args
+                    .get(5)
+                    .cloned()
+                    .unwrap_or_else(|| ".".to_string());
+                let source = match std::fs::read_to_string(&input) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("Error: cannot read {input}: {e}");
+                        return ExitCode::from(1);
+                    }
+                };
+                if let Err(diags) = lykaon::compile_tree(&source, &input) {
+                    for d in &diags {
+                        eprintln!("{d}");
+                    }
+                    return ExitCode::from(1);
+                }
+                let stem = std::path::Path::new(&input)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("program")
+                    .to_string();
+                let dir = std::path::Path::new(&outdir);
+                if let Err(e) = std::fs::create_dir_all(dir) {
+                    eprintln!("Error: cannot create {outdir}: {e}");
+                    return ExitCode::from(1);
+                }
+                let pyi = format!(
+                    "# Lykaon module {stem}\ndef run() -> int:\n    \"\"\"Run the embedded Lykaon program.\"\"\"\n    ...\n"
+                );
+                if let Err(e) = std::fs::write(dir.join(format!("{stem}.pyi")), pyi) {
+                    eprintln!("Error: cannot write the .pyi: {e}");
+                    return ExitCode::from(1);
+                }
+                let c = format!(
+                    "#include <Python.h>\n\
+                     extern int lykaon_rt_main(const char *src, long long len, int mode);\n\
+                     static PyObject *lykaon_run(PyObject *self, PyObject *args) {{\n\
+                     \x20   const char *src; Py_ssize_t len;\n\
+                     \x20   if (!PyArg_ParseTuple(args, \"s#\", &src, &len)) return NULL;\n\
+                     \x20   return PyLong_FromLong(lykaon_rt_main(src, (long long)len, 0));\n\
+                     }}\n\
+                     static PyMethodDef methods[] = {{\n\
+                     \x20   {{\"run\", lykaon_run, METH_VARARGS, \"Run the embedded Lykaon program.\"}},\n\
+                     \x20   {{NULL, NULL, 0, NULL}}\n\
+                     }};\n\
+                     static struct PyModuleDef module = {{\n\
+                     \x20   PyModuleDef_HEAD_INIT, \"{stem}\", NULL, -1, methods\n\
+                     }};\n\
+                     PyMODINIT_FUNC PyInit_{stem}(void) {{ return PyModule_Create(&module); }}\n"
+                );
+                if let Err(e) = std::fs::write(dir.join(format!("{stem}.c")), c) {
+                    eprintln!("Error: cannot write the extension source: {e}");
+                    return ExitCode::from(1);
+                }
+                // Try to build the importable extension. Windows uses the
+                // detected MSVC cl/link; other platforms need a C toolchain.
+                let py = std::process::Command::new("python")
+                    .args([
+                        "-c",
+                        "import sysconfig; print(sysconfig.get_paths()['include']); print(sysconfig.get_config_var('LIBDIR')); print(sysconfig.get_config_var('LDLIBRARY'))",
+                    ])
+                    .output();
+                if let Ok(py) = py {
+                    if py.status.success() {
+                        let text = String::from_utf8_lossy(&py.stdout);
+                        let mut it = text.lines();
+                        let include = it.next().unwrap_or("").to_string();
+                        let libdir = it.next().unwrap_or("").to_string();
+                        let dll = it.next().unwrap_or("python314.dll").to_string();
+                        let pylib = dll.replace(".dll", ".lib");
+                        if let Ok(tc) = lykaon::linker::detect() {
+                            unsafe {
+                                std::env::set_var("HOST", "x86_64-pc-windows-msvc");
+                                std::env::set_var("TARGET", "x86_64-pc-windows-msvc");
+                                std::env::set_var("OPT_LEVEL", "2");
+                            }
+                            let obj = dir.join("obj");
+                                let cfile = dir.join(format!("{stem}.c"));
+                                let _ = std::fs::create_dir_all(&obj);
+                                unsafe {
+                                    std::env::set_var("OUT_DIR", &obj);
+                                }
+                                cc::Build::new()
+                                    .file(&cfile)
+                                    .include(&include)
+                                    .warnings(false)
+                                    .compile("lykaon_py");
+                                let pyobj = obj.join("lykaon_py.lib");
+                                if pyobj.is_file() {
+                                    let rt = std::path::Path::new("target/release/lykaon_rt.lib");
+                                    let pyd = dir.join(format!("{stem}.pyd"));
+                                    let prog_obj = dir.join(format!("{stem}.obj"));
+                                    let obj_bytes = match lykaon::native_object(&source, &input, "fast", false) {
+                                        Ok((o, _, _)) => o,
+                                        Err(e) => {
+                                            eprintln!("python object failed");
+                                            Vec::new()
+                                        }
+                                    };
+                                    if obj_bytes.is_empty() {
+                                        println!("built {stem} for python (source + .pyi; link with the Python C API)");
+                                        return ExitCode::from(0);
+                                    }
+                                    if std::fs::write(&prog_obj, &obj_bytes).is_err() {
+                                        eprintln!("python object write failed");
+                                        return ExitCode::from(1);
+                                    }
+                                    let mut cmd = std::process::Command::new(&tc.link);
+                                    cmd.arg("/nologo").arg("/DLL").arg("/NODEFAULTLIB:LIBCMT");
+                                    for d in &tc.lib_dirs {
+                                        cmd.arg(format!("/LIBPATH:{}", d.display()));
+                                    }
+                                    cmd.arg(format!("/LIBPATH:{libdir}"));
+                                    cmd.arg(format!("/WHOLEARCHIVE:{}", pyobj.to_string_lossy()));
+                                    cmd.arg(&prog_obj);
+                                    cmd.arg(rt);
+                                    cmd.arg(&pylib);
+                                    for lib in [
+                                        "ws2_32.lib",
+                                        "advapi32.lib",
+                                        "bcrypt.lib",
+                                        "ntdll.lib",
+                                        "userenv.lib",
+                                        "crypt32.lib",
+                                        "secur32.lib",
+                                        "iphlpapi.lib",
+                                    ] {
+                                        cmd.arg(lib);
+                                    }
+                                    cmd.arg(format!("/OUT:{}", pyd.to_string_lossy()));
+                                    let link = cmd.output();
+                                    if link.as_ref().map(|o| o.status.success()).unwrap_or(false) {
+                                        println!("built {stem} for python ({})", pyd.display());
+                                        return ExitCode::from(0);
+                                    } else if let Ok(o) = link {
+                                        eprintln!(
+                                            "python link failed: {}{}",
+                                            String::from_utf8_lossy(&o.stdout),
+                                            String::from_utf8_lossy(&o.stderr)
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                println!("built {stem} for python (source + .pyi; link with the Python C API)");
+                return ExitCode::from(0);
+            }
+            // M6-G36: `lykaon build for js <input> [outdir]`.
+            if args.len() >= 4 && args[2] == "for" && args[3] == "js" {
+                let input = args[4].clone();
+                let outdir = args.get(5).cloned().unwrap_or_else(|| ".".to_string());
+                let source = match std::fs::read_to_string(&input) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("Error: cannot read {input}: {e}");
+                        return ExitCode::from(1);
+                    }
+                };
+                if let Err(diags) = lykaon::compile_tree(&source, &input) {
+                    for d in &diags {
+                        eprintln!("{d}");
+                    }
+                    return ExitCode::from(1);
+                }
+                let stem = std::path::Path::new(&input)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("program")
+                    .to_string();
+                let dir = std::path::Path::new(&outdir);
+                if let Err(e) = std::fs::create_dir_all(dir) {
+                    eprintln!("Error: cannot create {outdir}: {e}");
+                    return ExitCode::from(1);
+                }
+                let wasm_src = std::path::Path::new("playground/lykaon_playground.wasm");
+                if !wasm_src.is_file() {
+                    eprintln!("Error: playground/lykaon_playground.wasm is missing; build the playground first");
+                    return ExitCode::from(1);
+                }
+                if let Err(e) = std::fs::copy(wasm_src, dir.join(format!("{stem}.wasm"))) {
+                    eprintln!("Error: cannot copy the wasm runtime: {e}");
+                    return ExitCode::from(1);
+                }
+                let src_json = serde_json::to_string(&source).unwrap_or_else(|_| "\"\"".to_string());
+                let js = format!(
+                    "const SOURCE = {src_json};\n\
+                     async function load() {{\n\
+                     \x20   const bytes = await (await fetch(new URL('./{stem}.wasm', import.meta.url))).arrayBuffer();\n\
+                     \x20   return WebAssembly.instantiate(bytes);\n\
+                     }}\n\
+                     export async function run() {{\n\
+                     \x20   const {{ instance }} = await load();\n\
+                     \x20   const memory = instance.exports.memory;\n\
+                     \x20   const ptr = instance.exports.lykaon_alloc(SOURCE.length);\n\
+                     \x20   const data = new TextEncoder().encode(SOURCE);\n\
+                     \x20   new Uint8Array(memory.buffer, ptr, data.length).set(data);\n\
+                     \x20   const packed = instance.exports.lykaon_run(ptr, data.length);\n\
+                     \x20   const outPtr = Number(packed >> 32n);\n\
+                     \x20   const outLen = Number(packed & 0xffffffffn);\n\
+                     \x20   return new TextDecoder().decode(new Uint8Array(memory.buffer, outPtr, outLen));\n\
+                     }}\n"
+                );
+                if let Err(e) = std::fs::write(dir.join(format!("{stem}.js")), js) {
+                    eprintln!("Error: cannot write the JS loader: {e}");
+                    return ExitCode::from(1);
+                }
+                let dts = format!(
+                    "# Lykaon module {stem}\nexport function run(): Promise<string>;\n"
+                );
+                if let Err(e) = std::fs::write(dir.join(format!("{stem}.d.ts")), dts) {
+                    eprintln!("Error: cannot write the .d.ts: {e}");
+                    return ExitCode::from(1);
+                }
+                println!("built {stem} for js (wasm + loader + .d.ts)");
+                return ExitCode::from(0);
+            }
             // M3-S44: `lykaon build <debug|fast|small> [input.lykaon] [output]`,
             // the default output being build/<stem>.obj; the summary line is
             // `built <stem> in <mode>`, with the lowering reported honestly.

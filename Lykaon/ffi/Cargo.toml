@@ -1,0 +1,14 @@
+[package]
+name = "lykaon-ffi"
+version = "0.3.0"
+edition = "2024"
+
+# M6 preparation: a stable C ABI for Element/Screens (Model B) and for
+# C/C++/Rust/Python/JS hosts. Additive; programs that never cross it pay
+# nothing. The wasm playground builds without this crate.
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+lykaon = { path = "..", default-features = false }

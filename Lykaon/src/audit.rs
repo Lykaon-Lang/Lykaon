@@ -332,7 +332,16 @@ pub fn audit(prog: &Program, source: &str, file: &str) -> Audit {
     // permissions: compare used features with settings.lykaon
     let dir = Path::new(&prog.source_dir);
     let sb = Sandbox::from_settings(dir);
-    let (uses_files, uses_net, uses_proc) = uses(&prog.body);
+    let (uses_files, mut uses_net, mut uses_proc) = uses(&prog.body);
+    // M6b: the built-in boundaries are calls, not statements, so the
+    // statement scan above does not see them; catch them by name.
+    let src_low = source.to_ascii_lowercase();
+    if src_low.contains("capture ") {
+        uses_proc = true;
+    }
+    if src_low.contains("tcpopen") || src_low.contains("tcpsend") {
+        uses_net = true;
+    }
     if uses_files && !sb.declares_files() {
         out.findings.push(Finding {
             rule: "perm-files",

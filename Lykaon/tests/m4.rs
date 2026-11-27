@@ -1600,11 +1600,12 @@ fn run_helper_dir() -> std::path::PathBuf {
         let d = std::env::temp_dir().join(format!("lykaon_m48_helper_{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).expect("helper folder");
+        let exe = if cfg!(windows) { ".exe" } else { "" };
         for (built, name) in [
-            (env!("CARGO_BIN_EXE_m48sayhi_helper"), "m48sayhi.exe"),
-            (env!("CARGO_BIN_EXE_m48sig_helper"), "m48sig.exe"),
+            (env!("CARGO_BIN_EXE_m48sayhi_helper"), "m48sayhi"),
+            (env!("CARGO_BIN_EXE_m48sig_helper"), "m48sig"),
         ] {
-            std::fs::copy(built, d.join(name)).expect("helper copy");
+            std::fs::copy(built, d.join(format!("{name}{exe}"))).expect("helper copy");
         }
         d
     })
@@ -1619,7 +1620,14 @@ fn m48_run_runs_a_program_on_the_path() {
     let dir = run_helper_dir();
     let _g = M48_LOCK.lock().unwrap();
     let old = std::env::var("PATH").unwrap_or_default();
-    set_env("PATH", Some(&format!("{};{}", dir.display(), old)));
+    // PATH is `;`-separated on Windows and `:`-separated elsewhere; build
+    // it with the platform's own separator instead of hard-coding one.
+    let mut paths = vec![dir.clone()];
+    if let Some(existing) = std::env::var_os("PATH") {
+        paths.extend(std::env::split_paths(&existing));
+    }
+    let new_path = std::env::join_paths(&paths).unwrap().to_string_lossy().to_string();
+    set_env("PATH", Some(&new_path));
     let (out, code) = run("\
 first is alpha.
 second is beta.
@@ -1693,9 +1701,9 @@ fn m48_environment_read_gives_maybe_text() {
     // M4-G24/S80: the variable named by the words in upper case joined
     // by _; the value is maybe text.
     let _g = M48_LOCK.lock().unwrap();
-    set_env("Lykaon_TEST_MODE", Some("fast"));
+    set_env("LYKAON_TEST_MODE", Some("fast"));
     let (out, code) = run("Say Environment lykaon test mode.\n");
-    set_env("Lykaon_TEST_MODE", None);
+    set_env("LYKAON_TEST_MODE", None);
     assert_eq!(code, 0, "{out}");
     assert_eq!(trim(&out), "fast");
 }
@@ -1703,7 +1711,7 @@ fn m48_environment_read_gives_maybe_text() {
 #[test]
 fn m48_environment_missing_reads_as_missing() {
     let _g = M48_LOCK.lock().unwrap();
-    set_env("Lykaon_TEST_MODE", None);
+    set_env("LYKAON_TEST_MODE", None);
     let (out, code) = run("Say Environment lykaon test mode.\n");
     assert_eq!(code, 0, "{out}");
     assert_eq!(trim(&out), "missing");
@@ -1764,7 +1772,8 @@ Say done.
 /// own process. The flags live in the helper's process, so a pending
 /// flag can never leak into the test process's other runs.
 fn signal_run(dir: &std::path::Path, sig: &str, src: &std::path::Path) -> (String, i32) {
-    let out = std::process::Command::new(dir.join("m48sig.exe"))
+    let exe = if cfg!(windows) { "m48sig.exe" } else { "m48sig" };
+    let out = std::process::Command::new(dir.join(exe))
         .arg("pre")
         .arg(sig)
         .arg(src)

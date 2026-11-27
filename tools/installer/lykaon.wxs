@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Name="Lykaon"
+           Language="1033"
+           Version="0.2.0"
+           Manufacturer="Lykaon-Lang"
+           UpgradeCode="6F2B4C6E-7A1D-4C2E-9B3F-1D2E3F4A5B6C">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="Lykaon">
+          <Component Id="MainExecutable" Guid="12345678-1234-1234-1234-1234567890AB" Win64="yes">
+            <File Id="lykaonc" Name="lykaonc-cli.exe" Source="..\..\dist\lykaonc-cli.exe" />
+            <File Id="lykaon" Name="lykaon-cli.exe" Source="..\..\dist\lykaon-cli.exe" />
+            <File Id="rtlib" Name="lykaon_rt.lib" Source="..\..\Lykaon\target\release\lykaon_rt.lib" />
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id="Main" Title="Lykaon" Level="1">
+      <ComponentRef Id="MainExecutable" />
+    </Feature>
+  </Product>
+</Wix>

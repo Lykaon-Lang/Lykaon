@@ -1,13 +1,16 @@
-﻿//! Lykaon compiler - M1a (syntax only).
+//! Lykaon compiler - M1a (syntax only).
 //! Lexer, sentence splitter, name pre-scan, parser, formatter, M1a diagnostics.
 
 pub mod cli;
+pub use lykaon_core::cbridge;
 pub mod codegen;
 pub mod coverage_map;
 pub mod agent;
 pub mod audit;
+pub mod bindgen;
 pub mod dap;
 pub mod diag_json;
+pub mod extensions;
 pub mod diagnostics;
 pub mod docgen;
 pub mod fix;
@@ -29,6 +32,7 @@ pub mod parser;
 pub mod pre_scan;
 pub mod profile;
 pub mod prover;
+pub mod registry;
 pub mod sem;
 pub mod supplement;
 pub mod serve;
@@ -178,7 +182,120 @@ fn compile(source: &str, file_name: &str) -> Compiled {
         Ok(s) => s,
         Err(e) => return Compiled::Diags(e),
     };
-    let names = pre_scan::collect_names(&split.all, &split.roots);
+    let mut names = pre_scan::collect_names(&split.all, &split.roots);
+    // M6-G38: register C functions from `.stub.shelf` files before parsing.
+    let mut c_functions = Vec::new();
+    let base_dir = std::path::Path::new(file_name)
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .to_path_buf();
+    for base in [base_dir.clone(), base_dir.join("stubs")] {
+        let rd = match std::fs::read_dir(&base) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        for entry in rd.flatten() {
+            let p = entry.path();
+            if p.extension().and_then(|e| e.to_str()) != Some("shelf") {
+                continue;
+            }
+            let text = match std::fs::read_to_string(&p) {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            // M6b: `.py.shelf` files belong to the Python bridge, not here.
+            let stem = p
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string();
+            if stem.to_ascii_lowercase().ends_with(".py") {
+                continue;
+            }
+            match cbridge::parse_stub(&text) {
+                Ok(decls) => {
+                    let library = stem
+                        .strip_suffix(".stub")
+                        .unwrap_or(&stem)
+                        .to_string();
+                    for mut d in decls {
+                        d.library = library.clone();
+                        names
+                            .names
+                            .push((d.name.to_ascii_lowercase(), d.name.clone(), 0));
+                        c_functions.push(d);
+                    }
+                }
+                Err(e) => {
+                    return Compiled::Diags(vec![diagnostics::Diagnostic::error(
+                        "T0525",
+                        "C stub file cannot be read.".to_string(),
+                        p.to_string_lossy().to_string(),
+                        1,
+                        text.clone(),
+                        0,
+                        text.len().max(1),
+                        e,
+                        "Fix the stub file, or remove it.".to_string(),
+                    )]);
+                }
+            }
+        }
+    }
+    // M6b: register Python functions from `.py.shelf` files before parsing.
+    let mut py_functions = Vec::new();
+    for base in [base_dir.clone(), base_dir.join("stubs")] {
+        let rd = match std::fs::read_dir(&base) {
+            Ok(r) => r,
+            Err(_) => continue,
+        };
+        for entry in rd.flatten() {
+            let p = entry.path();
+            if p.extension().and_then(|e| e.to_str()) != Some("shelf") {
+                continue;
+            }
+            let stem = p
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string();
+            if !stem.to_ascii_lowercase().ends_with(".py") {
+                continue;
+            }
+            let text = match std::fs::read_to_string(&p) {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            match lykaon_core::pybridge::parse_py_stub(&text) {
+                Ok(decls) => {
+                    let module = stem
+                        .strip_suffix(".py")
+                        .unwrap_or(&stem)
+                        .to_string();
+                    for mut d in decls {
+                        d.module = module.clone();
+                        names
+                            .names
+                            .push((d.name.to_ascii_lowercase(), d.name.clone(), 0));
+                        py_functions.push(d);
+                    }
+                }
+                Err(e) => {
+                    return Compiled::Diags(vec![diagnostics::Diagnostic::error(
+                        "T0525",
+                        "Python stub file cannot be read.".to_string(),
+                        p.to_string_lossy().to_string(),
+                        1,
+                        text.clone(),
+                        0,
+                        text.len().max(1),
+                        e,
+                        "Fix the stub file, or remove it.".to_string(),
+                    )]);
+                }
+            }
+        }
+    }
     let mut diags = split.diagnostics;
     diags.extend(parser::parse_block(
         &split.all,
@@ -193,11 +310,21 @@ fn compile(source: &str, file_name: &str) -> Compiled {
     if has_error {
         return Compiled::Diags(diags);
     }
-    let (program, sem_diags) = sem::build(&split.all, &split.roots, &names, file_name);
+    cbridge::register_c_functions(&c_functions);
+    lykaon_core::pybridge::register_py_functions(&py_functions);
+    // M6b: standard-library built-ins are callable by name.
+    for b in lykaon_core::builtins::all() {
+        names
+            .names
+            .push((b.name.to_ascii_lowercase(), b.name.to_string(), 0));
+    }
+    let (mut program, sem_diags) = sem::build(&split.all, &split.roots, &names, file_name);
     if !sem_diags.is_empty() {
         diags.extend(sem_diags);
         return Compiled::Diags(diags);
     }
+    program.c_functions = c_functions;
+    program.py_functions = py_functions;
     if std::env::var("Lykaon_DEBUG").is_ok() {
         eprintln!("DBG funcs: {:#?}", program.funcs);
     }
@@ -285,6 +412,16 @@ fn expand_uses(
             if words.len() >= 2
                 && words.first().map(|w| w.eq_ignore_ascii_case("log")) == Some(true)
                 && words[1].eq_ignore_ascii_case("level")
+            {
+                out.push_str(raw);
+                out.push('\n');
+                line += 1;
+                continue;
+            }
+            // M6-G31: ``Use C library NAME.`` is not a module load.
+            if words.len() >= 2
+                && words.first().map(|w| w.eq_ignore_ascii_case("c")) == Some(true)
+                && words[1].eq_ignore_ascii_case("library")
             {
                 out.push_str(raw);
                 out.push('\n');
@@ -784,6 +921,51 @@ pub fn try_format_source(
     formatter::try_format(source, file_name)
 }
 
+/// M6-G32: the C header for `Share for C.` exports.
+pub fn c_header(prog: &lykaon_core::sem::Program) -> String {
+    use lykaon_core::cbridge::CKind;
+    use lykaon_core::sem::{Kind, ParamType};
+    fn kind(k: &Kind) -> CKind {
+        match k {
+            Kind::Whole => CKind::Whole,
+            Kind::Decimal => CKind::Decimal,
+            Kind::Boolean => CKind::YesNo,
+            Kind::Text => CKind::Text,
+            Kind::Record(name, _) => CKind::Record(name.clone()),
+            Kind::Maybe(inner) => kind(inner),
+            _ => CKind::Text,
+        }
+    }
+    fn param(p: &ParamType) -> CKind {
+        match p {
+            ParamType::K(k) => kind(k),
+            ParamType::Number => CKind::Whole,
+            _ => CKind::Text,
+        }
+    }
+    let exports: Vec<(String, Vec<CKind>, CKind, bool)> = prog
+        .c_exports
+        .iter()
+        .map(|f| {
+            let inputs = f
+                .inputs
+                .iter()
+                .enumerate()
+                .map(|(i, _)| {
+                    f.input_types
+                        .get(i)
+                        .and_then(|p| p.as_ref())
+                        .map(param)
+                        .unwrap_or(CKind::Text)
+                })
+                .collect();
+            let result = f.result_type.as_ref().map(param).unwrap_or(CKind::Text);
+            (f.name.clone(), inputs, result, f.can_fail)
+        })
+        .collect();
+    lykaon_core::cbridge::generate_header(&exports)
+}
+
 /// Compile a source file to a native object file, reporting which lowering
 /// the program received: `Full` (scalar machine code from the typed tree) or
 /// `Embedded` (an object whose `lykaon_main` runs the embedded source through
@@ -864,7 +1046,7 @@ pub fn native_run_captured(
         .map_err(|e| NativeFail::Tool(format!("cannot write {}: {e}", obj_path.display())))?;
     let result = linker::find_rt_lib()
         .map_err(|e| NativeFail::Tool(format!("the runtime library is missing: {e}")))
-        .and_then(|rt_lib| linker::link(&obj_path, &rt_lib, &exe_path).map_err(NativeFail::Tool))
+        .and_then(|rt_lib| linker::link_exe(&obj_path, &rt_lib, &exe_path).map_err(NativeFail::Tool))
         .and_then(|()| {
             // the module system resolves `Use <name>` relative to the
             // source's folder, like the interpreter does with files beside
@@ -921,7 +1103,7 @@ pub fn native_run_tool(
         .unwrap_or_else(|| file_name.to_string());
     let result = linker::find_rt_lib()
         .map_err(|e| NativeFail::Tool(format!("the runtime library is missing: {e}")))
-        .and_then(|rt_lib| linker::link(&obj_path, &rt_lib, &exe_path).map_err(NativeFail::Tool))
+        .and_then(|rt_lib| linker::link_exe(&obj_path, &rt_lib, &exe_path).map_err(NativeFail::Tool))
         .and_then(|()| {
             let mut cmd = std::process::Command::new(&exe_path);
             // Run in the caller's working directory (do NOT switch to the
@@ -975,7 +1157,7 @@ pub fn native_compile_to_exe(
         .map_err(|e| NativeFail::Tool(format!("cannot write {}: {e}", obj_path.display())))?;
     let rt_lib = linker::find_rt_lib()
         .map_err(|e| NativeFail::Tool(format!("the runtime library is missing: {e}")))?;
-    linker::link(&obj_path, &rt_lib, &exe_path).map_err(NativeFail::Tool)?;
+    linker::link_exe(&obj_path, &rt_lib, &exe_path).map_err(NativeFail::Tool)?;
     let _ = std::fs::remove_file(&obj_path);
     let compile_ms = start.elapsed().as_secs_f64() * 1000.0;
     Ok((exe_path, compile_ms))

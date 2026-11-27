@@ -178,7 +178,11 @@ ratios are measured live against the executable in the same run. The real
 standard benchmarks (nbody, fannkuch, spectral_norm, binary_trees, mandelbrot,
 json_parse) are planned for a later version.
 
-## Building from source
+## Building from source (optional)
+
+A prebuilt Linux archive (`Lykaon-v0.3.0-linux-x64.tar.gz`) needs no Rust or
+Cargo: unpack it and run `install.sh`. The steps below are only for building
+from the source tree.
 
 ```
 cargo build --release -p lykaon-rt
